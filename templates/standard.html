@@ -33,8 +33,16 @@
       font-family: Arial, Helvetica, sans-serif;
       font-size: 18pt;
       font-weight: 700;
-      margin-bottom: 0.5cm;
+      margin-bottom: 0.15cm;
       color: #000000;
+      line-height: 1.2;
+    }
+    .headline {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13pt;
+      font-weight: 600;
+      color: #333333;
+      margin-bottom: 0.35cm;
       line-height: 1.2;
     }
     .contact-info {
@@ -252,6 +260,7 @@
     <!-- Name centered at top -->
     <div class="header">
       <div class="name">{{name}}</div>
+      {{#headline}}<div class="headline">{{headline}}</div>{{/headline}}
       <!-- Under name: address, phone, email -->
       <div class="contact-info">
         {{#location}}{{location}} | {{/location}}{{#phone}}{{phone}} | {{/phone}}{{email}}{{#linkedin}} | <a href="{{linkedin}}">LinkedIn</a>{{/linkedin}}
@@ -274,6 +283,12 @@
         <div class="skill-list">{{valueString}}</div>
       </div>
       {{/hardSkills}}
+      {{#hasSoftSkills}}
+      <div class="skill-category">
+        <div class="skill-category-title">Professional</div>
+        <div class="skill-list">{{softSkillsString}}</div>
+      </div>
+      {{/hasSoftSkills}}
     </div>
     {{/hasSkills}}
 
@@ -312,6 +327,28 @@
       {{/education}}
     </div>
     {{/hasEducation}}
+
+    {{#hasCertifications}}
+    <div class="section section-certifications">
+      <div class="section-title">Certifications</div>
+      {{#certifications}}
+      <div class="certification-item">{{.}}</div>
+      {{/certifications}}
+    </div>
+    {{/hasCertifications}}
+
+    {{#hasProjects}}
+    <div class="section section-projects">
+      <div class="section-title">Projects</div>
+      {{#projects}}
+      <div class="project-item">
+        <div class="project-name">{{name}}</div>
+        {{#description}}<div class="project-description">{{description}}</div>{{/description}}
+        {{#technologiesString}}<div class="project-tech">{{technologiesString}}</div>{{/technologiesString}}
+      </div>
+      {{/projects}}
+    </div>
+    {{/hasProjects}}
 
   </div>
 </body>

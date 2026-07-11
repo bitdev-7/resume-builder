@@ -5,13 +5,14 @@ import { companyFormRowToDbPayload } from "@/lib/mappers/profile-form";
 
 export async function syncCompanies(
   userId: string,
+  profileId: string,
   rows: CompanyFormRow[],
   client: SupabaseClient = supabase
 ): Promise<void> {
   const { data: existing, error: fetchError } = await client
     .from("user_companies")
     .select("id")
-    .eq("user_id", userId);
+    .eq("profile_id", profileId);
 
   if (fetchError) throw fetchError;
 
@@ -29,7 +30,7 @@ export async function syncCompanies(
   }
 
   for (let i = 0; i < rows.length; i++) {
-    const payload = companyFormRowToDbPayload(rows[i], userId, i);
+    const payload = companyFormRowToDbPayload(rows[i], userId, profileId, i);
 
     if (rows[i].id) {
       const { id, ...updateFields } = payload;

@@ -12,6 +12,7 @@ import type { UpdatedResume } from "@/lib/types/resume";
 
 export interface CreateResumeParams {
   userId: string;
+  profileId?: string | null;
   jd: string;
   resume: UpdatedResume;
   aiType?: string | null;
@@ -41,6 +42,7 @@ export async function createResumeWithArtifacts(
     .insert({
       id: resumeId,
       user_id: params.userId,
+      profile_id: params.profileId ?? null,
       ai_type: params.aiType ?? null,
       model: params.model ?? null,
       job_site: params.jobSite ?? null,

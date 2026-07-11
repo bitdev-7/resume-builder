@@ -1,6 +1,12 @@
 import type { Express, Request, Response as ExpressResponse } from "express";
+import type { NextRequest } from "next/server";
 
-type RouteHandler = (request: Request) => Promise<Response>;
+/**
+ * Handlers are Next.js App Router route handlers: they accept a NextRequest and
+ * return a Web Response (NextResponse). The adapter builds a Web Request from the
+ * Express request and passes it in (cast to NextRequest — see registerRoute).
+ */
+type RouteHandler = (request: NextRequest) => Promise<Response>;
 
 function buildWebRequest(req: Request): globalThis.Request {
   const protocol = req.protocol || "http";
@@ -47,7 +53,7 @@ export function registerRoute(
       const response =
         handler.length === 0
           ? await (handler as () => Promise<Response>)()
-          : await (handler as RouteHandler)(webReq as unknown as Request);
+          : await (handler as RouteHandler)(webReq as unknown as NextRequest);
       await sendWebResponse(res, response);
     } catch (error) {
       console.error(`[${method.toUpperCase()} ${path}]`, error);

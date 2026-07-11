@@ -11,7 +11,33 @@ import type { UpdatedResume } from "@/lib/types/resume";
 export type { ResumeDownloadPaths };
 export { buildResumeDownloadPaths, formatPdfSaveMessage };
 
-function downloadPdfViaBrowser(pdfBase64: string, fileName: string): void {
+/** Render a resume to a PDF (base64) without saving/downloading. Used for the preview. */
+export async function renderResumePdfBase64(
+  resume: UpdatedResume | Record<string, unknown>,
+  template: string | undefined,
+  accessToken: string
+): Promise<string> {
+  const response = await fetch(apiUrl("/api/generate-pdf"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ resume, template }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(typeof err.error === "string" ? err.error : "Failed to generate PDF");
+  }
+
+  const { pdfBase64 } = (await response.json()) as { pdfBase64?: string };
+  const normalized = pdfBase64 ? String(pdfBase64).trim() : "";
+  if (!normalized) throw new Error("PDF generation returned empty data");
+  return normalized;
+}
+
+export function downloadPdfViaBrowser(pdfBase64: string, fileName: string): void {
   const binary = atob(pdfBase64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) {

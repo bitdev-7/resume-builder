@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Resume</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "Segoe UI", Arial, Helvetica, sans-serif; font-size: 10pt; line-height: 1.3; color: #1f2937; background: #fff; }
+    /* Printable A4 height minus the 10mm top/bottom PDF margins, so the colored
+       sidebar fills page one without spilling a near-empty second page. */
+    .page { display: flex; min-height: 275mm; }
+    .sidebar { width: 66mm; background: #0f766e; color: #eafffb; padding: 8mm 6mm; }
+    .main { flex: 1; padding: 8mm 9mm; min-width: 0; }
+
+    .photo-wrap { text-align: center; margin-bottom: 6mm; }
+    .photo { width: 34mm; height: 34mm; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.6); }
+
+    .side-block { margin-bottom: 6mm; }
+    .side-title { display: flex; align-items: center; gap: 5px; font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.35); padding-bottom: 1.5mm; margin-bottom: 2mm; }
+    .side-title svg { width: 12px; height: 12px; fill: none; stroke: #eafffb; stroke-width: 2; }
+    .side-item { font-size: 9pt; margin-bottom: 1mm; word-break: break-word; }
+    .side-item a { color: #eafffb; text-decoration: none; }
+    .side-cat { font-weight: 700; color: #fff; margin-top: 1mm; }
+
+    .lang { margin-bottom: 2mm; }
+    .lang-name { display: flex; justify-content: space-between; font-size: 9pt; margin-bottom: 0.8mm; }
+    .lang-name .lvl { color: #b9f2ea; }
+    .bar { height: 4px; background: rgba(255,255,255,0.25); border-radius: 3px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; background: #eafffb; }
+
+    .name { font-size: 21pt; font-weight: 800; color: #0f172a; line-height: 1.05; }
+    .headline { font-size: 11.5pt; font-weight: 600; color: #0f766e; margin-top: 1mm; }
+    .section { margin-top: 5mm; }
+    .section:first-child { margin-top: 0; }
+    .sec-title { display: flex; align-items: center; gap: 6px; font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #0f766e; border-bottom: 2px solid #0f766e; padding-bottom: 1mm; margin-bottom: 2mm; }
+    .sec-title svg { width: 14px; height: 14px; fill: none; stroke: #0f766e; stroke-width: 2; }
+    .summary { color: #374151; }
+    .exp { margin-bottom: 3mm; }
+    .exp-head { display: flex; justify-content: space-between; align-items: baseline; }
+    .exp-company { font-weight: 700; color: #111827; }
+    .exp-title { font-style: italic; color: #4b5563; }
+    .exp-dates { font-size: 9pt; color: #6b7280; white-space: nowrap; padding-left: 8px; }
+    .bullet { position: relative; padding-left: 12px; margin-top: 0.8mm; color: #374151; }
+    .bullet::before { content: ""; position: absolute; left: 0; top: 6px; width: 4px; height: 4px; border-radius: 50%; background: #0f766e; }
+    .edu { margin-bottom: 2mm; }
+    .edu-school { font-weight: 700; color: #111827; }
+    .edu-detail { color: #4b5563; }
+    .proj { margin-bottom: 2mm; }
+    .proj-name { font-weight: 700; color: #111827; }
+    .proj-tech { font-style: italic; color: #6b7280; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sec-title, .side-title { page-break-after: avoid; }
+      .exp, .edu, .proj, .lang { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      {{#hasPhoto}}<div class="photo-wrap"><img class="photo" src="{{photo}}" alt="" /></div>{{/hasPhoto}}
+
+      <div class="side-block">
+        <div class="side-title"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M4 8l8 5 8-5"/></svg>Contact</div>
+        {{#email}}<div class="side-item">{{email}}</div>{{/email}}
+        {{#phone}}<div class="side-item">{{phone}}</div>{{/phone}}
+        {{#location}}<div class="side-item">{{location}}</div>{{/location}}
+        {{#linkedin}}<div class="side-item"><a href="{{linkedin}}">LinkedIn</a></div>{{/linkedin}}
+      </div>
+
+      {{#hasSkills}}
+      <div class="side-block">
+        <div class="side-title"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.9H22l-5.8 4.2 2.2 7L12 15.9 5.6 20.1l2.2-7L2 8.9h7.6z"/></svg>Skills</div>
+        {{#hardSkills}}
+        <div class="side-item"><span class="side-cat">{{key}}</span><br>{{valueString}}</div>
+        {{/hardSkills}}
+        {{#hasSoftSkills}}
+        <div class="side-item"><span class="side-cat">Professional</span><br>{{softSkillsString}}</div>
+        {{/hasSoftSkills}}
+      </div>
+      {{/hasSkills}}
+
+      {{#hasLanguages}}
+      <div class="side-block">
+        <div class="side-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>Languages</div>
+        {{#languages}}
+        <div class="lang">
+          <div class="lang-name"><span>{{name}}</span><span class="lvl">{{level}}</span></div>
+          <div class="bar"><span style="width: {{barWidth}}%"></span></div>
+        </div>
+        {{/languages}}
+      </div>
+      {{/hasLanguages}}
+
+      {{#hasCertifications}}
+      <div class="side-block">
+        <div class="side-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="M9 14l-2 7 5-3 5 3-2-7"/></svg>Certifications</div>
+        {{#certifications}}<div class="side-item">{{.}}</div>{{/certifications}}
+      </div>
+      {{/hasCertifications}}
+    </aside>
+
+    <main class="main">
+      <div class="name">{{name}}</div>
+      {{#headline}}<div class="headline">{{headline}}</div>{{/headline}}
+
+      {{#hasSummary}}
+      <div class="section">
+        <div class="sec-title"><svg viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z"/><path d="M9 10h6M9 14h6"/></svg>Summary</div>
+        <div class="summary">{{summary}}</div>
+      </div>
+      {{/hasSummary}}
+
+      {{#hasExperience}}
+      <div class="section">
+        <div class="sec-title"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13"/><path d="M8 7V5h8v2"/></svg>Experience</div>
+        {{#experience}}
+        <div class="exp">
+          <div class="exp-head">
+            <div><span class="exp-company">{{company}}</span>{{#title}} <span class="exp-title">— {{title}}</span>{{/title}}</div>
+            {{#dateRange}}<div class="exp-dates">{{dateRange}}</div>{{/dateRange}}
+          </div>
+          {{#hasAchievements}}{{#achievements}}<div class="bullet">{{.}}</div>{{/achievements}}{{/hasAchievements}}
+        </div>
+        {{/experience}}
+      </div>
+      {{/hasExperience}}
+
+      {{#hasEducation}}
+      <div class="section">
+        <div class="sec-title"><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1 3 2 6 2s6-1 6-2v-5"/></svg>Education</div>
+        {{#education}}
+        <div class="edu">
+          <div class="edu-school">{{school}}</div>
+          <div class="edu-detail">{{degree}}{{#graduationDate}} | {{graduationDate}}{{/graduationDate}}</div>
+        </div>
+        {{/education}}
+      </div>
+      {{/hasEducation}}
+
+      {{#hasProjects}}
+      <div class="section">
+        <div class="sec-title"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v11H3z"/></svg>Projects</div>
+        {{#projects}}
+        <div class="proj">
+          <div class="proj-name">{{name}}</div>
+          {{#description}}<div>{{description}}</div>{{/description}}
+          {{#technologiesString}}<div class="proj-tech">{{technologiesString}}</div>{{/technologiesString}}
+        </div>
+        {{/projects}}
+      </div>
+      {{/hasProjects}}
+    </main>
+  </div>
+</body>
+</html>

@@ -51,6 +51,7 @@ export async function generateResumePdfBase64(
 
   const view: Record<string, unknown> = {
     name: resume.name || "",
+    headline: resume.headline || "",
     email: resume.email || "",
     phone: resume.phone || "",
     location: resume.location || "",
@@ -205,6 +206,31 @@ export async function generateResumePdfBase64(
   } else {
     view.hasProjects = false;
     view.projects = [];
+  }
+
+  // Optional headshot (data URL) — rendered only by visual templates that reference {{photo}}.
+  const photo = typeof resume.photo === "string" ? resume.photo.trim() : "";
+  view.photo = photo;
+  view.hasPhoto = photo.length > 0;
+
+  // Languages with proficiency bar widths (for the sidebar template).
+  const LANGUAGE_BAR: Record<string, number> = {
+    native: 100,
+    fluent: 92,
+    advanced: 80,
+    intermediate: 60,
+    basic: 35,
+  };
+  if (Array.isArray(resume.languages) && resume.languages.length > 0) {
+    view.hasLanguages = true;
+    view.languages = (resume.languages as Record<string, unknown>[]).map((l) => {
+      const name = String(l.name ?? "").trim();
+      const level = String(l.level ?? "").trim();
+      return { name, level, barWidth: LANGUAGE_BAR[level.toLowerCase()] ?? 70 };
+    });
+  } else {
+    view.hasLanguages = false;
+    view.languages = [];
   }
 
   const html = Mustache.render(tpl, view);

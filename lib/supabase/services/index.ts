@@ -3,7 +3,16 @@ export { syncEducations } from "@/lib/supabase/services/user-educations";
 export { syncCertifications } from "@/lib/supabase/services/user-certifications";
 export { syncProjects } from "@/lib/supabase/services/user-projects";
 export { syncCompanies } from "@/lib/supabase/services/user-companies";
+export { syncSkills } from "@/lib/supabase/services/user-skills";
 export { saveProfileForm } from "@/lib/supabase/services/save-profile";
+export {
+  listResumeProfiles,
+  ensureDefaultResumeProfile,
+  createResumeProfile,
+  updateResumeProfile,
+  deleteResumeProfile,
+  setDefaultResumeProfile,
+} from "@/lib/supabase/services/resume-profiles";
 export {
   createResumeWithArtifacts,
   listResumes,

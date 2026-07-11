@@ -1,19 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { getUserIdOrNull } from "@/lib/supabase/get-user-id";
-import { loadProfileBundle } from "@/lib/supabase/load-profile-bundle";
-import type { ProfileBundle } from "@/lib/supabase/database.types";
+import { loadProfileBundleById } from "@/lib/supabase/load-profile-bundle";
+import {
+  ensureDefaultResumeProfile,
+  listResumeProfiles,
+} from "@/lib/supabase/services/resume-profiles";
+import type { ProfileBundle, ResumeProfile } from "@/lib/supabase/database.types";
 import {
   isProfileBundlePopulated,
-  legacyAnalyzeProfileFromPreferences,
   profileBundleToLegacyAnalyzeProfile,
   profileBundleToResumeText,
   type LegacyAnalyzeProfile,
 } from "@/lib/mappers/profile-to-resume";
-import {
-  legacyPreferencesToProfileBundle,
-  type LegacyUserPreferences,
-} from "@/lib/mappers/legacy-preferences";
 import { createEmptyProfileBundle } from "@/lib/supabase/empty-profile-bundle";
 import {
   formatSupabaseConnectionError,
@@ -24,59 +23,32 @@ import { readProfileCache, writeProfileCache } from "@/lib/supabase/profile-cach
 export interface LoadProfileForAppOptions {
   email?: string | null;
   userId?: string;
+  /** Which resume profile to load; defaults to the account's default profile. */
+  profileId?: string;
 }
 
 export interface LoadedProfileForApp {
   bundle: ProfileBundle;
+  /** All resume profiles for the account (for the profile selector). */
+  profiles: ResumeProfile[];
+  activeProfileId: string;
   legacyAnalyzeProfile: LegacyAnalyzeProfile;
   resumeText: string;
-  source: "normalized" | "legacy_fallback" | "empty" | "cache";
-}
-
-async function fetchLegacyPreferences(
-  userId: string,
-  client: SupabaseClient
-): Promise<LegacyUserPreferences | null> {
-  const { data, error } = await client
-    .from("user_preferences")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  return (data as LegacyUserPreferences | null) ?? null;
-}
-
-function legacyPreferencesToAnalyzeInput(preferences: LegacyUserPreferences) {
-  return {
-    default_resume: preferences.default_resume ?? null,
-    company_1: preferences.company_1 ?? null,
-    company_2: preferences.company_2 ?? null,
-    company_3: preferences.company_3 ?? null,
-    company_4: preferences.company_4 ?? null,
-    company_5: preferences.company_5 ?? null,
-  };
+  source: "normalized" | "empty" | "cache";
 }
 
 function buildLoadedResult(
   bundle: ProfileBundle,
+  profiles: ResumeProfile[],
+  activeProfileId: string,
   options: LoadProfileForAppOptions,
-  source: LoadedProfileForApp["source"],
-  legacyPreferences: LegacyUserPreferences | null
+  source: LoadedProfileForApp["source"]
 ): LoadedProfileForApp {
-  const legacyAnalyzeProfile =
-    legacyPreferences != null
-      ? legacyAnalyzeProfileFromPreferences(
-          legacyPreferencesToAnalyzeInput(legacyPreferences)
-        )
-      : profileBundleToLegacyAnalyzeProfile(bundle, options.email);
-
   return {
     bundle,
-    legacyAnalyzeProfile,
+    profiles,
+    activeProfileId,
+    legacyAnalyzeProfile: profileBundleToLegacyAnalyzeProfile(bundle, options.email),
     resumeText: profileBundleToResumeText(bundle, options.email),
     source,
   };
@@ -91,27 +63,28 @@ async function loadProfileForAppInternal(
     throw new Error("Authentication required");
   }
 
-  let bundle = await loadProfileBundle(client);
-  let source: LoadedProfileForApp["source"] = isProfileBundlePopulated(bundle)
-    ? "normalized"
-    : "empty";
-  let legacyPreferences: LegacyUserPreferences | null = null;
-
-  if (!isProfileBundlePopulated(bundle)) {
-    legacyPreferences = await fetchLegacyPreferences(userId, client);
-    if (legacyPreferences) {
-      bundle = legacyPreferencesToProfileBundle(legacyPreferences, bundle.profile);
-      source = "legacy_fallback";
-    }
+  let profiles = await listResumeProfiles(userId, client);
+  if (profiles.length === 0) {
+    profiles = [await ensureDefaultResumeProfile(userId, client)];
   }
 
-  const result = buildLoadedResult(bundle, options, source, legacyPreferences);
+  const active =
+    profiles.find((p) => p.id === options.profileId) ??
+    profiles.find((p) => p.is_default) ??
+    profiles[0];
+
+  const bundle = await loadProfileBundleById(userId, active, client);
+  const source: LoadedProfileForApp["source"] = isProfileBundlePopulated(bundle)
+    ? "normalized"
+    : "empty";
+
+  const result = buildLoadedResult(bundle, profiles, active.id, options, source);
   writeProfileCache(userId, result);
   return result;
 }
 
 /**
- * Loads profile for the app: normalized tables first, then legacy fallback.
+ * Loads a resume profile for the app (the requested one, or the default).
  * On network failure returns cached or empty profile instead of throwing.
  */
 export async function loadProfileForApp(
@@ -135,7 +108,7 @@ export async function loadProfileForApp(
       }
 
       const emptyBundle = createEmptyProfileBundle(userId);
-      return buildLoadedResult(emptyBundle, options, "empty", null);
+      return buildLoadedResult(emptyBundle, [emptyBundle.resumeProfile], "", options, "empty");
     }
 
     throw new Error(message);

@@ -2,6 +2,7 @@ import { DEFAULT_JOBSITE, type JobsiteId } from "@/lib/jobsites";
 import type { JobWorkType } from "@/lib/prompts/job-page-extract";
 import type { AnalysisResult } from "@/lib/types/resume";
 import type { AtsMatchResult } from "@/lib/types/ats-match";
+import type { EnrichmentRecommendation } from "@/lib/types/tailoring";
 
 export interface StoredAnalysisSession {
   id: string;
@@ -34,6 +35,7 @@ export interface StoredAnalysisSession {
   extractCostUsd?: number;
   generationCostUsd?: number;
   atsCostUsd?: number;
+  enrichment?: EnrichmentRecommendation[] | null;
 }
 
 export interface GeneratorWorkspaceSnapshot {
@@ -100,9 +102,19 @@ export function normalizeSessionForStorage(
     generating?: boolean;
     downloading?: boolean;
     atsLoading?: boolean;
+    previewPdfBase64?: string;
+    previewLoading?: boolean;
   }
 ): StoredAnalysisSession {
-  const { generating: _g, downloading: _d, atsLoading: _a, ...rest } = session;
+  // Drop transient flags and the (large) preview PDF so sessionStorage stays small.
+  const {
+    generating: _g,
+    downloading: _d,
+    atsLoading: _a,
+    previewPdfBase64: _p,
+    previewLoading: _pl,
+    ...rest
+  } = session;
   return rest;
 }
 

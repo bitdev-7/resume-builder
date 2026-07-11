@@ -17,8 +17,6 @@ import {
   formatGpa,
   isoDateToDisplay,
 } from "@/lib/mappers/date-format";
-import { legacyCompanyJsonToResumeExperience } from "@/lib/mappers/legacy-preferences";
-import type { LegacyCompanyJson } from "@/lib/mappers/legacy-preferences";
 
 export function userCompanyToResumeExperience(
   company: UserCompany
@@ -98,7 +96,7 @@ export function profileBundleToUpdatedResume(
   bundle: ProfileBundle,
   email?: string | null
 ): UpdatedResume {
-  const { profile, companies, educations, skills, certifications, projects } =
+  const { resumeProfile, companies, educations, skills, certifications, projects } =
     bundle;
 
   const experience = sortCompaniesForResume(companies).map(
@@ -106,12 +104,19 @@ export function profileBundleToUpdatedResume(
   );
 
   return {
-    name: profile.full_name || undefined,
-    email: email || undefined,
-    phone: profile.phone || undefined,
-    location: profile.location || undefined,
-    linkedin: profile.linkedin_url || undefined,
-    summary: profile.summary || undefined,
+    name: resumeProfile.full_name || undefined,
+    headline: resumeProfile.headline || undefined,
+    photo: resumeProfile.photo_url || undefined,
+    // Prefer the resume email the user entered; fall back to their sign-in email.
+    email: resumeProfile.email || email || undefined,
+    phone: resumeProfile.phone || undefined,
+    location: resumeProfile.location || undefined,
+    linkedin: resumeProfile.linkedin_url || undefined,
+    summary: resumeProfile.summary || undefined,
+    languages:
+      Array.isArray(resumeProfile.languages) && resumeProfile.languages.length > 0
+        ? resumeProfile.languages
+        : undefined,
     experience: experience.length > 0 ? experience : undefined,
     skills: skills.length > 0 ? userSkillsToSkillsRecord(skills) : undefined,
     education:
@@ -217,7 +222,7 @@ export function profileBundleToLegacyAnalyzeProfile(
   email?: string | null
 ): LegacyAnalyzeProfile {
   const resume = profileBundleToUpdatedResume(bundle, email);
-  const template = bundle.profile.default_settings?.resume_template;
+  const template = bundle.resumeProfile.resume_template ?? undefined;
 
   const default_resume: LegacyAnalyzeProfile["default_resume"] = {
     ...resume,
@@ -237,39 +242,8 @@ export function profileBundleToLegacyAnalyzeProfile(
   return slots;
 }
 
-export function legacyAnalyzeProfileFromPreferences(preferences: {
-  default_resume?: Record<string, unknown> | null;
-  company_1?: LegacyCompanyJson | null;
-  company_2?: LegacyCompanyJson | null;
-  company_3?: LegacyCompanyJson | null;
-  company_4?: LegacyCompanyJson | null;
-  company_5?: LegacyCompanyJson | null;
-}): LegacyAnalyzeProfile {
-  const defaultResume = (preferences.default_resume ??
-    {}) as LegacyAnalyzeProfile["default_resume"];
-
-  return {
-    default_resume: defaultResume,
-    company_1: preferences.company_1
-      ? legacyCompanyJsonToResumeExperience(preferences.company_1)
-      : null,
-    company_2: preferences.company_2
-      ? legacyCompanyJsonToResumeExperience(preferences.company_2)
-      : null,
-    company_3: preferences.company_3
-      ? legacyCompanyJsonToResumeExperience(preferences.company_3)
-      : null,
-    company_4: preferences.company_4
-      ? legacyCompanyJsonToResumeExperience(preferences.company_4)
-      : null,
-    company_5: preferences.company_5
-      ? legacyCompanyJsonToResumeExperience(preferences.company_5)
-      : null,
-  };
-}
-
 export function isProfileBundlePopulated(bundle: ProfileBundle): boolean {
-  const { profile, companies, educations, certifications, projects, skills } =
+  const { resumeProfile, companies, educations, certifications, projects, skills } =
     bundle;
 
   if (companies.length > 0) return true;
@@ -277,43 +251,12 @@ export function isProfileBundlePopulated(bundle: ProfileBundle): boolean {
   if (certifications.length > 0) return true;
   if (projects.length > 0) return true;
   if (skills.length > 0) return true;
-  if (profile.full_name?.trim()) return true;
-  if (profile.summary?.trim()) return true;
-  if (profile.phone?.trim()) return true;
-  if (profile.linkedin_url?.trim()) return true;
-  if (profile.location?.trim()) return true;
+  if (resumeProfile.full_name?.trim()) return true;
+  if (resumeProfile.summary?.trim()) return true;
+  if (resumeProfile.phone?.trim()) return true;
+  if (resumeProfile.linkedin_url?.trim()) return true;
+  if (resumeProfile.location?.trim()) return true;
 
   return false;
 }
 
-export function isLegacyPreferencesPopulated(
-  preferences: Pick<
-    LegacyAnalyzeProfile,
-    "default_resume" | "company_1" | "company_2" | "company_3" | "company_4" | "company_5"
-  >
-): boolean {
-  if (
-    preferences.company_1 ||
-    preferences.company_2 ||
-    preferences.company_3 ||
-    preferences.company_4 ||
-    preferences.company_5
-  ) {
-    return true;
-  }
-
-  const resume = preferences.default_resume;
-  if (!resume) return false;
-
-  return Boolean(
-    resume.name?.trim() ||
-      resume.summary?.trim() ||
-      resume.phone?.trim() ||
-      resume.linkedin?.trim() ||
-      resume.location?.trim() ||
-      (resume.education?.length ?? 0) > 0 ||
-      (resume.certifications?.length ?? 0) > 0 ||
-      (resume.projects?.length ?? 0) > 0 ||
-      (resume.skills && Object.keys(resume.skills).length > 0)
-  );
-}

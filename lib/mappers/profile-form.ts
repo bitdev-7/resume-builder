@@ -1,6 +1,7 @@
 import type {
   ProfileBundle,
   UserCompany,
+  UserSkill,
   WorkType,
 } from "@/lib/supabase/database.types";
 import type { ResumeExperience } from "@/lib/types/resume";
@@ -16,6 +17,7 @@ import {
   userProjectToResumeProject,
 } from "@/lib/mappers/profile-to-resume";
 import { resolveResumeTemplate, type ResumeTemplateId } from "@/lib/resume-templates";
+import type { ParsedResume } from "@/lib/resume-import";
 
 export interface EducationFormRow {
   clientId: string;
@@ -47,17 +49,38 @@ export interface CompanyFormRow {
   achievements: string[];
 }
 
+export interface SkillFormRow {
+  clientId: string;
+  id?: string;
+  skillName: string;
+  /** Free-text category (e.g. "Backend", "Cloud"). "Soft Skills" is treated as a soft skill on the resume. */
+  category: string;
+}
+
+export interface LanguageFormRow {
+  clientId: string;
+  name: string;
+  level: string;
+}
+
 export interface ProfileFormState {
+  /** The profile's display name (for switching between profiles). */
+  label: string;
   fullName: string;
+  email: string;
+  headline: string;
+  photoUrl: string;
   phone: string;
   location: string;
   linkedin: string;
   summary: string;
+  languages: LanguageFormRow[];
   resumeTemplate: ResumeTemplateId;
   educations: EducationFormRow[];
   certifications: Array<{ clientId: string; id?: string; name: string }>;
   projects: ProjectFormRow[];
   companies: CompanyFormRow[];
+  skills: SkillFormRow[];
 }
 
 export function newClientId(): string {
@@ -78,15 +101,42 @@ export function createEmptyCompanyRow(): CompanyFormRow {
   };
 }
 
+export function createEmptySkillRow(): SkillFormRow {
+  return {
+    clientId: newClientId(),
+    skillName: "",
+    category: "",
+  };
+}
+
+export function createEmptyLanguageRow(): LanguageFormRow {
+  return {
+    clientId: newClientId(),
+    name: "",
+    level: "Fluent",
+  };
+}
+
+export const LANGUAGE_LEVELS = ["Native", "Fluent", "Advanced", "Intermediate", "Basic"] as const;
+
 export function profileBundleToFormState(bundle: ProfileBundle): ProfileFormState {
   return {
-    fullName: bundle.profile.full_name || "",
-    phone: bundle.profile.phone || "",
-    location: bundle.profile.location || "",
-    linkedin: bundle.profile.linkedin_url || "",
-    summary: bundle.profile.summary || "",
+    label: bundle.resumeProfile.label || "My Profile",
+    fullName: bundle.resumeProfile.full_name || "",
+    email: bundle.resumeProfile.email || "",
+    headline: bundle.resumeProfile.headline || "",
+    photoUrl: bundle.resumeProfile.photo_url || "",
+    phone: bundle.resumeProfile.phone || "",
+    location: bundle.resumeProfile.location || "",
+    linkedin: bundle.resumeProfile.linkedin_url || "",
+    summary: bundle.resumeProfile.summary || "",
+    languages: (bundle.resumeProfile.languages || []).map((l) => ({
+      clientId: newClientId(),
+      name: l.name,
+      level: l.level,
+    })),
     resumeTemplate: resolveResumeTemplate(
-      bundle.profile.default_settings?.resume_template as string | undefined
+      bundle.resumeProfile.resume_template as string | undefined
     ),
     educations: bundle.educations.map((edu) => {
       const mapped = userEducationToResumeEducation(edu);
@@ -118,6 +168,73 @@ export function profileBundleToFormState(bundle: ProfileBundle): ProfileFormStat
       const mapped = userCompanyToResumeExperience(company);
       return companyRowFromExperience(company.id, mapped);
     }),
+    skills: bundle.skills.map((skill) => ({
+      clientId: skill.id,
+      id: skill.id,
+      skillName: skill.skill_name,
+      category: skill.category || "",
+    })),
+  };
+}
+
+/**
+ * Maps AI-parsed resume data into profile form state (adds client ids, drops
+ * empty rows). Keeps the caller's chosen resume template. Used by the
+ * "Upload Existing Resume" flow so the user can review before saving.
+ */
+export function parsedResumeToFormState(
+  parsed: ParsedResume,
+  resumeTemplate: ResumeTemplateId,
+  label: string
+): ProfileFormState {
+  return {
+    label,
+    fullName: parsed.fullName,
+    email: parsed.email,
+    headline: parsed.headline,
+    photoUrl: "",
+    phone: parsed.phone,
+    location: parsed.location,
+    linkedin: parsed.linkedin,
+    summary: parsed.summary,
+    languages: [],
+    resumeTemplate,
+    educations: parsed.educations
+      .filter((e) => e.school.trim() || e.degree.trim())
+      .map((e) => ({
+        clientId: newClientId(),
+        degree: e.degree,
+        school: e.school,
+        graduationDate: e.graduationDate,
+        gpa: e.gpa,
+      })),
+    certifications: parsed.certifications
+      .filter((name) => name.trim())
+      .map((name) => ({ clientId: newClientId(), name })),
+    projects: parsed.projects
+      .filter((p) => p.name.trim())
+      .map((p) => ({
+        clientId: newClientId(),
+        name: p.name,
+        description: p.description,
+        technologies: p.technologies,
+      })),
+    companies: parsed.companies
+      .filter((c) => c.company.trim() || c.title.trim())
+      .map((c) => ({
+        clientId: newClientId(),
+        title: c.title,
+        company: c.company,
+        startDate: c.startDate,
+        endDate: c.endDate,
+        location: c.location,
+        workType: c.workType,
+        description: c.description,
+        achievements: c.achievements,
+      })),
+    skills: parsed.skills
+      .filter((s) => s.skillName.trim())
+      .map((s) => ({ clientId: newClientId(), skillName: s.skillName, category: s.category })),
   };
 }
 
@@ -142,6 +259,7 @@ export function companyRowFromExperience(
 export function companyFormRowToDbPayload(
   row: CompanyFormRow,
   userId: string,
+  profileId: string,
   displayOrder: number
 ): Omit<UserCompany, "created_at" | "updated_at"> {
   const isCurrent =
@@ -150,6 +268,7 @@ export function companyFormRowToDbPayload(
   return {
     id: row.id || newClientId(),
     user_id: userId,
+    profile_id: profileId,
     company_name: row.company,
     title: row.title || null,
     company_location: row.location || null,
@@ -166,6 +285,7 @@ export function companyFormRowToDbPayload(
 export function educationFormRowToDbPayload(
   row: EducationFormRow,
   userId: string,
+  profileId: string,
   displayOrder: number
 ) {
   const gpaNum = row.gpa.trim() ? Number.parseFloat(row.gpa) : null;
@@ -173,6 +293,7 @@ export function educationFormRowToDbPayload(
   return {
     id: row.id || newClientId(),
     user_id: userId,
+    profile_id: profileId,
     school: row.school,
     degree: row.degree || null,
     field_of_study: null,
@@ -187,11 +308,13 @@ export function educationFormRowToDbPayload(
 export function projectFormRowToDbPayload(
   row: ProjectFormRow,
   userId: string,
+  profileId: string,
   displayOrder: number
 ) {
   return {
     id: row.id || newClientId(),
     user_id: userId,
+    profile_id: profileId,
     project_name: row.name,
     description: row.description || null,
     technologies: row.technologies.length ? row.technologies : null,
@@ -203,13 +326,32 @@ export function projectFormRowToDbPayload(
   };
 }
 
+export function skillFormRowToDbPayload(
+  row: SkillFormRow,
+  userId: string,
+  profileId: string,
+  displayOrder: number
+): Omit<UserSkill, "created_at"> {
+  return {
+    id: row.id || newClientId(),
+    user_id: userId,
+    profile_id: profileId,
+    skill_name: row.skillName.trim(),
+    category: row.category.trim() || null,
+    proficiency: null,
+    display_order: displayOrder,
+  };
+}
+
 export function certificationFormRowToDbPayload(
   row: { id?: string; name: string },
-  userId: string
+  userId: string,
+  profileId: string
 ) {
   return {
     id: row.id || newClientId(),
     user_id: userId,
+    profile_id: profileId,
     certification_name: row.name,
     issuing_organization: null,
     issue_date: null,

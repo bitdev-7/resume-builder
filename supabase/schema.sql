@@ -1,0 +1,307 @@
+-- Resume Maker — database schema
+--
+-- This project's Supabase database was missing all application tables
+-- (confirmed via PGRST205 "Could not find the table 'public.profiles' in
+-- the schema cache"). No migration/schema file existed anywhere in the repo,
+-- so this was reconstructed from lib/supabase/database.types.ts and the
+-- query shapes in lib/supabase/services/*.
+--
+-- How to run: Supabase Dashboard → SQL Editor → paste this file → Run.
+-- Safe to re-run: every statement is idempotent (IF NOT EXISTS / OR REPLACE).
+
+create extension if not exists pgcrypto;
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- profiles — one row per auth user, id = auth.users.id
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists public.profiles (
+  id               uuid primary key references auth.users (id) on delete cascade,
+  full_name        text,
+  email            text,
+  headline         text,
+  phone            text,
+  linkedin_url     text,
+  summary          text,
+  location         text,
+  default_settings jsonb not null default '{}'::jsonb,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+
+-- Columns added after initial release (safe on existing installs).
+alter table public.profiles add column if not exists email text;
+alter table public.profiles add column if not exists headline text;
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "profiles_select_own" on public.profiles;
+create policy "profiles_select_own" on public.profiles
+  for select using (auth.uid() = id);
+
+drop policy if exists "profiles_insert_own" on public.profiles;
+create policy "profiles_insert_own" on public.profiles
+  for insert with check (auth.uid() = id);
+
+drop policy if exists "profiles_update_own" on public.profiles;
+create policy "profiles_update_own" on public.profiles
+  for update using (auth.uid() = id) with check (auth.uid() = id);
+
+drop policy if exists "profiles_delete_own" on public.profiles;
+create policy "profiles_delete_own" on public.profiles
+  for delete using (auth.uid() = id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- resume_profiles — one row per persona (many per account). Holds the resume
+-- contact/summary/title + PDF template; content tables reference it.
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists public.resume_profiles (
+  id               uuid primary key default gen_random_uuid(),
+  user_id          uuid not null references public.profiles (id) on delete cascade,
+  label            text not null default 'My Profile',
+  full_name        text,
+  email            text,
+  headline         text,
+  phone            text,
+  linkedin_url     text,
+  summary          text,
+  location         text,
+  resume_template  text,
+  photo_url        text,
+  languages        jsonb not null default '[]'::jsonb,
+  is_default       boolean not null default false,
+  display_order    integer not null default 0,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+
+create index if not exists resume_profiles_user_id_idx on public.resume_profiles (user_id);
+
+-- Columns added after the resume_profiles table shipped (safe on existing installs).
+alter table public.resume_profiles add column if not exists photo_url text;
+alter table public.resume_profiles add column if not exists languages jsonb not null default '[]'::jsonb;
+
+alter table public.resume_profiles enable row level security;
+
+drop policy if exists "resume_profiles_all_own" on public.resume_profiles;
+create policy "resume_profiles_all_own" on public.resume_profiles
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- user_educations
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists public.user_educations (
+  id               uuid primary key default gen_random_uuid(),
+  user_id          uuid not null references public.profiles (id) on delete cascade,
+  school           text not null,
+  degree           text,
+  field_of_study   text,
+  gpa              numeric,
+  location         text,
+  graduation_date  date,
+  description      text,
+  display_order    integer not null default 0,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+
+create index if not exists user_educations_user_id_idx on public.user_educations (user_id);
+
+alter table public.user_educations enable row level security;
+
+drop policy if exists "user_educations_all_own" on public.user_educations;
+create policy "user_educations_all_own" on public.user_educations
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- user_skills
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists public.user_skills (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null references public.profiles (id) on delete cascade,
+  skill_name     text not null,
+  category       text,
+  proficiency    text,
+  display_order  integer not null default 0,
+  created_at     timestamptz not null default now()
+);
+
+create index if not exists user_skills_user_id_idx on public.user_skills (user_id);
+
+alter table public.user_skills enable row level security;
+
+drop policy if exists "user_skills_all_own" on public.user_skills;
+create policy "user_skills_all_own" on public.user_skills
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- user_certifications
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists public.user_certifications (
+  id                    uuid primary key default gen_random_uuid(),
+  user_id               uuid not null references public.profiles (id) on delete cascade,
+  certification_name    text not null,
+  issuing_organization  text,
+  issue_date            date,
+  expiration_date       date,
+  credential_id         text,
+  credential_url        text,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+create index if not exists user_certifications_user_id_idx on public.user_certifications (user_id);
+
+alter table public.user_certifications enable row level security;
+
+drop policy if exists "user_certifications_all_own" on public.user_certifications;
+create policy "user_certifications_all_own" on public.user_certifications
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- user_projects
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists public.user_projects (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null references public.profiles (id) on delete cascade,
+  project_name   text not null,
+  description    text,
+  technologies   text[],
+  github_url     text,
+  live_url       text,
+  start_date     date,
+  end_date       date,
+  display_order  integer not null default 0,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+create index if not exists user_projects_user_id_idx on public.user_projects (user_id);
+
+alter table public.user_projects enable row level security;
+
+drop policy if exists "user_projects_all_own" on public.user_projects;
+create policy "user_projects_all_own" on public.user_projects
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- user_companies
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists public.user_companies (
+  id                uuid primary key default gen_random_uuid(),
+  user_id           uuid not null references public.profiles (id) on delete cascade,
+  company_name      text not null,
+  title             text,
+  company_location  text,
+  work_type         text check (work_type in ('Remote', 'Hybrid', 'Onsite')),
+  start_date        date,
+  end_date          date,
+  is_current        boolean not null default false,
+  description       text,
+  achievements      text[],
+  display_order     integer not null default 0,
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now()
+);
+
+create index if not exists user_companies_user_id_idx on public.user_companies (user_id);
+
+alter table public.user_companies enable row level security;
+
+drop policy if exists "user_companies_all_own" on public.user_companies;
+create policy "user_companies_all_own" on public.user_companies
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- resume_history — one row per generated/tailored resume ("bid")
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists public.resume_history (
+  id                 uuid primary key default gen_random_uuid(),
+  user_id            uuid not null references public.profiles (id) on delete cascade,
+  ai_type            text,
+  model              text,
+  job_site           text,
+  job_link           text,
+  job_title          text,
+  job_company        text,
+  jd_file_path       text,
+  resume_file_path   text,
+  bid_status         text not null default 'applied'
+                       check (bid_status in ('applied', 'interviewing', 'rejected', 'offer', 'accepted')),
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+create index if not exists resume_history_user_id_idx on public.resume_history (user_id);
+create index if not exists resume_history_created_at_idx on public.resume_history (created_at desc);
+
+alter table public.resume_history enable row level security;
+
+drop policy if exists "resume_history_all_own" on public.resume_history;
+create policy "resume_history_all_own" on public.resume_history
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- interview_history
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists public.interview_history (
+  id               uuid primary key default gen_random_uuid(),
+  user_id          uuid not null references public.profiles (id) on delete cascade,
+  resume_id        uuid references public.resume_history (id) on delete set null,
+  interview_date   date not null,
+  caller           text,
+  interviewer      text,
+  call_type        text check (call_type in ('intro', 'hr', 'live_coding', 'system_design', 'culture', 'final')),
+  video_name       text,
+  note             text,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+
+create index if not exists interview_history_user_id_idx on public.interview_history (user_id);
+create index if not exists interview_history_resume_id_idx on public.interview_history (resume_id);
+
+alter table public.interview_history enable row level security;
+
+drop policy if exists "interview_history_all_own" on public.interview_history;
+create policy "interview_history_all_own" on public.interview_history
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Storage buckets — jds (job description text) and resumes (resume/cover
+-- letter JSON), paths are "{userId}/..." so RLS is scoped by the first
+-- path segment matching the authenticated user's id.
+-- ─────────────────────────────────────────────────────────────────────────
+insert into storage.buckets (id, name, public)
+values ('jds', 'jds', false)
+on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
+values ('resumes', 'resumes', false)
+on conflict (id) do nothing;
+
+drop policy if exists "jds_all_own" on storage.objects;
+create policy "jds_all_own" on storage.objects
+  for all using (bucket_id = 'jds' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'jds' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists "resumes_all_own" on storage.objects;
+create policy "resumes_all_own" on storage.objects
+  for all using (bucket_id = 'resumes' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'resumes' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Per-profile content link (kept alongside user_id, which backs RLS).
+-- ─────────────────────────────────────────────────────────────────────────
+alter table public.user_educations     add column if not exists profile_id uuid references public.resume_profiles (id) on delete cascade;
+alter table public.user_skills          add column if not exists profile_id uuid references public.resume_profiles (id) on delete cascade;
+alter table public.user_certifications  add column if not exists profile_id uuid references public.resume_profiles (id) on delete cascade;
+alter table public.user_projects        add column if not exists profile_id uuid references public.resume_profiles (id) on delete cascade;
+alter table public.user_companies       add column if not exists profile_id uuid references public.resume_profiles (id) on delete cascade;
+alter table public.resume_history       add column if not exists profile_id uuid references public.resume_profiles (id) on delete set null;
+
+create index if not exists user_educations_profile_id_idx    on public.user_educations (profile_id);
+create index if not exists user_skills_profile_id_idx         on public.user_skills (profile_id);
+create index if not exists user_certifications_profile_id_idx on public.user_certifications (profile_id);
+create index if not exists user_projects_profile_id_idx       on public.user_projects (profile_id);
+create index if not exists user_companies_profile_id_idx      on public.user_companies (profile_id);
+create index if not exists resume_history_profile_id_idx      on public.resume_history (profile_id);

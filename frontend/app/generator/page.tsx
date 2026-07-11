@@ -10,6 +10,7 @@ import AnalysisResultCard, {
 } from "@/components/AnalysisResultCard";
 import AnswerQuestionsDialog from "@/components/AnswerQuestionsDialog";
 import ApplyAlertDialog from "@/components/ApplyAlertDialog";
+import ResumePreviewDialog from "@/components/ResumePreviewDialog";
 import { ToastContainer, useToast } from "@/components/Toast";
 import {
   DEFAULT_JOBSITE,
@@ -25,6 +26,7 @@ import { extractedJobIsHybridOrOnsite } from "@/lib/job-work-type";
 import type { AnalysisResult } from "@/lib/types/resume";
 import type { LegacyAnalyzeProfile } from "@/lib/mappers/profile-to-resume";
 import { loadProfileForApp } from "@/lib/supabase/load-profile-for-app";
+import type { ResumeProfile } from "@/lib/supabase/database.types";
 import { loadApplyAlertSettings } from "@/lib/supabase/services/apply-alert-settings";
 import { listResumes } from "@/lib/supabase/services/resumes";
 import { createResumeWithArtifacts } from "@/lib/supabase/services/resumes";
@@ -41,7 +43,11 @@ import {
   resolveResumeTemplate,
   type ResumeTemplateId,
 } from "@/lib/resume-templates";
-import { formatPdfSaveMessage, saveGeneratedResumeToDownloads } from "@/lib/pdf-download";
+import {
+  formatPdfSaveMessage,
+  renderResumePdfBase64,
+  savePdfToDownloadsFolder,
+} from "@/lib/pdf-download";
 import type { ExtractedJobInfo } from "@/lib/extract-job-page";
 import {
   DEFAULT_DIRECT_MODELS,
@@ -51,6 +57,7 @@ import {
   type DirectAiModelsResponse,
 } from "@/lib/direct-ai-shared";
 import type { AtsMatchResult } from "@/lib/types/ats-match";
+import type { EnrichmentRecommendation } from "@/lib/types/tailoring";
 import { fetchAtsMatch } from "@/lib/check-ats-client";
 import { DEFAULT_AI_SETTINGS } from "@/lib/ai-settings";
 import { loadAiSettings } from "@/lib/supabase/services/ai-settings";
@@ -71,6 +78,7 @@ interface AnalysisResponse {
   companyName?: string;
   jobDescription?: string;
   generationCostUsd?: number;
+  enrichmentRecommendations?: EnrichmentRecommendation[];
 }
 
 interface AnalysisSession {
@@ -107,6 +115,9 @@ interface AnalysisSession {
   extractCostUsd?: number;
   generationCostUsd?: number;
   atsCostUsd?: number;
+  enrichment?: EnrichmentRecommendation[] | null;
+  previewPdfBase64?: string;
+  previewLoading?: boolean;
 }
 
 let sessionCounter = 0;
@@ -154,6 +165,7 @@ function toSessionView(session: AnalysisSession): AnalysisSessionView {
     extractCostUsd: session.extractCostUsd,
     generationCostUsd: session.generationCostUsd,
     atsCostUsd: session.atsCostUsd,
+    enrichment: session.enrichment,
   };
 }
 
@@ -177,6 +189,10 @@ export default function GeneratorPage() {
   const [answerDialogSessionId, setAnswerDialogSessionId] = useState<string | null>(null);
 
   const [profileData, setProfileData] = useState<LegacyAnalyzeProfile | null>(null);
+  const [profiles, setProfiles] = useState<ResumeProfile[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string>("");
+  const [switchingProfile, setSwitchingProfile] = useState(false);
+  const [previewSessionId, setPreviewSessionId] = useState<string | null>(null);
   const [resumeContent, setResumeContent] = useState("");
   const [resumeTemplate, setResumeTemplate] =
     useState<ResumeTemplateId>(DEFAULT_RESUME_TEMPLATE);
@@ -327,6 +343,8 @@ export default function GeneratorPage() {
         });
         if (cancelled) return;
 
+        setProfiles(loaded.profiles);
+        setActiveProfileId(loaded.activeProfileId);
         setProfileData(loaded.legacyAnalyzeProfile);
         setResumeContent(loaded.resumeText);
         setResumeTemplate(
@@ -510,8 +528,30 @@ export default function GeneratorPage() {
     }
   };
 
+  const handleSwitchProfile = async (profileId: string) => {
+    if (!user || profileId === activeProfileId) return;
+    setSwitchingProfile(true);
+    try {
+      const loaded = await loadProfileForApp(supabase, {
+        email: user.email,
+        userId: user.id,
+        profileId,
+      });
+      setActiveProfileId(loaded.activeProfileId);
+      setProfileData(loaded.legacyAnalyzeProfile);
+      setResumeContent(loaded.resumeText);
+      setResumeTemplate(
+        resolveResumeTemplate(loaded.legacyAnalyzeProfile.default_resume?.resume_template)
+      );
+    } catch {
+      showToast("error", "Failed to switch profile.");
+    } finally {
+      setSwitchingProfile(false);
+    }
+  };
+
   const generateResumeForSession = useCallback(
-    async (sessionId: string) => {
+    async (sessionId: string, tweak?: { tone?: string; emphasis?: string }) => {
       const session = sessions.find((s) => s.id === sessionId);
       if (!session || session.generating || session.downloading) return;
 
@@ -520,6 +560,8 @@ export default function GeneratorPage() {
         return;
       }
       if (!user?.id) return;
+
+      const template = session.resumeTemplate || resumeTemplate;
 
       patchSession(sessionId, {
         generating: true,
@@ -537,7 +579,9 @@ export default function GeneratorPage() {
         atsLoading: false,
         atsResult: null,
         atsError: null,
-        resumeTemplate,
+        enrichment: null,
+        previewPdfBase64: undefined,
+        resumeTemplate: template,
       });
 
       let pdfPhase = false;
@@ -561,11 +605,12 @@ export default function GeneratorPage() {
             companyName: session.companyName,
             pageContent: session.pageContent,
             resumeContent,
-            template: resumeTemplate,
+            template,
             profileData,
             apiModel: session.aiModel,
             apiProvider: session.aiProvider,
             useOpenRouter: session.useOpenRouter,
+            ...(tweak && (tweak.tone || tweak.emphasis) ? { promptTweak: tweak } : {}),
           }),
         });
 
@@ -595,6 +640,7 @@ export default function GeneratorPage() {
           modelUsed: data.modelUsed,
           analyzeMs,
           generationCostUsd: data.generationCostUsd,
+          enrichment: data.enrichmentRecommendations ?? null,
           jobTitle: data.jobTitle?.trim() || session.jobTitle,
           companyName: data.companyName?.trim() || session.companyName,
           jobDescription: data.jobDescription?.trim() || session.jobDescription,
@@ -603,16 +649,11 @@ export default function GeneratorPage() {
         pdfPhase = true;
         const pdfStarted = Date.now();
 
-        const [{ savedPath }, record] = await Promise.all([
-          saveGeneratedResumeToDownloads(resume, undefined, {
-            companyName: session.companyName,
-            jobRole: session.jobTitle,
-            personName: resume.name || "resume",
-            template: resumeTemplate,
-            accessToken: authSession.access_token,
-          }),
+        const [previewPdfBase64, record] = await Promise.all([
+          renderResumePdfBase64(resume, template, authSession.access_token),
           createResumeWithArtifacts({
             userId: user.id,
+            profileId: activeProfileId || null,
             jd: session.jobDescription,
             resume,
             aiType: data.providerUsed ?? session.aiProvider,
@@ -628,8 +669,10 @@ export default function GeneratorPage() {
           resumeId: record.id,
           downloading: false,
           pdfMs: Date.now() - pdfStarted,
+          previewPdfBase64,
         });
-        showToast("success", formatPdfSaveMessage(savedPath, true));
+        setPreviewSessionId(sessionId);
+        showToast("success", "Resume ready — preview it, then download.");
 
         if (autoAtsAfterResume) {
           void runAutoAtsCheck(sessionId, resume, {
@@ -651,7 +694,7 @@ export default function GeneratorPage() {
         showToast("error", `Failed: ${message}`);
       }
     },
-    [sessions, resumeContent, profileData, resumeTemplate, patchSession, showToast, user?.id, autoAtsAfterResume, runAutoAtsCheck]
+    [sessions, resumeContent, profileData, resumeTemplate, activeProfileId, patchSession, showToast, user?.id, autoAtsAfterResume, runAutoAtsCheck]
   );
 
   const handleGenerateResume = useCallback(
@@ -664,6 +707,57 @@ export default function GeneratorPage() {
     [generateResumeForSession, runPreflightBeforeGenerate]
   );
 
+  const handleChangePreviewTemplate = async (sessionId: string, template: ResumeTemplateId) => {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session?.result || !user) return;
+    patchSession(sessionId, { resumeTemplate: template, previewLoading: true });
+    try {
+      const {
+        data: { session: authSession },
+      } = await supabase.auth.getSession();
+      if (!authSession) throw new Error("You must be signed in");
+      const previewPdfBase64 = await renderResumePdfBase64(
+        session.result,
+        template,
+        authSession.access_token
+      );
+      patchSession(sessionId, { previewPdfBase64, previewLoading: false });
+    } catch (err) {
+      patchSession(sessionId, { previewLoading: false });
+      showToast("error", err instanceof Error ? err.message : "Failed to render template");
+    }
+  };
+
+  const handleDownloadPreview = async (sessionId: string) => {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session?.previewPdfBase64) return;
+    try {
+      const {
+        data: { session: authSession },
+      } = await supabase.auth.getSession();
+      const { savedPath } = await savePdfToDownloadsFolder(session.previewPdfBase64, {
+        companyName: session.companyName,
+        jobRole: session.jobTitle,
+        personName: session.result?.name || "resume",
+        accessToken: authSession?.access_token ?? null,
+      });
+      showToast("success", formatPdfSaveMessage(savedPath, true));
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Failed to download");
+    }
+  };
+
+  const handleOpenPreview = (sessionId: string) => {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session?.result) return;
+    setPreviewSessionId(sessionId);
+    // Preview PDFs are not persisted to storage; re-render if we don't have one.
+    if (!session.previewPdfBase64 && !session.previewLoading) {
+      void handleChangePreviewTemplate(sessionId, resolveResumeTemplate(session.resumeTemplate));
+    }
+  };
+
+  const previewSession = sessions.find((s) => s.id === previewSessionId) ?? null;
   const answerDialogSession = sessions.find((s) => s.id === answerDialogSessionId) ?? null;
 
   if (!user) return null;
@@ -699,6 +793,26 @@ export default function GeneratorPage() {
         apiProvider={answerDialogSession?.aiProvider ?? aiProvider}
         useOpenRouter={answerDialogSession?.useOpenRouter ?? useOpenRouter}
         onError={(message) => showToast("error", message)}
+      />
+
+      <ResumePreviewDialog
+        open={previewSessionId !== null}
+        onClose={() => setPreviewSessionId(null)}
+        pdfBase64={previewSession?.previewPdfBase64}
+        previewLoading={previewSession?.previewLoading}
+        regenerating={Boolean(previewSession?.generating || previewSession?.downloading)}
+        template={resolveResumeTemplate(previewSession?.resumeTemplate)}
+        jobTitle={previewSession?.jobTitle}
+        companyName={previewSession?.companyName}
+        onTemplateChange={(t) => {
+          if (previewSessionId) void handleChangePreviewTemplate(previewSessionId, t);
+        }}
+        onRegenerate={(tweak) => {
+          if (previewSessionId) void generateResumeForSession(previewSessionId, tweak);
+        }}
+        onDownload={() => {
+          if (previewSessionId) void handleDownloadPreview(previewSessionId);
+        }}
       />
 
       <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
@@ -745,6 +859,25 @@ export default function GeneratorPage() {
                 {JOBSITES.map((site) => (
                   <option key={site.id} value={site.id}>
                     {site.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="profile" className="label-kicker mb-2 block">
+                Profile{switchingProfile ? " (switching…)" : ""}
+              </label>
+              <select
+                id="profile"
+                value={activeProfileId}
+                disabled={analysing || switchingProfile || profiles.length === 0}
+                onChange={(e) => void handleSwitchProfile(e.target.value)}
+                className="select-shell w-full text-xs disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                    {p.is_default ? " (default)" : ""}
                   </option>
                 ))}
               </select>
@@ -815,6 +948,7 @@ export default function GeneratorPage() {
                   session={toSessionView(session)}
                   onGenerateResume={handleGenerateResume}
                   onGenerateAnswers={setAnswerDialogSessionId}
+                  onPreview={handleOpenPreview}
                   onClose={dismissSession}
                   onError={(message) => showToast("error", message)}
                 />

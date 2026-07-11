@@ -33,6 +33,15 @@
       font-weight: 400;
       letter-spacing: 0.02em;
       line-height: 1.1;
+      margin-bottom: 1mm;
+    }
+
+    .headline {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 12pt;
+      color: #333;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
       margin-bottom: 2mm;
     }
 
@@ -196,6 +205,7 @@
   <div class="page">
     <header class="masthead">
       <div class="name">{{name}}</div>
+      {{#headline}}<div class="headline">{{headline}}</div>{{/headline}}
       <div class="contact-line">
         {{#email}}{{email}}{{/email}}{{#phone}} · {{phone}}{{/phone}}{{#location}} · {{location}}{{/location}}{{#linkedin}} · <a href="{{linkedin}}">{{linkedin}}</a>{{/linkedin}}
       </div>

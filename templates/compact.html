@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Resume</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; line-height: 1.18; color: #111; background: #fff; }
+    .container { max-width: 210mm; margin: 0 auto; padding: 5mm 10mm; }
+    .header { margin-bottom: 2mm; }
+    .name { font-size: 16pt; font-weight: 700; }
+    .headline { font-size: 10.5pt; font-weight: 600; color: #333; }
+    .contact-info { font-size: 9pt; color: #333; margin-top: 0.5mm; }
+    .contact-info a { color: #111; text-decoration: none; }
+    .section { margin-top: 2.5mm; }
+    .section-title { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #999; padding-bottom: 0.5px; margin-bottom: 1mm; }
+    .skill-category { margin-bottom: 0.5mm; }
+    .skill-category-title { font-weight: 700; }
+    .experience-item { margin-bottom: 1.8mm; }
+    .experience-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .company { font-weight: 700; }
+    .job-title { font-style: italic; color: #333; }
+    .date-range { font-size: 8.5pt; color: #555; white-space: nowrap; padding-left: 6px; }
+    .achievement-item { position: relative; padding-left: 10px; }
+    .achievement-item::before { content: "\2022"; position: absolute; left: 0; }
+    .education-item { margin-bottom: 0.8mm; }
+    .education-school { font-weight: 700; display: inline; }
+    .education-degree-date { display: inline; color: #333; }
+    .certification-item { position: relative; padding-left: 10px; }
+    .certification-item::before { content: "\2022"; position: absolute; left: 0; }
+    .project-item { margin-bottom: 1mm; }
+    .project-name { font-weight: 700; display: inline; }
+    .project-description { display: inline; }
+    .project-tech { font-style: italic; color: #555; }
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .section-title { page-break-after: avoid; }
+      .education-item, .project-item { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="name">{{name}}</div>
+      {{#headline}}<div class="headline">{{headline}}</div>{{/headline}}
+      <div class="contact-info">
+        {{#location}}{{location}} | {{/location}}{{#phone}}{{phone}} | {{/phone}}{{email}}{{#linkedin}} | <a href="{{linkedin}}">LinkedIn</a>{{/linkedin}}
+      </div>
+    </div>
+
+    {{#hasSummary}}
+    <div class="section section-summary">
+      <div class="section-title">Summary</div>
+      <div class="summary">{{summary}}</div>
+    </div>
+    {{/hasSummary}}
+
+    {{#hasSkills}}
+    <div class="section section-skills">
+      <div class="section-title">Skills</div>
+      {{#hardSkills}}
+      <div class="skill-category"><span class="skill-category-title">{{key}}:</span> {{valueString}}</div>
+      {{/hardSkills}}
+      {{#hasSoftSkills}}
+      <div class="skill-category"><span class="skill-category-title">Professional:</span> {{softSkillsString}}</div>
+      {{/hasSoftSkills}}
+    </div>
+    {{/hasSkills}}
+
+    {{#hasExperience}}
+    <div class="section section-experience">
+      <div class="section-title">Experience</div>
+      {{#experience}}
+      <div class="experience-item">
+        <div class="experience-header">
+          <div><span class="company">{{company}}</span>{{#title}} <span class="job-title">— {{title}}</span>{{/title}}</div>
+          {{#dateRange}}<div class="date-range">{{dateRange}}</div>{{/dateRange}}
+        </div>
+        {{#hasAchievements}}
+        <div class="achievements">
+          {{#achievements}}<div class="achievement-item">{{.}}</div>{{/achievements}}
+        </div>
+        {{/hasAchievements}}
+      </div>
+      {{/experience}}
+    </div>
+    {{/hasExperience}}
+
+    {{#hasEducation}}
+    <div class="section section-education">
+      <div class="section-title">Education</div>
+      {{#education}}
+      <div class="education-item"><span class="education-school">{{school}}</span> <span class="education-degree-date">— {{degree}} | {{graduationDate}}</span></div>
+      {{/education}}
+    </div>
+    {{/hasEducation}}
+
+    {{#hasCertifications}}
+    <div class="section section-certifications">
+      <div class="section-title">Certifications</div>
+      {{#certifications}}<div class="certification-item">{{.}}</div>{{/certifications}}
+    </div>
+    {{/hasCertifications}}
+
+    {{#hasProjects}}
+    <div class="section section-projects">
+      <div class="section-title">Projects</div>
+      {{#projects}}
+      <div class="project-item"><span class="project-name">{{name}}</span>{{#description}} <span class="project-description">— {{description}}</span>{{/description}}{{#technologiesString}}<div class="project-tech">{{technologiesString}}</div>{{/technologiesString}}</div>
+      {{/projects}}
+    </div>
+    {{/hasProjects}}
+  </div>
+</body>
+</html>

@@ -9,6 +9,31 @@ export const RESUME_TEMPLATES = [
     label: "Folio",
     description: "Left-aligned single column. Serif headings, small-caps labels, thin rules.",
   },
+  {
+    id: "modern",
+    label: "Modern",
+    description: "Sans-serif with a subtle accent color on the name and section headers.",
+  },
+  {
+    id: "classic",
+    label: "Classic",
+    description: "Traditional serif (Georgia), centered header, conservative and formal.",
+  },
+  {
+    id: "compact",
+    label: "Compact",
+    description: "Dense single column with tighter spacing to fit more on one page.",
+  },
+  {
+    id: "minimal",
+    label: "Minimal",
+    description: "Lots of whitespace, light rules, understated typography.",
+  },
+  {
+    id: "sidebar",
+    label: "Sidebar (visual)",
+    description: "Two-column with a colored sidebar, icons, optional photo and language bars. Eye-catching, but less ATS-friendly than single-column templates.",
+  },
 ] as const;
 
 export type ResumeTemplateId = (typeof RESUME_TEMPLATES)[number]["id"];

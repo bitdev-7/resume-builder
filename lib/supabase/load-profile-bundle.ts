@@ -3,9 +3,13 @@ import { supabase } from "@/lib/supabase";
 import { ensureProfile } from "@/lib/supabase/ensure-profile";
 import { createEmptyProfileBundle } from "@/lib/supabase/empty-profile-bundle";
 import { getUserId } from "@/lib/supabase/get-user-id";
+import {
+  ensureDefaultResumeProfile,
+} from "@/lib/supabase/services/resume-profiles";
 import type {
   Profile,
   ProfileBundle,
+  ResumeProfile,
   UserCertification,
   UserCompany,
   UserEducation,
@@ -20,145 +24,85 @@ function normalizeProfile(row: Profile): Profile {
   };
 }
 
-/**
- * Loads profile + all related user-owned rows for resume generation and profile UI.
- */
+/** Fetch a resume profile's content rows, scoped by profile_id. */
+async function fetchProfileContent(
+  profileId: string,
+  client: SupabaseClient
+): Promise<Omit<ProfileBundle, "profile" | "resumeProfile">> {
+  const [educations, skills, certifications, projects, companies] = await Promise.all([
+    client
+      .from("user_educations")
+      .select("*")
+      .eq("profile_id", profileId)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    client
+      .from("user_skills")
+      .select("*")
+      .eq("profile_id", profileId)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    client
+      .from("user_certifications")
+      .select("*")
+      .eq("profile_id", profileId)
+      .order("created_at", { ascending: true }),
+    client
+      .from("user_projects")
+      .select("*")
+      .eq("profile_id", profileId)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    client
+      .from("user_companies")
+      .select("*")
+      .eq("profile_id", profileId)
+      .order("display_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+  ]);
+
+  const firstError = [educations.error, skills.error, certifications.error, projects.error, companies.error].find(
+    Boolean
+  );
+  if (firstError) throw firstError;
+
+  return {
+    educations: (educations.data ?? []) as UserEducation[],
+    skills: (skills.data ?? []) as UserSkill[],
+    certifications: (certifications.data ?? []) as UserCertification[],
+    projects: (projects.data ?? []) as UserProject[],
+    companies: (companies.data ?? []) as UserCompany[],
+  };
+}
+
+/** Loads a specific resume profile (persona) + its content for a user. */
+export async function loadProfileBundleById(
+  userId: string,
+  resumeProfile: ResumeProfile,
+  client: SupabaseClient = supabase
+): Promise<ProfileBundle> {
+  const account = (await ensureProfile(userId, client)) ?? createEmptyProfileBundle(userId).profile;
+  const content = await fetchProfileContent(resumeProfile.id, client);
+  return { profile: normalizeProfile(account), resumeProfile, ...content };
+}
+
+/** Loads the default resume profile bundle for the current session. */
 export async function loadProfileBundle(
   client: SupabaseClient = supabase
 ): Promise<ProfileBundle> {
   const userId = await getUserId(client);
-  const ensured = await ensureProfile(userId, client);
-  const profile = normalizeProfile(
-    ensured ?? createEmptyProfileBundle(userId).profile
-  );
-
-  const [
-    educationsResult,
-    skillsResult,
-    certificationsResult,
-    projectsResult,
-    companiesResult,
-  ] = await Promise.all([
-    client
-      .from("user_educations")
-      .select("*")
-      .eq("user_id", userId)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-    client
-      .from("user_skills")
-      .select("*")
-      .eq("user_id", userId)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-    client
-      .from("user_certifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true }),
-    client
-      .from("user_projects")
-      .select("*")
-      .eq("user_id", userId)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-    client
-      .from("user_companies")
-      .select("*")
-      .eq("user_id", userId)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-  ]);
-
-  const errors = [
-    educationsResult.error,
-    skillsResult.error,
-    certificationsResult.error,
-    projectsResult.error,
-    companiesResult.error,
-  ].filter(Boolean);
-
-  if (errors.length > 0) {
-    throw errors[0];
-  }
-
-  return {
-    profile,
-    educations: (educationsResult.data ?? []) as UserEducation[],
-    skills: (skillsResult.data ?? []) as UserSkill[],
-    certifications: (certificationsResult.data ?? []) as UserCertification[],
-    projects: (projectsResult.data ?? []) as UserProject[],
-    companies: (companiesResult.data ?? []) as UserCompany[],
-  };
+  return loadProfileBundleForUser(userId, client);
 }
 
-/**
- * Loads profile bundle for a specific user id (must match authenticated user via RLS).
- */
+/** Loads the default resume profile bundle for a specific user id. */
 export async function loadProfileBundleForUser(
   userId: string,
   client: SupabaseClient = supabase
 ): Promise<ProfileBundle> {
-  const profileRow =
-    (await ensureProfile(userId, client)) ??
-    createEmptyProfileBundle(userId).profile;
-
-  const [
-    educationsResult,
-    skillsResult,
-    certificationsResult,
-    projectsResult,
-    companiesResult,
-  ] = await Promise.all([
-    client
-      .from("user_educations")
-      .select("*")
-      .eq("user_id", userId)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-    client
-      .from("user_skills")
-      .select("*")
-      .eq("user_id", userId)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-    client
-      .from("user_certifications")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true }),
-    client
-      .from("user_projects")
-      .select("*")
-      .eq("user_id", userId)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-    client
-      .from("user_companies")
-      .select("*")
-      .eq("user_id", userId)
-      .order("display_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-  ]);
-
-  const errors = [
-    educationsResult.error,
-    skillsResult.error,
-    certificationsResult.error,
-    projectsResult.error,
-    companiesResult.error,
-  ].filter(Boolean);
-
-  if (errors.length > 0) {
-    throw errors[0];
-  }
-
-  return {
-    profile: normalizeProfile(profileRow),
-    educations: (educationsResult.data ?? []) as UserEducation[],
-    skills: (skillsResult.data ?? []) as UserSkill[],
-    certifications: (certificationsResult.data ?? []) as UserCertification[],
-    projects: (projectsResult.data ?? []) as UserProject[],
-    companies: (companiesResult.data ?? []) as UserCompany[],
-  };
+  const account = normalizeProfile(
+    (await ensureProfile(userId, client)) ?? createEmptyProfileBundle(userId).profile
+  );
+  const resumeProfile = await ensureDefaultResumeProfile(userId, client);
+  const content = await fetchProfileContent(resumeProfile.id, client);
+  return { profile: account, resumeProfile, ...content };
 }

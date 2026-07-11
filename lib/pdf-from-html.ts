@@ -96,7 +96,7 @@ async function getLaunchOptions(): Promise<LaunchOptions> {
   }
 
   try {
-    options.executablePath = puppeteer.executablePath();
+    options.executablePath = await puppeteer.executablePath();
   } catch {
     throw new Error(
       "Chrome not found for PDF generation. Install Google Chrome or run " +

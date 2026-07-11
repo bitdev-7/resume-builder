@@ -28,6 +28,8 @@ export interface DefaultSettings {
 export interface Profile {
   id: string;
   full_name: string | null;
+  email: string | null;
+  headline: string | null;
   phone: string | null;
   linkedin_url: string | null;
   summary: string | null;
@@ -40,6 +42,8 @@ export interface Profile {
 export interface ProfileInsert {
   id: string;
   full_name?: string | null;
+  email?: string | null;
+  headline?: string | null;
   phone?: string | null;
   linkedin_url?: string | null;
   summary?: string | null;
@@ -49,6 +53,8 @@ export interface ProfileInsert {
 
 export interface ProfileUpdate {
   full_name?: string | null;
+  email?: string | null;
+  headline?: string | null;
   phone?: string | null;
   linkedin_url?: string | null;
   summary?: string | null;
@@ -56,9 +62,69 @@ export interface ProfileUpdate {
   default_settings?: DefaultSettings;
 }
 
+export interface ResumeLanguage {
+  name: string;
+  /** Proficiency label, e.g. "Native", "Fluent", "Advanced", "Intermediate", "Basic". */
+  level: string;
+}
+
+export interface ResumeProfile {
+  id: string;
+  user_id: string;
+  /** Display name for switching between profiles (e.g. "Software Engineer"). */
+  label: string;
+  full_name: string | null;
+  email: string | null;
+  headline: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  summary: string | null;
+  location: string | null;
+  resume_template: string | null;
+  /** Optional headshot as a data URL (shown only on visual templates). */
+  photo_url: string | null;
+  languages: ResumeLanguage[];
+  is_default: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResumeProfileInsert {
+  user_id: string;
+  label: string;
+  full_name?: string | null;
+  email?: string | null;
+  headline?: string | null;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  summary?: string | null;
+  location?: string | null;
+  resume_template?: string | null;
+  is_default?: boolean;
+  display_order?: number;
+}
+
+export interface ResumeProfileUpdate {
+  label?: string;
+  full_name?: string | null;
+  email?: string | null;
+  headline?: string | null;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  summary?: string | null;
+  location?: string | null;
+  resume_template?: string | null;
+  photo_url?: string | null;
+  languages?: ResumeLanguage[];
+  is_default?: boolean;
+  display_order?: number;
+}
+
 export interface UserEducation {
   id: string;
   user_id: string;
+  profile_id: string;
   school: string;
   degree: string | null;
   field_of_study: string | null;
@@ -74,6 +140,7 @@ export interface UserEducation {
 export interface UserSkill {
   id: string;
   user_id: string;
+  profile_id: string;
   skill_name: string;
   category: string | null;
   proficiency: string | null;
@@ -84,6 +151,7 @@ export interface UserSkill {
 export interface UserCertification {
   id: string;
   user_id: string;
+  profile_id: string;
   certification_name: string;
   issuing_organization: string | null;
   issue_date: string | null;
@@ -97,6 +165,7 @@ export interface UserCertification {
 export interface UserProject {
   id: string;
   user_id: string;
+  profile_id: string;
   project_name: string;
   description: string | null;
   technologies: string[] | null;
@@ -112,6 +181,7 @@ export interface UserProject {
 export interface UserCompany {
   id: string;
   user_id: string;
+  profile_id: string;
   company_name: string;
   title: string | null;
   company_location: string | null;
@@ -129,6 +199,7 @@ export interface UserCompany {
 export interface ResumeRecord {
   id: string;
   user_id: string;
+  profile_id: string | null;
   ai_type: string | null;
   model: string | null;
   job_site: string | null;
@@ -156,9 +227,13 @@ export interface InterviewRecord {
   updated_at: string;
 }
 
-/** Full profile payload used for resume generation and profile UI. */
+/**
+ * Full payload for one resume profile: the account row (for default_settings),
+ * the persona (`resumeProfile`), and that persona's content rows.
+ */
 export interface ProfileBundle {
   profile: Profile;
+  resumeProfile: ResumeProfile;
   educations: UserEducation[];
   skills: UserSkill[];
   certifications: UserCertification[];

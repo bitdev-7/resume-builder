@@ -11,6 +11,7 @@ import { formatDurationMs } from "@/lib/format-duration";
 import { atsScoreTextClass, formatAtsScoreLabel } from "@/lib/check-ats-client";
 import { formatAiCostBreakdown } from "@/lib/ai-usage";
 import type { AtsMatchResult } from "@/lib/types/ats-match";
+import type { EnrichmentRecommendation } from "@/lib/types/tailoring";
 import JobDescriptionDialog from "@/components/JobDescriptionDialog";
 import AtsMatchDialog from "@/components/AtsMatchDialog";
 
@@ -44,12 +45,14 @@ export interface AnalysisSessionView {
   extractCostUsd?: number;
   generationCostUsd?: number;
   atsCostUsd?: number;
+  enrichment?: EnrichmentRecommendation[] | null;
 }
 
 interface AnalysisResultCardProps {
   session: AnalysisSessionView;
   onGenerateResume: (id: string) => void;
   onGenerateAnswers: (id: string) => void;
+  onPreview: (id: string) => void;
   onClose: (id: string) => void;
   onError?: (message: string) => void;
 }
@@ -162,6 +165,7 @@ export default function AnalysisResultCard({
   session,
   onGenerateResume,
   onGenerateAnswers,
+  onPreview,
   onClose,
   onError,
 }: AnalysisResultCardProps) {
@@ -372,6 +376,14 @@ export default function AnalysisResultCard({
           </button>
           <button
             type="button"
+            onClick={() => onPreview(session.id)}
+            disabled={!hasResume || busy}
+            className="btn-compact h-8 bg-[#007fff] px-3 text-xs font-semibold text-white shadow-sm hover:border-[#0066cc] hover:bg-[#0066cc] hover:text-white dark:hover:border-[#0066cc] dark:hover:bg-[#0066cc]"
+          >
+            Preview & Download
+          </button>
+          <button
+            type="button"
             onClick={() => setAtsOpen(true)}
             disabled={!hasResume || !hasJobDescription || busy || atsBusy}
             className="btn-compact h-8 px-3 text-xs"
@@ -387,6 +399,26 @@ export default function AnalysisResultCard({
             Answers
           </button>
         </div>
+
+        {hasResume && session.enrichment && session.enrichment.length > 0 ? (
+          <div className="border-t border-slate-100/90 px-3 py-2 pl-3.5 dark:border-slate-600/40">
+            <p className="mb-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              Relevant to this role but not found in your profile. Add them under Profile if you have them —
+              they were not invented into your resume.
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {session.enrichment.map((rec) => (
+                <span
+                  key={rec.skill}
+                  title={rec.reason}
+                  className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium leading-tight text-amber-800 ring-1 ring-inset ring-amber-200/80 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-800/50"
+                >
+                  {rec.skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </article>
     </>
   );

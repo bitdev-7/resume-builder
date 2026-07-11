@@ -12,9 +12,11 @@
     "dev:backend": "npm run dev -w resume-backend",
     "build": "npm run build -w resume-backend && npm run build -w resume-frontend",
     "start:frontend": "npm run start -w resume-frontend",
-    "start:backend": "npm run start -w resume-backend"
+    "start:backend": "npm run start -w resume-backend",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "vitest": "^2.1.9"
   }
 }

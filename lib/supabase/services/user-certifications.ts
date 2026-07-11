@@ -4,13 +4,14 @@ import { certificationFormRowToDbPayload } from "@/lib/mappers/profile-form";
 
 export async function syncCertifications(
   userId: string,
+  profileId: string,
   rows: Array<{ id?: string; name: string }>,
   client: SupabaseClient = supabase
 ): Promise<void> {
   const { data: existing, error: fetchError } = await client
     .from("user_certifications")
     .select("id")
-    .eq("user_id", userId);
+    .eq("profile_id", profileId);
 
   if (fetchError) throw fetchError;
 
@@ -28,7 +29,7 @@ export async function syncCertifications(
   }
 
   for (const row of rows) {
-    const payload = certificationFormRowToDbPayload(row, userId);
+    const payload = certificationFormRowToDbPayload(row, userId, profileId);
 
     if (row.id) {
       const { error } = await client

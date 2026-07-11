@@ -1,6 +1,6 @@
-import type { WorkType } from "@/lib/supabase/database.types";
+import type { WorkType, ResumeLanguage } from "@/lib/supabase/database.types";
 
-export type { WorkType };
+export type { WorkType, ResumeLanguage };
 
 export interface ResumeExperience {
   title: string;
@@ -35,11 +35,16 @@ export interface ResumeProject {
 
 export interface UpdatedResume {
   name?: string;
+  /** Professional title/headline shown under the name (e.g. "Software Engineer"). */
+  headline?: string;
+  /** Optional headshot as a data URL (rendered only on visual templates). */
+  photo?: string;
   email?: string;
   phone?: string;
   location?: string;
   linkedin?: string;
   summary?: string;
+  languages?: ResumeLanguage[];
   experience?: ResumeExperience[];
   skills?: Record<string, string[]>;
   hardSkills?: Record<string, string[]>;

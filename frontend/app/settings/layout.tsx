@@ -3,10 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const SETTINGS_NAV = [
+type SettingsNavItem = {
+  href: string;
+  label: string;
+  /** When true, only the exact path is active (not sub-paths). */
+  exact?: boolean;
+};
+
+const SETTINGS_NAV: readonly SettingsNavItem[] = [
   { href: "/settings", label: "General", exact: true },
   { href: "/settings/prompt", label: "Prompt" },
-] as const;
+];
 
 export default function SettingsLayout({
   children,

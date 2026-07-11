@@ -5,6 +5,7 @@ import { registerRoute } from "./next-adapter.js";
 
 import { POST as analyzePost } from "./api/analyze/route.js";
 import { POST as extractJobPost } from "./api/extract-job/route.js";
+import { POST as parseResumePost } from "./api/parse-resume/route.js";
 import { POST as answerQuestionsPost } from "./api/answer-questions/route.js";
 import { POST as checkAtsPost } from "./api/check-ats/route.js";
 import { POST as coverLetterPost } from "./api/cover-letter/route.js";
@@ -35,6 +36,7 @@ app.get("/health", (_req, res) => {
 
 registerRoute(app, "post", "/api/analyze", analyzePost);
 registerRoute(app, "post", "/api/extract-job", extractJobPost);
+registerRoute(app, "post", "/api/parse-resume", parseResumePost);
 registerRoute(app, "post", "/api/answer-questions", answerQuestionsPost);
 registerRoute(app, "post", "/api/check-ats", checkAtsPost);
 registerRoute(app, "post", "/api/cover-letter", coverLetterPost);
@@ -46,6 +48,18 @@ registerRoute(app, "post", "/api/save-pdf", savePdfPost);
 registerRoute(app, "post", "/api/save-resume-pdf", saveResumePdfPost);
 registerRoute(app, "post", "/api/save-text", saveTextPost);
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Resume API backend listening on http://localhost:${port}`);
-}).setTimeout(300_000);
+});
+
+// Resume tailoring runs several sequential AI calls (JD analysis, per-experience
+// generation, composer, optional repair) and can legitimately take minutes.
+// Node's defaults would abort the request mid-generation and close the socket,
+// which the frontend proxy reports as "socket hang up (ECONNRESET)":
+//   - server.timeout (idle socket) was 300s here
+//   - server.requestTimeout defaults to 300s since Node 18 (whole-request cap)
+// Raise both well above the pipeline's worst case. Configurable via SERVER_TIMEOUT_MS.
+const SERVER_TIMEOUT_MS = Number(process.env.SERVER_TIMEOUT_MS || 600_000);
+server.setTimeout(SERVER_TIMEOUT_MS);
+server.requestTimeout = SERVER_TIMEOUT_MS;
+// headersTimeout must stay below requestTimeout; the default (60s) is fine.
