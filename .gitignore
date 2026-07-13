@@ -17,8 +17,6 @@ frontend/.next/
 /build
 backend/dist/
 
-/logs
-
 # misc
 .DS_Store
 *.pem
@@ -30,6 +28,10 @@ backend/dist/
 *.RAR
 *.doc
 *.docx
+
+# logs
+logs/
+*.log
 
 # debug
 npm-debug.log*
