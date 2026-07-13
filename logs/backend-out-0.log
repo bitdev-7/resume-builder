@@ -1,0 +1,649 @@
+2026-07-13T01:59:02: Resume API backend listening on http://localhost:9999
+2026-07-13T01:59:32: Resume API backend listening on http://localhost:9999
+2026-07-13T01:59:34: Resume API backend listening on http://localhost:9999
+2026-07-13T02:02:29: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T02:03:12: Warning: TT: undefined function: 21
+2026-07-13T02:03:12: Warning: TT: undefined function: 21
+2026-07-13T02:10:07: Resume API backend listening on http://localhost:9999
+2026-07-13T02:12:28: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T02:14:41: Warning: TT: undefined function: 21
+2026-07-13T02:14:41: Warning: TT: undefined function: 21
+2026-07-13T02:19:04: Tailoring pipeline finished in 64506ms (provider=openai, model=openai/gpt-4.1-mini, cost=$0.0184, archetype=backend_engineer)
+2026-07-13T02:19:04: [generate-pdf] Auth OK { elapsedMs: 439 }
+2026-07-13T02:19:04: [generate-pdf] Request parsed { hasResume: true, template: 'standard', elapsedMs: 446 }
+2026-07-13T02:19:04: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T02:19:04:   template: 'standard',
+2026-07-13T02:19:04:   resumeName: 'BENCH FAUSTINO TABLANTE',
+2026-07-13T02:19:04:   experienceCount: 5,
+2026-07-13T02:19:04:   elapsedMs: 448
+2026-07-13T02:19:04: }
+2026-07-13T02:19:04: [generate-pdf] Loading template {
+2026-07-13T02:19:04:   template: 'standard',
+2026-07-13T02:19:04:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\standard.html',
+2026-07-13T02:19:04:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T02:19:04: }
+2026-07-13T02:19:04: [generate-pdf] Template loaded {
+2026-07-13T02:19:04:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\standard.html',
+2026-07-13T02:19:04:   tplChars: 9762,
+2026-07-13T02:19:04:   elapsedMs: 5
+2026-07-13T02:19:04: }
+2026-07-13T02:19:04: [generate-pdf] HTML rendered { htmlChars: 21637, experienceCount: 5, elapsedMs: 21 }
+2026-07-13T02:19:04: [generate-pdf] Starting Puppeteer render…
+2026-07-13T02:19:04: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T02:19:04: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T02:19:04: [pdf] renderHtmlToPdfBase64 started { htmlChars: 21637 }
+2026-07-13T02:19:04: [pdf] Launching Chrome {
+2026-07-13T02:19:04:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T02:19:04:   timeoutMs: 60000
+2026-07-13T02:19:04: }
+2026-07-13T02:19:05: [pdf] Chrome launched { connected: true }
+2026-07-13T02:19:05: [pdf] Browser ready { elapsedMs: 249 }
+2026-07-13T02:19:05: [pdf] Opening new page
+2026-07-13T02:19:05: [pdf] Page opened { elapsedMs: 273 }
+2026-07-13T02:19:05: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T02:19:05: [pdf] Page content set { elapsedMs: 280 }
+2026-07-13T02:19:05: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T02:19:05: [pdf] PDF export complete { pdfBytes: 107328, base64Chars: 143104, elapsedMs: 498 }
+2026-07-13T02:19:05: [pdf] Closing page
+2026-07-13T02:19:05: [pdf] Closing browser
+2026-07-13T02:19:05: [pdf] Browser closed { elapsedMs: 1034 }
+2026-07-13T02:19:05: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T02:19:05: [generate-pdf] Puppeteer render finished { base64Chars: 143104, elapsedMs: 1056 }
+2026-07-13T02:19:05: [generate-pdf] Done { base64Chars: 143104, elapsedMs: 1506 }
+2026-07-13T02:19:40: [generate-pdf] Auth OK { elapsedMs: 183 }
+2026-07-13T02:19:40: [generate-pdf] Request parsed { hasResume: true, template: 'modern', elapsedMs: 183 }
+2026-07-13T02:19:40: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T02:19:40:   template: 'modern',
+2026-07-13T02:19:40:   resumeName: 'BENCH FAUSTINO TABLANTE',
+2026-07-13T02:19:40:   experienceCount: 5,
+2026-07-13T02:19:40:   elapsedMs: 184
+2026-07-13T02:19:40: }
+2026-07-13T02:19:40: [generate-pdf] Loading template {
+2026-07-13T02:19:40:   template: 'modern',
+2026-07-13T02:19:40:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T02:19:40:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T02:19:40: }
+2026-07-13T02:19:40: [generate-pdf] Template loaded {
+2026-07-13T02:19:40:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T02:19:40:   tplChars: 5466,
+2026-07-13T02:19:40:   elapsedMs: 2
+2026-07-13T02:19:40: }
+2026-07-13T02:19:40: [generate-pdf] HTML rendered { htmlChars: 16799, experienceCount: 5, elapsedMs: 11 }
+2026-07-13T02:19:40: [generate-pdf] Starting Puppeteer render…
+2026-07-13T02:19:40: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T02:19:40: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T02:19:40: [pdf] renderHtmlToPdfBase64 started { htmlChars: 16799 }
+2026-07-13T02:19:40: [pdf] Launching Chrome {
+2026-07-13T02:19:40:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T02:19:40:   timeoutMs: 60000
+2026-07-13T02:19:40: }
+2026-07-13T02:19:40: [pdf] Chrome launched { connected: true }
+2026-07-13T02:19:40: [pdf] Browser ready { elapsedMs: 266 }
+2026-07-13T02:19:40: [pdf] Opening new page
+2026-07-13T02:19:40: [pdf] Page opened { elapsedMs: 283 }
+2026-07-13T02:19:40: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T02:19:40: [pdf] Page content set { elapsedMs: 286 }
+2026-07-13T02:19:40: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T02:19:40: [pdf] PDF export complete { pdfBytes: 77450, base64Chars: 103268, elapsedMs: 543 }
+2026-07-13T02:19:40: [pdf] Closing page
+2026-07-13T02:19:40: [pdf] Closing browser
+2026-07-13T02:19:40: [pdf] Browser closed { elapsedMs: 650 }
+2026-07-13T02:19:40: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T02:19:40: [generate-pdf] Puppeteer render finished { base64Chars: 103268, elapsedMs: 661 }
+2026-07-13T02:19:40: [generate-pdf] Done { base64Chars: 103268, elapsedMs: 845 }
+2026-07-13T02:43:01: Resume API backend listening on http://localhost:9999
+2026-07-13T02:44:21: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T02:47:01: Tailoring pipeline finished in 130625ms (provider=openai, model=openai/gpt-4.1-mini, cost=$0.0170, archetype=java_backend_engineer)
+2026-07-13T02:47:01: [generate-pdf] Auth OK { elapsedMs: 253 }
+2026-07-13T02:47:01: [generate-pdf] Request parsed { hasResume: true, template: 'standard', elapsedMs: 253 }
+2026-07-13T02:47:01: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T02:47:01:   template: 'standard',
+2026-07-13T02:47:01:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T02:47:01:   experienceCount: 5,
+2026-07-13T02:47:01:   elapsedMs: 253
+2026-07-13T02:47:01: }
+2026-07-13T02:47:01: [generate-pdf] Loading template {
+2026-07-13T02:47:01:   template: 'standard',
+2026-07-13T02:47:01:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\standard.html',
+2026-07-13T02:47:01:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T02:47:01: }
+2026-07-13T02:47:01: [generate-pdf] Template loaded {
+2026-07-13T02:47:01:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\standard.html',
+2026-07-13T02:47:01:   tplChars: 9762,
+2026-07-13T02:47:01:   elapsedMs: 1
+2026-07-13T02:47:01: }
+2026-07-13T02:47:01: [generate-pdf] HTML rendered { htmlChars: 26546, experienceCount: 5, elapsedMs: 3 }
+2026-07-13T02:47:01: [generate-pdf] Starting Puppeteer render…
+2026-07-13T02:47:01: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T02:47:01: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T02:47:01: [pdf] renderHtmlToPdfBase64 started { htmlChars: 26546 }
+2026-07-13T02:47:01: [pdf] Launching Chrome {
+2026-07-13T02:47:01:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T02:47:01:   timeoutMs: 60000
+2026-07-13T02:47:01: }
+2026-07-13T02:47:01: [pdf] Chrome launched { connected: true }
+2026-07-13T02:47:01: [pdf] Browser ready { elapsedMs: 183 }
+2026-07-13T02:47:01: [pdf] Opening new page
+2026-07-13T02:47:01: [pdf] Page opened { elapsedMs: 204 }
+2026-07-13T02:47:01: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T02:47:01: [pdf] Page content set { elapsedMs: 208 }
+2026-07-13T02:47:01: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T02:47:02: [pdf] PDF export complete { pdfBytes: 141199, base64Chars: 188268, elapsedMs: 527 }
+2026-07-13T02:47:02: [pdf] Closing page
+2026-07-13T02:47:02: [pdf] Closing browser
+2026-07-13T02:47:02: [pdf] Browser closed { elapsedMs: 608 }
+2026-07-13T02:47:02: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T02:47:02: [generate-pdf] Puppeteer render finished { base64Chars: 188268, elapsedMs: 612 }
+2026-07-13T02:47:02: [generate-pdf] Done { base64Chars: 188268, elapsedMs: 866 }
+2026-07-13T02:57:44: [generate-pdf] Auth OK { elapsedMs: 818 }
+2026-07-13T02:57:44: [generate-pdf] Request parsed { hasResume: true, template: 'sidebar', elapsedMs: 818 }
+2026-07-13T02:57:44: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T02:57:44:   template: 'sidebar',
+2026-07-13T02:57:44:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T02:57:44:   experienceCount: 5,
+2026-07-13T02:57:44:   elapsedMs: 819
+2026-07-13T02:57:44: }
+2026-07-13T02:57:44: [generate-pdf] Loading template {
+2026-07-13T02:57:44:   template: 'sidebar',
+2026-07-13T02:57:44:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\sidebar.html',
+2026-07-13T02:57:44:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T02:57:44: }
+2026-07-13T02:57:44: [generate-pdf] Template loaded {
+2026-07-13T02:57:44:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\sidebar.html',
+2026-07-13T02:57:44:   tplChars: 7641,
+2026-07-13T02:57:44:   elapsedMs: 0
+2026-07-13T02:57:44: }
+2026-07-13T02:57:44: [generate-pdf] HTML rendered { htmlChars: 21663, experienceCount: 5, elapsedMs: 4 }
+2026-07-13T02:57:44: [generate-pdf] Starting Puppeteer render…
+2026-07-13T02:57:44: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T02:57:44: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T02:57:44: [pdf] renderHtmlToPdfBase64 started { htmlChars: 21663 }
+2026-07-13T02:57:44: [pdf] Launching Chrome {
+2026-07-13T02:57:44:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T02:57:44:   timeoutMs: 60000
+2026-07-13T02:57:44: }
+2026-07-13T02:57:44: [pdf] Chrome launched { connected: true }
+2026-07-13T02:57:44: [pdf] Browser ready { elapsedMs: 215 }
+2026-07-13T02:57:44: [pdf] Opening new page
+2026-07-13T02:57:44: [pdf] Page opened { elapsedMs: 247 }
+2026-07-13T02:57:44: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T02:57:44: [pdf] Page content set { elapsedMs: 251 }
+2026-07-13T02:57:44: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T02:57:44: [pdf] PDF export complete { pdfBytes: 115140, base64Chars: 153520, elapsedMs: 578 }
+2026-07-13T02:57:44: [pdf] Closing page
+2026-07-13T02:57:44: [pdf] Closing browser
+2026-07-13T02:57:44: [pdf] Browser closed { elapsedMs: 691 }
+2026-07-13T02:57:44: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T02:57:44: [generate-pdf] Puppeteer render finished { base64Chars: 153520, elapsedMs: 695 }
+2026-07-13T02:57:44: [generate-pdf] Done { base64Chars: 153520, elapsedMs: 1514 }
+2026-07-13T02:58:25: [generate-pdf] Auth OK { elapsedMs: 186 }
+2026-07-13T02:58:25: [generate-pdf] Request parsed { hasResume: true, template: 'modern', elapsedMs: 187 }
+2026-07-13T02:58:25: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T02:58:25:   template: 'modern',
+2026-07-13T02:58:25:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T02:58:25:   experienceCount: 5,
+2026-07-13T02:58:25:   elapsedMs: 187
+2026-07-13T02:58:25: }
+2026-07-13T02:58:25: [generate-pdf] Loading template {
+2026-07-13T02:58:25:   template: 'modern',
+2026-07-13T02:58:25:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T02:58:25:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T02:58:25: }
+2026-07-13T02:58:25: [generate-pdf] Template loaded {
+2026-07-13T02:58:25:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T02:58:25:   tplChars: 5466,
+2026-07-13T02:58:25:   elapsedMs: 1
+2026-07-13T02:58:25: }
+2026-07-13T02:58:25: [generate-pdf] HTML rendered { htmlChars: 21553, experienceCount: 5, elapsedMs: 2 }
+2026-07-13T02:58:25: [generate-pdf] Starting Puppeteer render…
+2026-07-13T02:58:25: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T02:58:25: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T02:58:25: [pdf] renderHtmlToPdfBase64 started { htmlChars: 21553 }
+2026-07-13T02:58:25: [pdf] Launching Chrome {
+2026-07-13T02:58:25:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T02:58:25:   timeoutMs: 60000
+2026-07-13T02:58:25: }
+2026-07-13T02:58:25: [pdf] Chrome launched { connected: true }
+2026-07-13T02:58:25: [pdf] Browser ready { elapsedMs: 193 }
+2026-07-13T02:58:25: [pdf] Opening new page
+2026-07-13T02:58:25: [pdf] Page opened { elapsedMs: 217 }
+2026-07-13T02:58:25: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T02:58:25: [pdf] Page content set { elapsedMs: 225 }
+2026-07-13T02:58:25: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T02:58:26: [pdf] PDF export complete { pdfBytes: 92455, base64Chars: 123276, elapsedMs: 542 }
+2026-07-13T02:58:26: [pdf] Closing page
+2026-07-13T02:58:26: [pdf] Closing browser
+2026-07-13T02:58:26: [pdf] Browser closed { elapsedMs: 665 }
+2026-07-13T02:58:26: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T02:58:26: [generate-pdf] Puppeteer render finished { base64Chars: 123276, elapsedMs: 667 }
+2026-07-13T02:58:26: [generate-pdf] Done { base64Chars: 123276, elapsedMs: 854 }
+2026-07-13T03:16:26: Resume API backend listening on http://localhost:9999
+2026-07-13T03:16:56: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T04:11:42: Tailoring pipeline finished in 41840ms (provider=openai, model=openai/gpt-4.1-mini, cost=$0.0123, archetype=full_stack_python_engineer)
+2026-07-13T04:11:42: [generate-pdf] Auth OK { elapsedMs: 275 }
+2026-07-13T04:11:42: [generate-pdf] Request parsed { hasResume: true, template: 'standard', elapsedMs: 282 }
+2026-07-13T04:11:42: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T04:11:42:   template: 'standard',
+2026-07-13T04:11:42:   resumeName: 'Eric Jiang',
+2026-07-13T04:11:42:   experienceCount: 5,
+2026-07-13T04:11:42:   elapsedMs: 284
+2026-07-13T04:11:42: }
+2026-07-13T04:11:42: [generate-pdf] Loading template {
+2026-07-13T04:11:42:   template: 'standard',
+2026-07-13T04:11:42:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\standard.html',
+2026-07-13T04:11:42:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T04:11:42: }
+2026-07-13T04:11:42: [generate-pdf] Template loaded {
+2026-07-13T04:11:42:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\standard.html',
+2026-07-13T04:11:42:   tplChars: 9762,
+2026-07-13T04:11:42:   elapsedMs: 4
+2026-07-13T04:11:42: }
+2026-07-13T04:11:42: [generate-pdf] HTML rendered { htmlChars: 18304, experienceCount: 5, elapsedMs: 30 }
+2026-07-13T04:11:42: [generate-pdf] Starting Puppeteer render…
+2026-07-13T04:11:42: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T04:11:42: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T04:11:42: [pdf] renderHtmlToPdfBase64 started { htmlChars: 18304 }
+2026-07-13T04:11:42: [pdf] Launching Chrome {
+2026-07-13T04:11:42:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T04:11:42:   timeoutMs: 60000
+2026-07-13T04:11:42: }
+2026-07-13T04:11:42: [pdf] Chrome launched { connected: true }
+2026-07-13T04:11:42: [pdf] Browser ready { elapsedMs: 212 }
+2026-07-13T04:11:42: [pdf] Opening new page
+2026-07-13T04:11:42: [pdf] Page opened { elapsedMs: 229 }
+2026-07-13T04:11:42: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T04:11:42: [pdf] Page content set { elapsedMs: 235 }
+2026-07-13T04:11:42: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T04:11:43: [pdf] PDF export complete { pdfBytes: 101642, base64Chars: 135524, elapsedMs: 449 }
+2026-07-13T04:11:43: [pdf] Closing page
+2026-07-13T04:11:43: [pdf] Closing browser
+2026-07-13T04:11:43: [pdf] Browser closed { elapsedMs: 577 }
+2026-07-13T04:11:43: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T04:11:43: [generate-pdf] Puppeteer render finished { base64Chars: 135524, elapsedMs: 609 }
+2026-07-13T04:11:43: [generate-pdf] Done { base64Chars: 135524, elapsedMs: 895 }
+2026-07-13T17:54:14: Resume API backend listening on http://localhost:9999
+2026-07-13T17:57:47: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T18:02:01: Tailoring pipeline finished in 53750ms (provider=openai, model=openai/gpt-4.1-mini, cost=$0.0104, archetype=java_backend_engineer)
+2026-07-13T18:02:01: [generate-pdf] Auth OK { elapsedMs: 279 }
+2026-07-13T18:02:01: [generate-pdf] Request parsed { hasResume: true, template: 'standard', elapsedMs: 280 }
+2026-07-13T18:02:01: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T18:02:01:   template: 'standard',
+2026-07-13T18:02:01:   resumeName: 'Bench Faustino Tablante',
+2026-07-13T18:02:01:   experienceCount: 3,
+2026-07-13T18:02:01:   elapsedMs: 281
+2026-07-13T18:02:01: }
+2026-07-13T18:02:01: [generate-pdf] Loading template {
+2026-07-13T18:02:01:   template: 'standard',
+2026-07-13T18:02:01:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\standard.html',
+2026-07-13T18:02:01:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T18:02:01: }
+2026-07-13T18:02:01: [generate-pdf] Template loaded {
+2026-07-13T18:02:01:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\standard.html',
+2026-07-13T18:02:01:   tplChars: 9762,
+2026-07-13T18:02:01:   elapsedMs: 15
+2026-07-13T18:02:01: }
+2026-07-13T18:02:01: [generate-pdf] HTML rendered { htmlChars: 19133, experienceCount: 3, elapsedMs: 20 }
+2026-07-13T18:02:01: [generate-pdf] Starting Puppeteer render…
+2026-07-13T18:02:01: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T18:02:01: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T18:02:01: [pdf] renderHtmlToPdfBase64 started { htmlChars: 19133 }
+2026-07-13T18:02:01: [pdf] Launching Chrome {
+2026-07-13T18:02:01:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T18:02:01:   timeoutMs: 60000
+2026-07-13T18:02:01: }
+2026-07-13T18:02:01: [pdf] Chrome launched { connected: true }
+2026-07-13T18:02:01: [pdf] Browser ready { elapsedMs: 480 }
+2026-07-13T18:02:01: [pdf] Opening new page
+2026-07-13T18:02:01: [pdf] Page opened { elapsedMs: 510 }
+2026-07-13T18:02:01: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T18:02:01: [pdf] Page content set { elapsedMs: 515 }
+2026-07-13T18:02:01: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T18:02:02: [pdf] PDF export complete { pdfBytes: 122444, base64Chars: 163260, elapsedMs: 807 }
+2026-07-13T18:02:02: [pdf] Closing page
+2026-07-13T18:02:02: [pdf] Closing browser
+2026-07-13T18:02:02: [pdf] Browser closed { elapsedMs: 895 }
+2026-07-13T18:02:02: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T18:02:02: [generate-pdf] Puppeteer render finished { base64Chars: 163260, elapsedMs: 916 }
+2026-07-13T18:02:02: [generate-pdf] Done { base64Chars: 163260, elapsedMs: 1199 }
+2026-07-13T18:03:03: [generate-pdf] Auth OK { elapsedMs: 365 }
+2026-07-13T18:03:03: [generate-pdf] Request parsed { hasResume: true, template: 'modern', elapsedMs: 366 }
+2026-07-13T18:03:03: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T18:03:03:   template: 'modern',
+2026-07-13T18:03:03:   resumeName: 'Bench Faustino Tablante',
+2026-07-13T18:03:03:   experienceCount: 3,
+2026-07-13T18:03:03:   elapsedMs: 366
+2026-07-13T18:03:03: }
+2026-07-13T18:03:03: [generate-pdf] Loading template {
+2026-07-13T18:03:03:   template: 'modern',
+2026-07-13T18:03:03:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T18:03:03:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T18:03:03: }
+2026-07-13T18:03:03: [generate-pdf] Template loaded {
+2026-07-13T18:03:03:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T18:03:03:   tplChars: 5466,
+2026-07-13T18:03:03:   elapsedMs: 100
+2026-07-13T18:03:03: }
+2026-07-13T18:03:03: [generate-pdf] HTML rendered { htmlChars: 14448, experienceCount: 3, elapsedMs: 104 }
+2026-07-13T18:03:03: [generate-pdf] Starting Puppeteer render…
+2026-07-13T18:03:03: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T18:03:03: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T18:03:03: [pdf] renderHtmlToPdfBase64 started { htmlChars: 14448 }
+2026-07-13T18:03:03: [pdf] Launching Chrome {
+2026-07-13T18:03:03:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T18:03:03:   timeoutMs: 60000
+2026-07-13T18:03:03: }
+2026-07-13T18:03:03: [pdf] Chrome launched { connected: true }
+2026-07-13T18:03:03: [pdf] Browser ready { elapsedMs: 223 }
+2026-07-13T18:03:03: [pdf] Opening new page
+2026-07-13T18:03:03: [pdf] Page opened { elapsedMs: 244 }
+2026-07-13T18:03:03: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T18:03:03: [pdf] Page content set { elapsedMs: 247 }
+2026-07-13T18:03:03: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T18:03:03: [pdf] PDF export complete { pdfBytes: 79541, base64Chars: 106056, elapsedMs: 540 }
+2026-07-13T18:03:03: [pdf] Closing page
+2026-07-13T18:03:03: [pdf] Closing browser
+2026-07-13T18:03:03: [pdf] Browser closed { elapsedMs: 643 }
+2026-07-13T18:03:03: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T18:03:03: [generate-pdf] Puppeteer render finished { base64Chars: 106056, elapsedMs: 747 }
+2026-07-13T18:03:03: [generate-pdf] Done { base64Chars: 106056, elapsedMs: 1113 }
+2026-07-13T18:12:00: Resume API backend listening on http://localhost:9999
+2026-07-13T18:12:07: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T18:14:05: Tailoring pipeline finished in 113854ms (provider=openai, model=openai/gpt-4.1-mini, cost=$0.0183, archetype=java_backend_engineer)
+2026-07-13T18:14:05: [generate-pdf] Auth OK { elapsedMs: 271 }
+2026-07-13T18:14:05: [generate-pdf] Request parsed { hasResume: true, template: 'modern', elapsedMs: 271 }
+2026-07-13T18:14:05: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T18:14:05:   template: 'modern',
+2026-07-13T18:14:05:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T18:14:05:   experienceCount: 5,
+2026-07-13T18:14:05:   elapsedMs: 271
+2026-07-13T18:14:05: }
+2026-07-13T18:14:05: [generate-pdf] Loading template {
+2026-07-13T18:14:05:   template: 'modern',
+2026-07-13T18:14:05:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T18:14:05:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T18:14:05: }
+2026-07-13T18:14:05: [generate-pdf] Template loaded {
+2026-07-13T18:14:05:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T18:14:05:   tplChars: 5498,
+2026-07-13T18:14:05:   elapsedMs: 1
+2026-07-13T18:14:05: }
+2026-07-13T18:14:05: [generate-pdf] HTML rendered { htmlChars: 21475, experienceCount: 5, elapsedMs: 3 }
+2026-07-13T18:14:05: [generate-pdf] Starting Puppeteer render…
+2026-07-13T18:14:05: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T18:14:05: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T18:14:05: [pdf] renderHtmlToPdfBase64 started { htmlChars: 21475 }
+2026-07-13T18:14:05: [pdf] Launching Chrome {
+2026-07-13T18:14:05:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T18:14:05:   timeoutMs: 60000
+2026-07-13T18:14:05: }
+2026-07-13T18:14:05: [pdf] Chrome launched { connected: true }
+2026-07-13T18:14:05: [pdf] Browser ready { elapsedMs: 227 }
+2026-07-13T18:14:05: [pdf] Opening new page
+2026-07-13T18:14:05: [pdf] Page opened { elapsedMs: 250 }
+2026-07-13T18:14:05: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T18:14:05: [pdf] Page content set { elapsedMs: 255 }
+2026-07-13T18:14:05: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T18:14:06: [pdf] PDF export complete { pdfBytes: 93401, base64Chars: 124536, elapsedMs: 543 }
+2026-07-13T18:14:06: [pdf] Closing page
+2026-07-13T18:14:06: [pdf] Closing browser
+2026-07-13T18:14:06: [pdf] Browser closed { elapsedMs: 628 }
+2026-07-13T18:14:06: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T18:14:06: [generate-pdf] Puppeteer render finished { base64Chars: 124536, elapsedMs: 632 }
+2026-07-13T18:14:06: [generate-pdf] Done { base64Chars: 124536, elapsedMs: 903 }
+2026-07-13T18:14:42: [generate-pdf] Auth OK { elapsedMs: 168 }
+2026-07-13T18:14:42: [generate-pdf] Request parsed { hasResume: true, template: 'minimal', elapsedMs: 168 }
+2026-07-13T18:14:42: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T18:14:42:   template: 'minimal',
+2026-07-13T18:14:42:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T18:14:42:   experienceCount: 5,
+2026-07-13T18:14:42:   elapsedMs: 168
+2026-07-13T18:14:42: }
+2026-07-13T18:14:42: [generate-pdf] Loading template {
+2026-07-13T18:14:42:   template: 'minimal',
+2026-07-13T18:14:42:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\minimal.html',
+2026-07-13T18:14:42:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T18:14:42: }
+2026-07-13T18:14:42: [generate-pdf] Template loaded {
+2026-07-13T18:14:42:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\minimal.html',
+2026-07-13T18:14:42:   tplChars: 5250,
+2026-07-13T18:14:42:   elapsedMs: 1
+2026-07-13T18:14:42: }
+2026-07-13T18:14:42: [generate-pdf] HTML rendered { htmlChars: 20855, experienceCount: 5, elapsedMs: 4 }
+2026-07-13T18:14:42: [generate-pdf] Starting Puppeteer render…
+2026-07-13T18:14:42: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T18:14:42: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T18:14:42: [pdf] renderHtmlToPdfBase64 started { htmlChars: 20855 }
+2026-07-13T18:14:42: [pdf] Launching Chrome {
+2026-07-13T18:14:42:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T18:14:42:   timeoutMs: 60000
+2026-07-13T18:14:42: }
+2026-07-13T18:14:43: [pdf] Chrome launched { connected: true }
+2026-07-13T18:14:43: [pdf] Browser ready { elapsedMs: 204 }
+2026-07-13T18:14:43: [pdf] Opening new page
+2026-07-13T18:14:43: [pdf] Page opened { elapsedMs: 229 }
+2026-07-13T18:14:43: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T18:14:43: [pdf] Page content set { elapsedMs: 233 }
+2026-07-13T18:14:43: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T18:14:43: [pdf] PDF export complete { pdfBytes: 109796, base64Chars: 146396, elapsedMs: 456 }
+2026-07-13T18:14:43: [pdf] Closing page
+2026-07-13T18:14:43: [pdf] Closing browser
+2026-07-13T18:14:43: [pdf] Browser closed { elapsedMs: 592 }
+2026-07-13T18:14:43: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T18:14:43: [generate-pdf] Puppeteer render finished { base64Chars: 146396, elapsedMs: 596 }
+2026-07-13T18:14:43: [generate-pdf] Done { base64Chars: 146396, elapsedMs: 764 }
+2026-07-13T18:38:33: Resume API backend listening on http://localhost:9999
+2026-07-13T18:43:53: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T19:04:12: Resume API backend listening on http://localhost:9999
+2026-07-13T19:04:16: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T19:05:47: Tailoring pipeline finished in 89302ms (provider=openai, model=openai/gpt-4.1-mini, cost=$0.0162, archetype=java_backend_engineer)
+2026-07-13T19:05:48: [generate-pdf] Auth OK { elapsedMs: 253 }
+2026-07-13T19:05:48: [generate-pdf] Request parsed { hasResume: true, template: 'minimal', elapsedMs: 253 }
+2026-07-13T19:05:48: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T19:05:48:   template: 'minimal',
+2026-07-13T19:05:48:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T19:05:48:   experienceCount: 5,
+2026-07-13T19:05:48:   elapsedMs: 253
+2026-07-13T19:05:48: }
+2026-07-13T19:05:48: [generate-pdf] Loading template {
+2026-07-13T19:05:48:   template: 'minimal',
+2026-07-13T19:05:48:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\minimal.html',
+2026-07-13T19:05:48:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T19:05:48: }
+2026-07-13T19:05:48: [generate-pdf] Template loaded {
+2026-07-13T19:05:48:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\minimal.html',
+2026-07-13T19:05:48:   tplChars: 5250,
+2026-07-13T19:05:48:   elapsedMs: 2
+2026-07-13T19:05:48: }
+2026-07-13T19:05:48: [generate-pdf] HTML rendered { htmlChars: 19469, experienceCount: 5, elapsedMs: 4 }
+2026-07-13T19:05:48: [generate-pdf] Starting Puppeteer render…
+2026-07-13T19:05:48: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T19:05:48: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T19:05:48: [pdf] renderHtmlToPdfBase64 started { htmlChars: 19469 }
+2026-07-13T19:05:48: [pdf] Launching Chrome {
+2026-07-13T19:05:48:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T19:05:48:   timeoutMs: 60000
+2026-07-13T19:05:48: }
+2026-07-13T19:05:48: [pdf] Chrome launched { connected: true }
+2026-07-13T19:05:48: [pdf] Browser ready { elapsedMs: 273 }
+2026-07-13T19:05:48: [pdf] Opening new page
+2026-07-13T19:05:48: [pdf] Page opened { elapsedMs: 297 }
+2026-07-13T19:05:48: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T19:05:48: [pdf] Page content set { elapsedMs: 301 }
+2026-07-13T19:05:48: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T19:05:48: [pdf] PDF export complete { pdfBytes: 107198, base64Chars: 142932, elapsedMs: 515 }
+2026-07-13T19:05:48: [pdf] Closing page
+2026-07-13T19:05:48: [pdf] Closing browser
+2026-07-13T19:05:48: [pdf] Browser closed { elapsedMs: 593 }
+2026-07-13T19:05:48: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T19:05:48: [generate-pdf] Puppeteer render finished { base64Chars: 142932, elapsedMs: 597 }
+2026-07-13T19:05:48: [generate-pdf] Done { base64Chars: 142932, elapsedMs: 850 }
+2026-07-13T19:06:08: [generate-pdf] Auth OK { elapsedMs: 177 }
+2026-07-13T19:06:08: [generate-pdf] Request parsed { hasResume: true, template: 'folio', elapsedMs: 177 }
+2026-07-13T19:06:08: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T19:06:08:   template: 'folio',
+2026-07-13T19:06:08:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T19:06:08:   experienceCount: 5,
+2026-07-13T19:06:08:   elapsedMs: 177
+2026-07-13T19:06:08: }
+2026-07-13T19:06:08: [generate-pdf] Loading template {
+2026-07-13T19:06:08:   template: 'folio',
+2026-07-13T19:06:08:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\folio.html',
+2026-07-13T19:06:08:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T19:06:08: }
+2026-07-13T19:06:08: [generate-pdf] Template loaded {
+2026-07-13T19:06:08:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\folio.html',
+2026-07-13T19:06:08:   tplChars: 7062,
+2026-07-13T19:06:08:   elapsedMs: 1
+2026-07-13T19:06:08: }
+2026-07-13T19:06:08: [generate-pdf] HTML rendered { htmlChars: 21795, experienceCount: 5, elapsedMs: 2 }
+2026-07-13T19:06:08: [generate-pdf] Starting Puppeteer render…
+2026-07-13T19:06:08: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T19:06:08: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T19:06:08: [pdf] renderHtmlToPdfBase64 started { htmlChars: 21795 }
+2026-07-13T19:06:08: [pdf] Launching Chrome {
+2026-07-13T19:06:08:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T19:06:08:   timeoutMs: 60000
+2026-07-13T19:06:08: }
+2026-07-13T19:06:09: [pdf] Chrome launched { connected: true }
+2026-07-13T19:06:09: [pdf] Browser ready { elapsedMs: 152 }
+2026-07-13T19:06:09: [pdf] Opening new page
+2026-07-13T19:06:09: [pdf] Page opened { elapsedMs: 172 }
+2026-07-13T19:06:09: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T19:06:09: [pdf] Page content set { elapsedMs: 174 }
+2026-07-13T19:06:09: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T19:06:09: [pdf] PDF export complete { pdfBytes: 136343, base64Chars: 181792, elapsedMs: 538 }
+2026-07-13T19:06:09: [pdf] Closing page
+2026-07-13T19:06:09: [pdf] Closing browser
+2026-07-13T19:06:09: [pdf] Browser closed { elapsedMs: 957 }
+2026-07-13T19:06:09: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T19:06:09: [generate-pdf] Puppeteer render finished { base64Chars: 181792, elapsedMs: 959 }
+2026-07-13T19:06:09: [generate-pdf] Done { base64Chars: 181792, elapsedMs: 1136 }
+2026-07-13T19:06:12: [generate-pdf] Auth OK { elapsedMs: 68 }
+2026-07-13T19:06:12: [generate-pdf] Request parsed { hasResume: true, template: 'modern', elapsedMs: 68 }
+2026-07-13T19:06:12: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T19:06:12:   template: 'modern',
+2026-07-13T19:06:12:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T19:06:12:   experienceCount: 5,
+2026-07-13T19:06:12:   elapsedMs: 68
+2026-07-13T19:06:12: }
+2026-07-13T19:06:12: [generate-pdf] Loading template {
+2026-07-13T19:06:12:   template: 'modern',
+2026-07-13T19:06:12:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T19:06:12:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T19:06:12: }
+2026-07-13T19:06:12: [generate-pdf] Template loaded {
+2026-07-13T19:06:12:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T19:06:12:   tplChars: 5498,
+2026-07-13T19:06:12:   elapsedMs: 1
+2026-07-13T19:06:12: }
+2026-07-13T19:06:12: [generate-pdf] HTML rendered { htmlChars: 20063, experienceCount: 5, elapsedMs: 3 }
+2026-07-13T19:06:12: [generate-pdf] Starting Puppeteer render…
+2026-07-13T19:06:12: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T19:06:12: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T19:06:12: [pdf] renderHtmlToPdfBase64 started { htmlChars: 20063 }
+2026-07-13T19:06:12: [pdf] Launching Chrome {
+2026-07-13T19:06:12:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T19:06:12:   timeoutMs: 60000
+2026-07-13T19:06:12: }
+2026-07-13T19:06:13: [pdf] Chrome launched { connected: true }
+2026-07-13T19:06:13: [pdf] Browser ready { elapsedMs: 196 }
+2026-07-13T19:06:13: [pdf] Opening new page
+2026-07-13T19:06:13: [pdf] Page opened { elapsedMs: 215 }
+2026-07-13T19:06:13: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T19:06:13: [pdf] Page content set { elapsedMs: 218 }
+2026-07-13T19:06:13: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T19:06:13: [pdf] PDF export complete { pdfBytes: 91031, base64Chars: 121376, elapsedMs: 496 }
+2026-07-13T19:06:13: [pdf] Closing page
+2026-07-13T19:06:13: [pdf] Closing browser
+2026-07-13T19:06:13: [pdf] Browser closed { elapsedMs: 574 }
+2026-07-13T19:06:13: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T19:06:13: [generate-pdf] Puppeteer render finished { base64Chars: 121376, elapsedMs: 577 }
+2026-07-13T19:06:13: [generate-pdf] Done { base64Chars: 121376, elapsedMs: 645 }
+2026-07-13T19:14:06: Resume API backend listening on http://localhost:9999
+2026-07-13T19:14:13: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T19:14:54: Tailoring pipeline finished in 33894ms (provider=openai, model=openai/gpt-4.1-mini, cost=$0.0098, archetype=java_backend_engineer)
+2026-07-13T19:14:54: [generate-pdf] Auth OK { elapsedMs: 164 }
+2026-07-13T19:14:54: [generate-pdf] Request parsed { hasResume: true, template: 'modern', elapsedMs: 164 }
+2026-07-13T19:14:54: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T19:14:54:   template: 'modern',
+2026-07-13T19:14:54:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T19:14:54:   experienceCount: 5,
+2026-07-13T19:14:54:   elapsedMs: 164
+2026-07-13T19:14:54: }
+2026-07-13T19:14:54: [generate-pdf] Loading template {
+2026-07-13T19:14:54:   template: 'modern',
+2026-07-13T19:14:54:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T19:14:54:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T19:14:54: }
+2026-07-13T19:14:54: [generate-pdf] Template loaded {
+2026-07-13T19:14:54:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T19:14:54:   tplChars: 5498,
+2026-07-13T19:14:54:   elapsedMs: 0
+2026-07-13T19:14:54: }
+2026-07-13T19:14:54: [generate-pdf] HTML rendered { htmlChars: 20229, experienceCount: 5, elapsedMs: 2 }
+2026-07-13T19:14:54: [generate-pdf] Starting Puppeteer render…
+2026-07-13T19:14:54: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T19:14:54: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T19:14:54: [pdf] renderHtmlToPdfBase64 started { htmlChars: 20229 }
+2026-07-13T19:14:54: [pdf] Launching Chrome {
+2026-07-13T19:14:54:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T19:14:54:   timeoutMs: 60000
+2026-07-13T19:14:54: }
+2026-07-13T19:14:54: [pdf] Chrome launched { connected: true }
+2026-07-13T19:14:54: [pdf] Browser ready { elapsedMs: 172 }
+2026-07-13T19:14:54: [pdf] Opening new page
+2026-07-13T19:14:54: [pdf] Page opened { elapsedMs: 190 }
+2026-07-13T19:14:54: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T19:14:54: [pdf] Page content set { elapsedMs: 196 }
+2026-07-13T19:14:54: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T19:14:54: [pdf] PDF export complete { pdfBytes: 91543, base64Chars: 122060, elapsedMs: 495 }
+2026-07-13T19:14:54: [pdf] Closing page
+2026-07-13T19:14:54: [pdf] Closing browser
+2026-07-13T19:14:54: [pdf] Browser closed { elapsedMs: 563 }
+2026-07-13T19:14:54: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T19:14:54: [generate-pdf] Puppeteer render finished { base64Chars: 122060, elapsedMs: 567 }
+2026-07-13T19:14:54: [generate-pdf] Done { base64Chars: 122060, elapsedMs: 732 }
+2026-07-13T19:18:32: Resume API backend listening on http://localhost:9999
+2026-07-13T19:22:09: [openrouter-models] Loaded 345 models from OpenRouter
+2026-07-13T19:23:43: Tailoring pipeline finished in 92066ms (provider=openai, model=openai/gpt-4.1-mini, cost=$0.0221, archetype=java_backend_engineer)
+2026-07-13T19:23:43: [generate-pdf] Auth OK { elapsedMs: 229 }
+2026-07-13T19:23:43: [generate-pdf] Request parsed { hasResume: true, template: 'modern', elapsedMs: 229 }
+2026-07-13T19:23:43: [generate-pdf] Calling generateResumePdfBase64 {
+2026-07-13T19:23:43:   template: 'modern',
+2026-07-13T19:23:43:   resumeName: 'Ranie Garcia Gamboa',
+2026-07-13T19:23:43:   experienceCount: 5,
+2026-07-13T19:23:43:   elapsedMs: 229
+2026-07-13T19:23:43: }
+2026-07-13T19:23:43: [generate-pdf] Loading template {
+2026-07-13T19:23:43:   template: 'modern',
+2026-07-13T19:23:43:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T19:23:43:   templatesDir: 'E:\\Profiles\\resume-maker\\templates'
+2026-07-13T19:23:43: }
+2026-07-13T19:23:43: [generate-pdf] Template loaded {
+2026-07-13T19:23:43:   tplPath: 'E:\\Profiles\\resume-maker\\templates\\modern.html',
+2026-07-13T19:23:43:   tplChars: 5498,
+2026-07-13T19:23:43:   elapsedMs: 1
+2026-07-13T19:23:43: }
+2026-07-13T19:23:43: [generate-pdf] HTML rendered { htmlChars: 17664, experienceCount: 3, elapsedMs: 5 }
+2026-07-13T19:23:43: [generate-pdf] Starting Puppeteer render…
+2026-07-13T19:23:43: [pdf] Waiting for render lock: renderHtmlToPdfBase64
+2026-07-13T19:23:43: [pdf] Render lock acquired { label: 'renderHtmlToPdfBase64', waitMs: 0 }
+2026-07-13T19:23:43: [pdf] renderHtmlToPdfBase64 started { htmlChars: 17664 }
+2026-07-13T19:23:43: [pdf] Launching Chrome {
+2026-07-13T19:23:43:   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+2026-07-13T19:23:43:   timeoutMs: 60000
+2026-07-13T19:23:43: }
+2026-07-13T19:23:44: [pdf] Chrome launched { connected: true }
+2026-07-13T19:23:44: [pdf] Browser ready { elapsedMs: 176 }
+2026-07-13T19:23:44: [pdf] Opening new page
+2026-07-13T19:23:44: [pdf] Page opened { elapsedMs: 197 }
+2026-07-13T19:23:44: [pdf] Setting page content (domcontentloaded, 15s timeout)
+2026-07-13T19:23:44: [pdf] Page content set { elapsedMs: 201 }
+2026-07-13T19:23:44: [pdf] Exporting PDF { timeoutMs: 90000 }
+2026-07-13T19:23:44: [pdf] PDF export complete { pdfBytes: 86873, base64Chars: 115832, elapsedMs: 493 }
+2026-07-13T19:23:44: [pdf] Closing page
+2026-07-13T19:23:44: [pdf] Closing browser
+2026-07-13T19:23:44: [pdf] Browser closed { elapsedMs: 568 }
+2026-07-13T19:23:44: [pdf] Render lock released: renderHtmlToPdfBase64
+2026-07-13T19:23:44: [generate-pdf] Puppeteer render finished { base64Chars: 115832, elapsedMs: 575 }
+2026-07-13T19:23:44: [generate-pdf] Done { base64Chars: 115832, elapsedMs: 805 }

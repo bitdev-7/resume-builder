@@ -23,6 +23,7 @@ function writerInput(experienceId: string): ExperienceWriterInput {
     endDate: "Present",
     allowedEvidence: [{ id: `fact_${experienceId}`, text: "Built authentication APIs", factType: "responsibility", confidence: "imported" }],
     allowedSkills: ["Python"],
+    targetSkills: [],
     priorityRequirements: [],
     targetBulletCount: 2,
   };

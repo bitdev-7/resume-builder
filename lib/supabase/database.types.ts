@@ -84,6 +84,8 @@ export interface ResumeProfile {
   /** Optional headshot as a data URL (shown only on visual templates). */
   photo_url: string | null;
   languages: ResumeLanguage[];
+  /** Per-profile editable AI prompt guidance overrides, keyed by prompt key. */
+  prompt_overrides: Record<string, string> | null;
   is_default: boolean;
   display_order: number;
   created_at: string;
@@ -117,6 +119,7 @@ export interface ResumeProfileUpdate {
   resume_template?: string | null;
   photo_url?: string | null;
   languages?: ResumeLanguage[];
+  prompt_overrides?: Record<string, string> | null;
   is_default?: boolean;
   display_order?: number;
 }
@@ -130,6 +133,8 @@ export interface UserEducation {
   field_of_study: string | null;
   gpa: number | null;
   location: string | null;
+  start_date: string | null;
+  end_date: string | null;
   graduation_date: string | null;
   description: string | null;
   display_order: number;

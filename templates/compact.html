@@ -91,7 +91,7 @@
     <div class="section section-education">
       <div class="section-title">Education</div>
       {{#education}}
-      <div class="education-item"><span class="education-school">{{school}}</span> <span class="education-degree-date">— {{degree}} | {{graduationDate}}</span></div>
+      <div class="education-item"><span class="education-school">{{school}}</span> <span class="education-degree-date">— {{degree}}{{#eduDateRange}} | {{eduDateRange}}{{/eduDateRange}}</span></div>
       {{/education}}
     </div>
     {{/hasEducation}}

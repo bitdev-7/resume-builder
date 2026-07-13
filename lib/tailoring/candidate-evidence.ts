@@ -137,6 +137,8 @@ function toCandidateEducation(edu: ResumeEducation): CandidateEducation {
     degree: edu.degree || "",
     school: edu.school || "",
     location: edu.location,
+    startDate: edu.startDate,
+    endDate: edu.endDate,
     graduationDate: edu.graduationDate || "",
     gpa: edu.gpa,
     fieldOfStudy: edu.fieldOfStudy,

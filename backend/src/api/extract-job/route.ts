@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractJobFromPageContent } from "@/lib/extract-job-page";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
+import { sanitizePromptOverrides } from "@/lib/prompts/prompt-overrides";
 
 export async function POST(request: NextRequest) {
   try {
     await requireAuthClient(request);
 
-    const { pageContent, useOpenRouter: useOpenRouterBody } = await request.json();
+    const { pageContent, useOpenRouter: useOpenRouterBody, promptOverrides: promptOverridesBody } =
+      await request.json();
     if (!pageContent || typeof pageContent !== "string") {
       return NextResponse.json(
         { error: "Job page content is required" },
@@ -16,6 +18,7 @@ export async function POST(request: NextRequest) {
 
     const { extracted, extractCostUsd } = await extractJobFromPageContent(pageContent, {
       useOpenRouter: useOpenRouterBody,
+      promptOverrides: sanitizePromptOverrides(promptOverridesBody),
     });
     return NextResponse.json({ ...extracted, extractCostUsd });
   } catch (error) {

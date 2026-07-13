@@ -3,8 +3,9 @@ import type { AIMessage } from "@/lib/ai-provider";
 import type { ResolvedAIRequest } from "@/lib/ai-api";
 import {
   buildJdAnalyzerUserPrompt,
-  JD_ANALYZER_SYSTEM_PROMPT,
+  buildJdAnalyzerSystemPrompt,
 } from "@/lib/prompts/jd-analyzer-prompt";
+import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 import { jdAnalysisAiOutputSchema } from "@/lib/tailoring/schemas";
 import type { JDAnalysis, JDRequirement, RequirementType } from "@/lib/types/tailoring";
 import { cleanJsonText } from "@/lib/analyze-json";
@@ -39,10 +40,11 @@ export interface JdAnalyzerResult {
 /** Stage 1 — parses a raw JD into structured requirements. Makes no resume-content decisions. */
 export async function analyzeJobDescription(
   jd: string,
-  aiRequest: ResolvedAIRequest
+  aiRequest: ResolvedAIRequest,
+  promptOverrides?: PromptOverrides
 ): Promise<JdAnalyzerResult> {
   const messages: AIMessage[] = [
-    { role: "system", content: JD_ANALYZER_SYSTEM_PROMPT },
+    { role: "system", content: buildJdAnalyzerSystemPrompt(promptOverrides) },
     { role: "user", content: buildJdAnalyzerUserPrompt(jd) },
   ];
 

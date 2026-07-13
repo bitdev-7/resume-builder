@@ -8,7 +8,7 @@ import type {
   ValidationIssue,
 } from "@/lib/types/tailoring";
 import { FORBIDDEN_OPENING_VERBS } from "@/lib/prompts/tailoring-policy";
-import { detectSkillMentions, skillKey, skillKeyFromCandidateId } from "@/lib/tailoring/skill-ontology";
+import { skillKey } from "@/lib/tailoring/skill-ontology";
 
 const METRIC_LIKE_PATTERNS: RegExp[] = [
   /\d+(?:\.\d+)?\s?%/g,
@@ -97,7 +97,6 @@ export function validateTailoredResume(input: ValidateTailoredResumeInput): Vali
     if (!plan || !experience) continue;
 
     const allowedEvidenceIds = new Set(plan.allowedEvidenceIds);
-    const allowedSkillKeys = new Set(plan.relevantSkillIds.map((id) => skillKeyFromCandidateId(id)));
     const path = `experience[${result.experienceId}]`;
 
     // 7. Bullet count vs. plan target (tolerance +/-1)
@@ -150,16 +149,8 @@ export function validateTailoredResume(input: ValidateTailoredResumeInput): Vali
         }
       }
 
-      // 6. Experience skill claims — mentioned skills must be in this experience's allowed skill list
-      for (const mention of detectSkillMentions(bullet.text)) {
-        if (!allowedSkillKeys.has(skillKey(mention))) {
-          issues.push({
-            code: "UNSUPPORTED_EXPERIENCE_SKILL",
-            path: bulletPath,
-            message: `"${mention}" is mentioned but not an allowed/evidenced skill for this experience`,
-          });
-        }
-      }
+      // (Skills mentioned in bullets are intentionally not restricted — the writer may
+      // introduce role-appropriate technologies. Metric grounding below still applies.)
 
       // 10. Forbidden opening verbs
       const lowerText = bullet.text.trim().toLowerCase();

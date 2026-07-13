@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 import { apiUrl } from "@/lib/api-config";
+import { copyText } from "@/lib/clipboard";
 import type { AnalysisResult } from "@/lib/types/resume";
 
 export interface QuestionAnswer {
@@ -112,11 +113,10 @@ export default function AnswerQuestionsDialog({
   };
 
   const handleCopy = async (index: number, text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
+    if (await copyText(text)) {
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
-    } catch {
+    } else {
       onError("Copy failed");
     }
   };

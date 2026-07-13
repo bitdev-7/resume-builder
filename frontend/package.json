@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=--disable-warning=DEP0060 next dev",
-    "dev:verbose": "next dev",
+    "dev": "cross-env NODE_OPTIONS=--disable-warning=DEP0060 next dev -p 80",
+    "dev:verbose": "next dev -p 80",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 80",
     "lint": "next lint"
   },
   "dependencies": {

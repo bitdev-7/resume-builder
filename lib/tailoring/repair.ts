@@ -13,6 +13,7 @@ import { generateExperience } from "@/lib/tailoring/experience-generator";
 import { composeResumeTopSection, DEFAULT_SKILL_BUDGET } from "@/lib/tailoring/composer";
 import type { ComposerInput } from "@/lib/prompts/composer-prompt";
 import type { ExperienceWriterInput } from "@/lib/prompts/experience-writer-prompt";
+import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 import { validateTailoredResume } from "@/lib/tailoring/validators";
 import { skillKey } from "@/lib/tailoring/skill-ontology";
 
@@ -28,6 +29,7 @@ export interface RepairContext {
   skillBudget?: SkillBudgetConfig;
   maxAttempts?: number;
   buildFallback: (input: ExperienceWriterInput) => ExperienceGenerationResult;
+  promptOverrides?: PromptOverrides;
 }
 
 export interface RepairOutcome {
@@ -79,7 +81,7 @@ function applyDeterministicBackstop(
     const bulletMatch = issue.path.match(EXPERIENCE_BULLET_PATH_RE);
     if (
       bulletMatch &&
-      ["UNKNOWN_EVIDENCE_ID", "UNKNOWN_REQUIREMENT_ID", "UNGROUNDED_METRIC", "UNSUPPORTED_EXPERIENCE_SKILL", "DUPLICATE_BULLET"].includes(
+      ["UNKNOWN_EVIDENCE_ID", "UNKNOWN_REQUIREMENT_ID", "UNGROUNDED_METRIC", "DUPLICATE_BULLET"].includes(
         issue.code
       )
     ) {
@@ -157,7 +159,7 @@ export async function repairTailoredResume(
           const writerInput = ctx.experienceWriterInputsById.get(expId);
           if (!writerInput) return null;
           const notes = expIssues.map((i) => `- [${i.code}] ${i.message}`).join("\n");
-          return generateExperience(writerInput, ctx.aiRequest, notes);
+          return generateExperience(writerInput, ctx.aiRequest, notes, ctx.promptOverrides);
         })
       );
 
@@ -185,7 +187,8 @@ export async function repairTailoredResume(
             ctx.composerInput,
             ctx.aiRequest,
             skillBudget,
-            notes
+            notes,
+            ctx.promptOverrides
           );
           composerResult = result;
           costUsd += c ?? 0;

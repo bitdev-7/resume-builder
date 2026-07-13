@@ -4,9 +4,10 @@ import type { AIMessage } from "@/lib/ai-provider";
 import { resolveExtractModel, resolveExtractProvider } from "@/lib/ai-api";
 import { cleanJsonText, diagnoseJsonParseFailure } from "@/lib/analyze-json";
 import {
-  RESUME_PARSE_SYSTEM_PROMPT,
+  buildResumeParseSystemPrompt,
   buildResumeParseUserPrompt,
 } from "@/lib/prompts/resume-parse-prompt";
+import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 
 /** Shape returned by resume-PDF parsing; maps 1:1 to the profile form (minus client ids). */
 const workTypeSchema = z.enum(["Remote", "Hybrid", "Onsite", ""]).catch("");
@@ -24,6 +25,8 @@ export const parsedResumeSchema = z.object({
       z.object({
         degree: z.string().catch(""),
         school: z.string().catch(""),
+        startDate: z.string().catch(""),
+        endDate: z.string().catch(""),
         graduationDate: z.string().catch(""),
         gpa: z.string().catch(""),
       })
@@ -86,13 +89,13 @@ const RESUME_PARSE_MAX_TOKENS = Number(process.env.RESUME_PARSE_MAX_TOKENS || 81
  */
 export async function parseResumeText(
   resumeText: string,
-  options: { useOpenRouter?: boolean } = {}
+  options: { useOpenRouter?: boolean; promptOverrides?: PromptOverrides } = {}
 ): Promise<ParseResumeResult> {
   const useOpenRouter = options.useOpenRouter ?? true;
   const text = resumeText.slice(0, MAX_RESUME_TEXT_CHARS);
 
   const messages: AIMessage[] = [
-    { role: "system", content: RESUME_PARSE_SYSTEM_PROMPT },
+    { role: "system", content: buildResumeParseSystemPrompt(options.promptOverrides) },
     { role: "user", content: buildResumeParseUserPrompt(text) },
   ];
 

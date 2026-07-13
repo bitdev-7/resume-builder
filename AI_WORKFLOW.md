@@ -14,9 +14,9 @@ Sign in  ->  Fill profile once  ->  Paste a job posting  ->  Generate  ->  Downl
 ```
 
 1. **Sign in** with Supabase email/password.
-2. **Fill the profile once** (`/profile`): contact info, education, work experiences (with achievement bullets), projects, certifications, and skills. This is the candidate's source of truth.
-3. **Paste a job posting** into the Generator (`/generator`) and click Analyse. A cheap AI model extracts structured job data.
-4. **Generate a tailored resume**. The backend runs the 12-stage pipeline, renders a PDF, saves it to the OS Downloads folder, and records the run in `resume_history` (JD + resume JSON archived in Supabase Storage).
+2. **Fill a resume profile** (`/profile`): contact info, professional title/headline, photo, education, work experiences (with achievement bullets), projects, certifications, skills, and languages. An account can hold **multiple profiles** (personas), each its own source of truth; a profile can also be auto-filled by **uploading an existing resume PDF** (`/api/parse-resume`).
+3. **Paste a job posting** into the Generator (`/generator`), pick the profile to use, and click Analyse. A cheap AI model extracts structured job data.
+4. **Generate a tailored resume**. The backend runs the 12-stage pipeline and returns the resume JSON; the client renders a PDF and opens a preview (see §8). Downloading records the run in `resume_history` (JD + resume JSON archived in Supabase Storage).
 5. Optional follow-ups: **ATS match score**, **cover letter**, **interview-question answers**, all grounded in the same resume.
 
 ---
@@ -28,9 +28,9 @@ Sign in  ->  Fill profile once  ->  Paste a job posting  ->  Generate  ->  Downl
 | Frontend (`frontend/`) | Next.js UI. Talks to Supabase directly for app data; calls the backend only for AI, PDF, and file saves. |
 | Backend (`backend/`) | Express server exposing REST endpoints. Runs all AI calls server-side. |
 | Shared library (`lib/`) | Imported by both. Contains the tailoring pipeline, prompts, Supabase services, PDF generation, and types. |
-| Supabase | Postgres (profile, resume history, interviews), Auth (JWT), Storage (JD text + resume JSON). |
+| Supabase | Postgres (account + multiple resume profiles, resume history, interviews), Auth (JWT), Storage (JD text + resume JSON, plus `jds`/`resumes` buckets). |
 | AI providers | OpenRouter (multi-model) or direct OpenAI / Anthropic / DeepSeek. Gemini and others are reachable through OpenRouter. |
-| Puppeteer + Mustache | HTML template to PDF rendering (`templates/standard.html`, `templates/folio.html`). |
+| Puppeteer + Mustache | HTML template to PDF rendering (7 templates: `standard`, `folio`, `modern`, `classic`, `compact`, `minimal`, `sidebar`). |
 
 All AI keys live in `backend/.env` and are never exposed to the browser. The frontend only ever sends a request to the backend, which holds the keys.
 
@@ -41,12 +41,13 @@ All AI keys live in `backend/.env` and are never exposed to the browser. The fro
 | Endpoint | AI calls | Purpose | Temperature |
 |---|---|---|---|
 | `POST /api/extract-job` | 1 (cheap model) | Turn pasted page text into structured job data | 0.1 |
+| `POST /api/parse-resume` | 1 (cheap model) | Extract structured profile data from an uploaded resume PDF (extraction only, no rewriting) | 0.1 |
 | `POST /api/analyze` | JD analyzer (1) + experiences (N, concurrent) + composer (1) + repair (0 to N) | The full tailoring pipeline | 0.1 / 0.6 / 0.6 |
 | `POST /api/check-ats` | 1 | Score keyword/skill match against the JD | 0.2 |
 | `POST /api/cover-letter` | 1 | Draft a cover letter from the resume | 0.4 |
 | `POST /api/answer-questions` | 1 | Answer interview questions from the resume | 0.3 |
 
-The central AI transport is `lib/ai-provider.ts` (`callAI`), which normalizes OpenRouter and direct providers, handles timeouts/retries, extracts JSON, and computes cost. Model/provider selection is resolved once per request by `lib/ai-api.ts` (`resolveAIRequest`).
+The central AI transport is `lib/ai-provider.ts` (`callAI`), which normalizes OpenRouter and direct providers, handles timeouts, retries transient failures with backoff, falls back to a secondary model on provider-level errors, extracts JSON, and computes cost (see [§10 Resilience](#10-resilience-when-the-ai-fails)). Model/provider selection is resolved once per request by `lib/ai-api.ts` (`resolveAIRequest`).
 
 ---
 
@@ -191,6 +192,8 @@ Each experience is generated independently and in parallel. For each role the mo
 
 Rules enforced in the prompt and re-checked in code: use only supplied evidence; never invent technologies, metrics, responsibilities, stakeholder scope, or domains; start with strong action verbs; never start with filler (helped, assisted, participated, supported, worked on, contributed, collaborated); do not force a metric into every bullet.
 
+**JD-required skill weaving (`targetSkills`).** Skills the JD requires that the candidate lacks direct evidence for are passed to the writer as `targetSkills`. Where a role's real evidence plausibly touches such a skill, the bullet is phrased to surface that skill by name (naming the tool/technology) — but only ever as *context around a real accomplishment*, never as a fabricated metric or invented responsibility. This is the mechanism that gets required keywords into Experience (and, via the composer, into project tech) rather than leaving them isolated in the skills list. It is a user-chosen behavior (see §5.1).
+
 Concurrency uses `Promise.allSettled`, and results are re-mapped to the input order by `experienceId`, so one role failing never corrupts the others (a failed role falls back to its own evidence bullets).
 
 Example output for one role:
@@ -207,7 +210,7 @@ Example output for one role:
 
 ### 4.9 Stage 8: Composer (AI)
 
-Runs only after experience bullets exist, so the summary is consistent with them. Generates the professional summary (70 to 100 words, preserves seniority, no invented metrics, no generic filler), groups the final skills into role-appropriate categories, selects useful soft skills, and writes tailored project descriptions. It may only select skills from an allow-list already gated by evidence, and it respects a skill budget (default 35 total, 10 per category). The composer's skill output is filtered against the allow-list again in code as defense in depth.
+Runs only after experience bullets exist, so the summary is consistent with them. Generates the professional summary (70 to 100 words, preserves seniority, no invented metrics, no generic filler), groups the final skills into role-appropriate categories, selects useful soft skills, and writes tailored project descriptions. It may only select skills from an allow-list already gated by evidence, and it respects a skill budget (default 35 total, 10 per category). The composer's skill output is filtered against the allow-list again in code as defense in depth. The composer also receives `targetSkills` and weaves relevant JD-required skills into project technology lists (same rules as §4.8), and it honors the user's seniority-framing and tone preferences (§5.1).
 
 ### 4.10 Stage 9: Deterministic Validation
 
@@ -262,14 +265,27 @@ The single legacy mega-prompt was replaced by small, stage-specific prompts shar
 
 Every AI stage validates its output against a Zod schema (`lib/tailoring/schemas.ts`) before the pipeline trusts it. A user-supplied custom prompt (Settings, Prompt) is passed as additional instructions that cannot override the evidence policy.
 
+### 5.2 Customizable prompts (per resume profile)
+
+Every system prompt is split into a FIXED contract (JSON output shape + the untrusted-input security guard, in code) and an EDITABLE guidance section. Users can override the guidance per resume profile at `/settings/prompt`; the fixed contract can never be edited, so a bad edit cannot break the JSON output. Overrides are stored in `resume_profiles.prompt_overrides` (jsonb, keyed by prompt key), sent with each AI request, sanitized server-side (`sanitizePromptOverrides`), and merged by the prompt builders (`lib/prompts/*`, keys defined in `lib/prompts/prompt-overrides.ts`, UI catalog in `lib/prompts/prompt-registry.ts`). Editable prompts: global evidence policy, JD analyzer, experience writer, composer, resume-parse, ATS match, and job-page extract. Guidance may reference `{{STRONG_ACTION_VERBS}}` / `{{FORBIDDEN_OPENING_VERBS}}` placeholders. A blank or default-equal override falls back to the built-in default.
+
+### 5.1 User generation preferences and per-run tweaks
+
+Two layers of user control ride on top of the pipeline without weakening the evidence policy (`lib/resume-prompt-settings.ts`):
+
+- **Persistent preferences** (`/settings/prompt`): **tone**, **spelling**, **language**, **seniority framing**, and free-text additional instructions. `buildResumeExtraInstructions()` composes them into the instruction block handed to the AI stages.
+- **Per-run tweak** (`promptTweak` on `/api/analyze`, driven from the preview dialog's **Regenerate** control): a one-off **tone** and/or **emphasis** override applied to that single generation only, so the user can nudge a result without changing their saved defaults.
+
+**Seniority framing (default: always senior).** By default the summary and framing never label the candidate "junior", "mid-level", or "entry-level"; they present a senior/expert posture. This is enforced two ways: the composer prompt instructs it, and `enforceSeniorFraming()` is a deterministic backstop applied to the summary after generation that rewrites any leaked junior/mid/entry wording (it deliberately leaves neutral terms like "associate"/"graduate" alone). A user can switch this to "Match evidence" to disable it.
+
 ---
 
 ## 6. Model configuration
 
 - Selection is centralized: `resolveAIRequest({ useOpenRouter, apiModel, apiProvider })` in `lib/ai-api.ts`.
 - `useOpenRouter: true` routes through OpenRouter (any `provider/model` id, including Gemini and OpenAI). `useOpenRouter: false` uses a direct provider (`openai`, `anthropic`, `deepseek`) with keys from `backend/.env`.
-- All calls go through `callAI` in `lib/ai-provider.ts`, which adds timeout, one retry, JSON extraction, and USD cost accounting.
-- Recommended: use a model with native structured-output support (OpenAI JSON schema mode, Gemini responseSchema) for the pipeline stages; use a cheaper/faster model for the JD analyzer and job extraction.
+- All calls go through `callAI` in `lib/ai-provider.ts`, which adds timeout, transient-failure retry with backoff, cross-provider fallback, JSON extraction, and USD cost accounting (see §10).
+- Recommended: use a model with native structured-output support (OpenAI JSON schema mode, Gemini responseSchema) for the pipeline stages; use a cheaper/faster model for the JD analyzer, job extraction, and resume parsing.
 
 ---
 
@@ -281,8 +297,8 @@ Per resume generation, the pipeline makes roughly `1 (JD analyzer) + N (experien
 
 ## 8. After generation
 
-1. The tailored resume JSON is rendered to a PDF via Mustache + Puppeteer (`templates/standard.html` or `folio.html`, both now render every section: Summary, Skills incl. soft skills, Experience, Education, Certifications, Projects).
-2. The PDF is saved to the OS Downloads folder.
+1. The tailored resume JSON is rendered to a PDF via Mustache + Puppeteer using the chosen template (one of `standard`, `folio`, `modern`, `classic`, `compact`, `minimal`, `sidebar`). Each renders Summary, Skills (incl. soft skills), Experience, Education, Certifications, and Projects; `sidebar` is the two-column visual template that also shows an optional photo and language-proficiency bars.
+2. The result opens in a **preview dialog**: the user can switch template (re-renders via `/api/generate-pdf` with no extra AI cost), regenerate with a tone/emphasis tweak (§5.1), and then **Download** the PDF (or save it to the backend host's Downloads folder).
 3. A `resume_history` row is written and the JD text plus resume JSON are archived to Supabase Storage.
 4. Optional: ATS score (`/api/check-ats`), cover letter (`/api/cover-letter`), interview answers (`/api/answer-questions`), each a single grounded AI call.
 
@@ -303,3 +319,17 @@ Per resume generation, the pipeline makes roughly `1 (JD analyzer) + N (experien
 | Structured-output schema validation | Zod schemas, every AI stage |
 | Bounded targeted repair, not full regeneration | Stage 10 |
 | Relevant-but-unsupported skills routed to enrichment, never the resume | Stage 12 |
+
+---
+
+## 10. Resilience: when the AI fails
+
+AI calls fail for transient (rate limits, provider blips, timeouts) and permanent (bad key, out of credits) reasons. `callAI` (`lib/ai-provider.ts`) handles both so a hiccup does not surface as a raw 500.
+
+**Retry with backoff.** Transient failures — connection resets/timeouts and HTTP `408`, `409`, `429`, and any `5xx` — are retried up to `AI_MAX_RETRIES` times (default 1) with exponential backoff plus jitter, capped at `AI_MAX_BACKOFF_MS` (default 20s). If the provider sends a `Retry-After` header, it is honored. Non-retryable errors (`400`/`401`/`402`/`403`) fail fast — retrying a bad key or an empty balance only wastes time.
+
+**Cross-provider fallback.** When the primary model fails with a *provider-level* error (5xx / 429 / timeout / model-not-found), `callAI` tries `AI_FALLBACK_MODEL` once (recommended: a different provider via the same OpenRouter key, e.g. `google/gemini-2.5-flash`, so one provider's outage does not take both down). Fallback is intentionally **not** attempted for account-level errors (`400`/`401`/`402`/`403`), which would fail identically on any model.
+
+**Status-aware messages.** `formatAIProviderError` turns raw errors into actionable text: `402` explains the account is out of credits, `429` explains rate-limiting, `5xx` is reported as a temporary provider error, and connection/timeout/`403` cases get their own guidance. `/api/analyze` maps timeouts to `504` and surfaces these messages otherwise.
+
+**Per-stage isolation.** Within the pipeline, the per-experience stage uses `Promise.allSettled`, so one role's failure falls back to its own evidence bullets instead of failing the whole resume; the composer and repair stages have deterministic backstops (drop unsupported skills/bullets) rather than hard-failing.

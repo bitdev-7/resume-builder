@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { copyText } from "@/lib/clipboard";
 
 interface JobDescriptionDialogProps {
   open: boolean;
@@ -47,12 +48,9 @@ export default function JobDescriptionDialog({
   }, [open]);
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(jobDescription);
+    if (await copyText(jobDescription)) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // ignore
     }
   };
 

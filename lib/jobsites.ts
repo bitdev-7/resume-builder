@@ -9,6 +9,7 @@ export const JOBSITES = [
   { id: "greenhouse", label: "Greenhouse" },
   { id: "lever", label: "Lever" },
   { id: "workday", label: "Workday" },
+  { id: "jobstreet", label: "JobStreet" },
   { id: "other", label: "Other" },
 ] as const;
 

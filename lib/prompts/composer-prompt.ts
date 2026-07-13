@@ -1,14 +1,13 @@
-import { GLOBAL_EVIDENCE_POLICY } from "@/lib/prompts/tailoring-policy";
+import { buildGlobalEvidencePolicy } from "@/lib/prompts/tailoring-policy";
+import {
+  applyPromptPlaceholders,
+  resolveGuidance,
+  type PromptOverrides,
+} from "@/lib/prompts/prompt-overrides";
 import type { SkillBudgetConfig } from "@/lib/types/tailoring";
 
-const GENERIC_PHRASES_TO_AVOID = [
-  "results-driven", "passionate", "dynamic", "highly motivated", "seasoned professional", "proven track record",
-];
-
-export function buildComposerSystemPrompt(skillBudget: SkillBudgetConfig): string {
-  return `${GLOBAL_EVIDENCE_POLICY}
-
-You are the Final Composer stage. Tailored experience bullets have already been written; you now write the professional summary, group the final skills list, select soft skills, and write tailored project descriptions.
+/** EDITABLE default guidance for the composer prompt. */
+export const COMPOSER_DEFAULT_GUIDANCE = `You are the Final Composer stage. Tailored experience bullets have already been written; you now write the professional summary, group the final skills list, select soft skills, and write tailored project descriptions.
 
 Summary rules:
 - 70-100 words.
@@ -16,7 +15,7 @@ Summary rules:
 - Emphasize the highest-priority supported JD requirements you are given.
 - Include relevant supported role skills where useful, even if not literally in the JD.
 - Do not introduce any technology, tool, or metric that is not present in "allowedSkills" or "summaryEvidence".
-- Avoid generic filler phrases such as: ${GENERIC_PHRASES_TO_AVOID.join(", ")}.
+- Avoid generic filler phrases such as: results-driven, passionate, dynamic, highly motivated, seasoned professional, proven track record.
 
 Final skills policy:
 - Include EVERY skill in the "allowedSkills" list. Do not omit any. These are already vetted: each is either supported by the candidate's evidence or explicitly required by the job description.
@@ -27,16 +26,31 @@ Final skills policy:
 
 Project rules:
 - For each project you are given, write a short tailored description and technology list.
-- Only use facts/technologies supplied for that project — do not invent new technologies or outcomes.
-- You may omit a project if it is not relevant to the target role.
+- Base the description on the supplied project facts. Do not invent project outcomes, metrics, or numbers.
+- Technologies: include the project's real technologies, and ALSO add the "targetSkills" (JD-required technologies) to the projects' technology lists so that EVERY targetSkill appears somewhere in the projects section. Spread them across the projects where they best fit (a given targetSkill only needs to appear on one project), and reference the most relevant ones naturally in the descriptions (e.g. "built with a Go backend and a Next.js frontend"). Never invent a quantified result around a targetSkill.
+- You may omit a project if it is not relevant to the target role.`;
 
-Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
+/** FIXED output contract — never user-editable. */
+const COMPOSER_CONTRACT = `Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
 {
   "summary": string,
   "skillCategories": { "<category name>": string[] },
   "softSkills": string[],
   "projects": [ { "id": string, "description": string, "technologies": string[] } ]
 }`;
+
+export function buildComposerSystemPrompt(
+  _skillBudget: SkillBudgetConfig,
+  overrides?: PromptOverrides
+): string {
+  const guidance = applyPromptPlaceholders(
+    resolveGuidance(overrides, "composer", COMPOSER_DEFAULT_GUIDANCE)
+  );
+  return `${buildGlobalEvidencePolicy(overrides)}
+
+${guidance}
+
+${COMPOSER_CONTRACT}`;
 }
 
 export interface ComposerInput {
@@ -46,6 +60,8 @@ export interface ComposerInput {
   topRequirements: { id: string; text: string; priority: number }[];
   summaryEvidence: string[];
   allowedSkills: string[];
+  /** JD-required skills to weave into project tech/descriptions where plausible. */
+  targetSkills: string[];
   categoryHints: string[];
   projects: { id: string; name: string; facts: string[]; technologies: string[] }[];
   extraInstructions?: string;
@@ -57,6 +73,7 @@ export function buildComposerUserPrompt(input: ComposerInput): string {
     topRequirements: input.topRequirements,
     summaryEvidence: input.summaryEvidence,
     allowedSkills: input.allowedSkills,
+    targetSkills: input.targetSkills,
     categoryHints: input.categoryHints,
     projects: input.projects,
   };

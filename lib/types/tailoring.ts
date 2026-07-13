@@ -138,6 +138,8 @@ export interface CandidateEducation {
   degree: string;
   school: string;
   location?: string;
+  startDate?: string;
+  endDate?: string;
   graduationDate: string;
   gpa?: string;
   fieldOfStudy?: string;

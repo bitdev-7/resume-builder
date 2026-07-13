@@ -1,0 +1,20 @@
+2026-07-13T02:46:22: [tailoring] Composer repair failed, keeping previous version: Error: Composer returned invalid JSON
+2026-07-13T02:46:22:     at composeResumeTopSection (E:\Profiles\resume-maker\lib\tailoring\composer.ts:141:11)
+2026-07-13T02:46:22:     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-07-13T02:46:22:     at async repairTailoredResume (E:\Profiles\resume-maker\lib\tailoring\repair.ts:184:42)
+2026-07-13T02:46:22:     at async runTailoringPipeline (E:\Profiles\resume-maker\lib\tailoring\pipeline.ts:255:25)
+2026-07-13T02:46:22:     at async POST (E:\Profiles\resume-maker\backend\src\api\analyze\route.ts:111:28)
+2026-07-13T02:46:22:     at async <anonymous> (E:\Profiles\resume-maker\backend\src\next-adapter.ts:56:13)
+2026-07-13T02:47:01: [tailoring] Composer repair failed, keeping previous version: Error: Composer returned invalid JSON
+2026-07-13T02:47:01:     at composeResumeTopSection (E:\Profiles\resume-maker\lib\tailoring\composer.ts:141:11)
+2026-07-13T02:47:01:     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-07-13T02:47:01:     at async repairTailoredResume (E:\Profiles\resume-maker\lib\tailoring\repair.ts:184:42)
+2026-07-13T02:47:01:     at async runTailoringPipeline (E:\Profiles\resume-maker\lib\tailoring\pipeline.ts:255:25)
+2026-07-13T02:47:01:     at async POST (E:\Profiles\resume-maker\backend\src\api\analyze\route.ts:111:28)
+2026-07-13T02:47:01:     at async <anonymous> (E:\Profiles\resume-maker\backend\src\next-adapter.ts:56:13)
+2026-07-13T18:44:12: Error analyzing resume: Error: JD Analyzer output failed validation: Invalid enum value. Expected 'technology' | 'architecture' | 'responsibility' | 'methodology' | 'domain' | 'soft_skill' | 'education' | 'experience', received 'contextual'; Invalid enum value. Expected 'technology' | 'architecture' | 'responsibility' | 'methodology' | 'domain' | 'soft_skill' | 'education' | 'experience', received 'contextual'
+2026-07-13T18:44:12:     at analyzeJobDescription (E:\Profiles\resume-maker\lib\tailoring\jd-analyzer.ts:91:11)
+2026-07-13T18:44:12:     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+2026-07-13T18:44:12:     at async runTailoringPipeline (E:\Profiles\resume-maker\lib\tailoring\pipeline.ts:132:78)
+2026-07-13T18:44:12:     at async POST (E:\Profiles\resume-maker\backend\src\api\analyze\route.ts:113:28)
+2026-07-13T18:44:12:     at async <anonymous> (E:\Profiles\resume-maker\backend\src\next-adapter.ts:56:13)

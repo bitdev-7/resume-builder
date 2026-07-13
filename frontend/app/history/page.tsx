@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { copyText } from "@/lib/clipboard";
 import {
   BID_STATUSES,
   DEFAULT_BID_STATUS,
@@ -539,11 +540,10 @@ export default function HistoryPage() {
 
   const handleCopyJd = async () => {
     if (!expandedJd) return;
-    try {
-      await navigator.clipboard.writeText(expandedJd);
+    if (await copyText(expandedJd)) {
       setJdCopied(true);
       setTimeout(() => setJdCopied(false), 2000);
-    } catch {
+    } else {
       showToast("error", "Copy failed");
     }
   };

@@ -29,7 +29,8 @@ import type { ExperienceWriterInput } from "@/lib/prompts/experience-writer-prom
 import { repairTailoredResume } from "@/lib/tailoring/repair";
 import { assembleFinalResume } from "@/lib/tailoring/assemble";
 import { buildEnrichmentRecommendations } from "@/lib/tailoring/enrichment";
-import { skillKey } from "@/lib/tailoring/skill-ontology";
+import { skillKey, detectSkillMentions } from "@/lib/tailoring/skill-ontology";
+import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 
 export interface RunTailoringPipelineInput {
   jd: string;
@@ -37,6 +38,8 @@ export interface RunTailoringPipelineInput {
   aiRequest: ResolvedAIRequest;
   /** User's custom prompt override from Settings -> Prompt, if any (kept for backward compatibility). */
   customPromptOverride?: string | null;
+  /** Per-resume-profile editable prompt guidance overrides. */
+  promptOverrides?: PromptOverrides;
   skillBudget?: SkillBudgetConfig;
   bulletBudget?: BulletBudgetConfig;
 }
@@ -50,6 +53,89 @@ export interface RunTailoringPipelineResult {
   enrichmentRecommendations: EnrichmentRecommendation[];
   remainingValidationIssues: ValidationIssue[];
   generationCostUsd: number;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Join names into "A", "A and B", or "A, B, and C". */
+function formatSkillList(names: string[]): string {
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
+/**
+ * Deterministic backstop for the "every target skill must appear in the experience
+ * bullets" policy. The writer usually weaves them in; for any target skill not present
+ * in any bullet, append one grouped, natural bullet to the most substantial experience
+ * so the skill is shown as used in real work (never with a fabricated metric).
+ */
+export function ensureTargetSkillsInExperiences(
+  results: ExperienceGenerationResult[],
+  targetSkillNames: string[]
+): ExperienceGenerationResult[] {
+  if (targetSkillNames.length === 0 || results.length === 0) return results;
+
+  const combined = results
+    .flatMap((r) => r.bullets.map((b) => b.text))
+    .join("\n")
+    .toLowerCase();
+
+  const uncovered = targetSkillNames.filter((name) => {
+    const re = new RegExp(`(^|[^a-z0-9+#.])${escapeRegExp(name.toLowerCase())}([^a-z0-9+#]|$)`, "i");
+    return !re.test(combined);
+  });
+  if (uncovered.length === 0) return results;
+
+  // Append to the experience that already has the most bullets (most substantial role).
+  let targetIdx = 0;
+  for (let i = 1; i < results.length; i += 1) {
+    if (results[i].bullets.length > results[targetIdx].bullets.length) targetIdx = i;
+  }
+
+  const text = `Built and delivered production features using ${formatSkillList(uncovered)}.`;
+  return results.map((r, i) =>
+    i === targetIdx
+      ? { ...r, bullets: [...r.bullets, { text, evidenceIds: [], requirementIds: [] }] }
+      : r
+  );
+}
+
+/**
+ * Deterministic backstop for the "every target skill must also appear in the projects
+ * section" policy. Adds any target skill missing from all project tech lists/descriptions
+ * to the most substantial project's technology list.
+ */
+export function ensureTargetSkillsInProjects<T extends { description?: string; technologies?: string[] }>(
+  projects: T[],
+  targetSkillNames: string[]
+): T[] {
+  if (targetSkillNames.length === 0 || projects.length === 0) return projects;
+
+  const combined = projects
+    .flatMap((p) => [p.description ?? "", ...(p.technologies ?? [])])
+    .join("\n")
+    .toLowerCase();
+
+  const uncovered = targetSkillNames.filter((name) => {
+    const re = new RegExp(`(^|[^a-z0-9+#.])${escapeRegExp(name.toLowerCase())}([^a-z0-9+#]|$)`, "i");
+    return !re.test(combined);
+  });
+  if (uncovered.length === 0) return projects;
+
+  // Append to the project that already lists the most technologies (most substantial).
+  let targetIdx = 0;
+  for (let i = 1; i < projects.length; i += 1) {
+    if ((projects[i].technologies?.length ?? 0) > (projects[targetIdx].technologies?.length ?? 0)) {
+      targetIdx = i;
+    }
+  }
+
+  return projects.map((p, i) =>
+    i === targetIdx ? { ...p, technologies: [...(p.technologies ?? []), ...uncovered] } : p
+  );
 }
 
 function buildFallbackFactory(experiencesById: Map<string, CandidateExperience>) {
@@ -75,10 +161,13 @@ export async function runTailoringPipeline(
 ): Promise<RunTailoringPipelineResult> {
   let totalCost = 0;
 
+  const promptOverrides = input.promptOverrides;
+
   // Stage 1 — JD Analyzer
   const { analysis: jdAnalysis, costUsd: jdCost, providerUsed, modelUsed } = await analyzeJobDescription(
     input.jd,
-    input.aiRequest
+    input.aiRequest,
+    promptOverrides
   );
   totalCost += jdCost ?? 0;
 
@@ -93,6 +182,23 @@ export async function runTailoringPipeline(
     );
   }
   const possessedSkillNames = getPossessedSkillNames(candidateProfile);
+
+  // The user's own skill categories (from their profile). Used to (a) hint the composer's
+  // grouping so it mirrors how the candidate categorized their skills, and (b) place any
+  // leftover/introduced skill under its real category instead of an "Additional Skills" bucket.
+  const profileSkillCategoryByKey = new Map<string, string>();
+  const profileSkillCategoryOrder: string[] = [];
+  for (const record of [input.profileData.default_resume?.skills, input.profileData.default_resume?.hardSkills]) {
+    if (!record) continue;
+    for (const [category, list] of Object.entries(record)) {
+      if (!category || /soft/i.test(category)) continue;
+      if (!profileSkillCategoryOrder.includes(category)) profileSkillCategoryOrder.push(category);
+      for (const raw of list || []) {
+        const key = skillKey(String(raw));
+        if (key && !profileSkillCategoryByKey.has(key)) profileSkillCategoryByKey.set(key, category);
+      }
+    }
+  }
 
   // Stage 3 — Role Skill Expansion (deterministic)
   const rawCandidates = await expandRoleSkills(jdAnalysis, roleArchetype, possessedSkillNames);
@@ -135,6 +241,24 @@ export async function runTailoringPipeline(
   const experiencesById = new Map(candidateProfile.experiences.map((e) => [e.id, e]));
   const factById = new Map(candidateProfile.experiences.flatMap((e) => e.facts).map((f) => [f.id, f]));
 
+  const jdRequiredMissingNames = jdRequiredMissingSkills.map((c) => c.canonicalName);
+
+  // Skills to actively surface in experiences AND projects: the JD-required skills the
+  // candidate lacks, PLUS the JD's own ATS technology terms. Using atsTerms makes this
+  // robust even when the analyzer mis-categorizes requirements (so a JD tech isn't tagged
+  // category="technology"), which otherwise leaves the target list empty. Deduped + capped.
+  const targetSkillNames = Array.from(
+    new Map(
+      [...jdRequiredMissingNames, ...(jdAnalysis.atsTerms ?? [])]
+        .map((n) => String(n || "").trim())
+        .filter(Boolean)
+        .map((n) => [skillKey(n), n] as const)
+    ).values()
+  ).slice(0, 20);
+  console.log(
+    `[tailoring] target skills to weave (${targetSkillNames.length}): ${targetSkillNames.join(", ") || "(none)"}`
+  );
+
   const experienceWriterInputsById = new Map<string, ExperienceWriterInput>();
   for (const expPlan of plan.experiencePlans) {
     const exp = experiencesById.get(expPlan.experienceId);
@@ -157,6 +281,7 @@ export async function runTailoringPipeline(
       endDate: exp.endDate,
       allowedEvidence: exp.facts,
       allowedSkills,
+      targetSkills: targetSkillNames,
       priorityRequirements,
       targetBulletCount: expPlan.targetBulletCount,
       extraInstructions: input.customPromptOverride ?? undefined,
@@ -172,7 +297,8 @@ export async function runTailoringPipeline(
   const { results: initialExperienceResults, costUsd: expCost } = await generateExperiencesInParallel(
     writerInputs,
     input.aiRequest,
-    buildFallback
+    buildFallback,
+    promptOverrides
   );
   totalCost += expCost;
 
@@ -204,7 +330,9 @@ export async function runTailoringPipeline(
       ...jdRequiredMissingSkills.map((c) => `Required skill: ${c.canonicalName}`),
     ],
     allowedSkills: resumeEligibleSkills.map((c) => c.canonicalName),
-    categoryHints: catalogEntry.skillCategoryHints,
+    targetSkills: targetSkillNames,
+    // Prefer the candidate's own categories, then fall back to role-catalog hints.
+    categoryHints: Array.from(new Set([...profileSkillCategoryOrder, ...catalogEntry.skillCategoryHints])),
     projects: candidateProfile.projects.map((p) => ({
       id: p.id,
       name: p.name,
@@ -217,7 +345,7 @@ export async function runTailoringPipeline(
   const skillBudget = input.skillBudget ?? DEFAULT_SKILL_BUDGET;
   let initialComposerResult;
   try {
-    const composed = await composeResumeTopSection(composerInput, input.aiRequest, skillBudget);
+    const composed = await composeResumeTopSection(composerInput, input.aiRequest, skillBudget, undefined, promptOverrides);
     initialComposerResult = composed.result;
     totalCost += composed.costUsd ?? 0;
   } catch (err) {
@@ -241,21 +369,48 @@ export async function runTailoringPipeline(
     skillBudget,
     maxAttempts: bulletBudget.maxRepairAttempts,
     buildFallback,
+    promptOverrides,
   });
   totalCost += repairOutcome.costUsd;
 
-  // Guarantee every eligible skill (all declared/supported + JD-required) appears
-  // in the final skills section, even if the composer omitted some.
+  // Guarantee every JD-required target skill is shown as used in the experience bullets
+  // (user policy: all target skills must appear in experiences, not just the skills list).
+  const coveredExperienceResults = ensureTargetSkillsInExperiences(
+    repairOutcome.experienceResults,
+    targetSkillNames
+  );
+
+  // Technologies the writer introduced in the final experience bullets (beyond the
+  // candidate's declared + JD-required skills). Surface them in the skills section too,
+  // so a skill shown as used in an experience also appears categorized under Skills.
+  const introducedSkillNames = new Set<string>();
+  for (const r of coveredExperienceResults) {
+    for (const b of r.bullets) {
+      for (const mention of detectSkillMentions(b.text)) introducedSkillNames.add(mention);
+    }
+  }
+
+  // Guarantee every eligible skill (declared/supported + JD-required + introduced)
+  // appears in the final skills section, each under its real category.
   const finalComposerResult = ensureAllEligibleSkills(
     repairOutcome.composerResult,
-    resumeEligibleSkills.map((c) => c.canonicalName)
+    [...resumeEligibleSkills.map((c) => c.canonicalName), ...introducedSkillNames],
+    profileSkillCategoryByKey
   );
 
   // Stage 11 — Final Resume Assembly
-  const resume = assembleFinalResume(candidateProfile, repairOutcome.experienceResults, finalComposerResult);
+  const resume = assembleFinalResume(candidateProfile, coveredExperienceResults, finalComposerResult);
+
+  // Guarantee every JD-required target skill also appears in the projects section.
+  if (resume.projects && resume.projects.length > 0) {
+    resume.projects = ensureTargetSkillsInProjects(resume.projects, targetSkillNames);
+  }
 
   // Stage 12 — Gap / Enrichment Recommendations (exclude skills we already added to the resume)
-  const addedSkillKeys = new Set(resumeEligibleSkills.map((c) => skillKey(c.canonicalName)));
+  const addedSkillKeys = new Set([
+    ...resumeEligibleSkills.map((c) => skillKey(c.canonicalName)),
+    ...Array.from(introducedSkillNames).map((n) => skillKey(n)),
+  ]);
   const enrichmentRecommendations = buildEnrichmentRecommendations(plan).filter(
     (rec) => !addedSkillKeys.has(skillKey(rec.skill))
   );

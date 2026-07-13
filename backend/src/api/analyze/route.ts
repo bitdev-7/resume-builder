@@ -10,6 +10,7 @@ import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
 import { loadResumePromptPreferences } from "@/lib/supabase/services/resume-prompt-settings";
 import { buildResumeExtraInstructions, enforceSeniorFraming } from "@/lib/resume-prompt-settings";
 import { runTailoringPipeline } from "@/lib/tailoring/pipeline";
+import { sanitizePromptOverrides } from "@/lib/prompts/prompt-overrides";
 import type { LegacyAnalyzeProfile } from "@/lib/mappers/profile-to-resume";
 import type { UpdatedResume } from "@/lib/types/resume";
 
@@ -44,6 +45,8 @@ export async function POST(request: NextRequest) {
       apiProvider,
       useOpenRouter: useOpenRouterBody,
       promptTweak,
+      headlineOverride,
+      promptOverrides: promptOverridesBody,
     } = await request.json();
 
     if (!hasUsableProfileData(profileData)) {
@@ -112,6 +115,7 @@ export async function POST(request: NextRequest) {
       profileData,
       aiRequest,
       customPromptOverride: extraInstructions || undefined,
+      promptOverrides: sanitizePromptOverrides(promptOverridesBody),
     });
     console.log(
       `Tailoring pipeline finished in ${Date.now() - pipelineStarted}ms (provider=${pipelineResult.providerUsed}, model=${pipelineResult.modelUsed}, cost=$${pipelineResult.generationCostUsd.toFixed(4)}, archetype=${pipelineResult.roleArchetype.primaryRoleArchetype})`
@@ -123,6 +127,15 @@ export async function POST(request: NextRequest) {
     // survive in the generated summary even if the model slips.
     if (promptPrefs.seniority === "senior" && pipelineResume.summary) {
       pipelineResume.summary = enforceSeniorFraming(pipelineResume.summary);
+    }
+
+    // Per-generation headline/title override from the Generator's Title field.
+    // Identity is deterministic (never AI-generated), so overriding it post-pipeline
+    // is safe and does not affect evidence grounding.
+    const titleOverride =
+      typeof headlineOverride === "string" ? headlineOverride.trim() : "";
+    if (titleOverride) {
+      pipelineResume.headline = titleOverride;
     }
 
     const template = isValidResumeTemplate(requestedTemplate || "")

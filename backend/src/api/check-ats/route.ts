@@ -3,6 +3,7 @@ import { requireAIConfigured, resolveAIRequest } from "@/lib/ai-api";
 import { callAI, formatAIProviderError } from "@/lib/ai-provider";
 import type { AIMessage } from "@/lib/ai-provider";
 import { buildAtsMatchPrompt } from "@/lib/prompts/ats-match";
+import { sanitizePromptOverrides } from "@/lib/prompts/prompt-overrides";
 import {
   isEmptyAtsMatchResult,
   parseAtsFromAiResponse,
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
       apiModel,
       apiProvider,
       useOpenRouter: useOpenRouterBody,
+      promptOverrides: promptOverridesBody,
     } = await request.json();
 
     if (!resume || typeof resume !== "object") {
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
       },
       {
         role: "user",
-        content: buildAtsMatchPrompt(jobDescription, resumeJson),
+        content: buildAtsMatchPrompt(jobDescription, resumeJson, sanitizePromptOverrides(promptOverridesBody)),
       },
     ];
 

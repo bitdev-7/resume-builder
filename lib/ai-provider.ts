@@ -216,6 +216,44 @@ function isConnectTimeout(err: unknown): boolean {
   );
 }
 
+/** HTTP status from an SDK/fetch error, if any. */
+function getHttpStatus(err: unknown): number | undefined {
+  if (!err || typeof err !== "object") return undefined;
+  const e = err as { status?: number; statusCode?: number; response?: { status?: number } };
+  if (typeof e.status === "number") return e.status;
+  if (typeof e.statusCode === "number") return e.statusCode;
+  if (typeof e.response?.status === "number") return e.response.status;
+  return undefined;
+}
+
+/** Transient statuses worth retrying: rate limit, request timeout, and 5xx. */
+function isRetryableStatus(status: number | undefined): boolean {
+  return status === 408 || status === 409 || status === 429 || (status !== undefined && status >= 500 && status <= 599);
+}
+
+/** Honor a Retry-After header (seconds or HTTP-date) when the provider sends one. */
+function getRetryAfterMs(err: unknown): number | undefined {
+  if (!err || typeof err !== "object") return undefined;
+  const headers = (err as { headers?: unknown }).headers;
+  let raw: string | null | undefined;
+  if (headers && typeof (headers as { get?: unknown }).get === "function") {
+    raw = (headers as { get: (k: string) => string | null }).get("retry-after");
+  } else if (headers && typeof headers === "object") {
+    const h = headers as Record<string, string | undefined>;
+    raw = h["retry-after"] ?? h["Retry-After"];
+  }
+  if (raw == null) return undefined;
+  const secs = Number(raw);
+  if (Number.isFinite(secs)) return Math.max(0, secs * 1000);
+  const when = Date.parse(String(raw));
+  if (!Number.isNaN(when)) return Math.max(0, when - Date.now());
+  return undefined;
+}
+
+function isRetryableError(err: unknown): boolean {
+  return isTimeoutError(err) || isConnectionError(err) || isRetryableStatus(getHttpStatus(err));
+}
+
 function providerLabel(useOpenRouter: boolean, provider?: string, modelId?: string): string {
   if (useOpenRouter) {
     return modelId ? `OpenRouter (${modelId})` : "OpenRouter";
@@ -240,6 +278,20 @@ export function formatAIProviderError(
 ): string {
   const useOpenRouter = options?.useOpenRouter ?? Boolean(modelId?.includes("/"));
   const label = providerLabel(useOpenRouter, options?.provider, modelId);
+
+  const status = getHttpStatus(err);
+  if (status === 402) {
+    return (
+      `${label} rejected the request (402 — out of API credits). ` +
+      "Top up your provider account (e.g. openrouter.ai/settings/credits) or switch to a funded provider/key, then try again."
+    );
+  }
+  if (status === 429) {
+    return `${label} is rate-limited (429). Wait a moment and try again; retries were attempted automatically.`;
+  }
+  if (status !== undefined && status >= 500 && status <= 599) {
+    return `${label} had a server error (${status}). This is usually temporary — try again shortly.`;
+  }
 
   if (isConnectionError(err) && !isTimeoutError(err)) {
     const keyHint = useOpenRouter
@@ -289,6 +341,14 @@ export function formatAIProviderError(
   return err instanceof Error ? err.message : "AI request failed";
 }
 
+const MAX_BACKOFF_MS = Number(process.env.AI_MAX_BACKOFF_MS || 20_000);
+
+/**
+ * Runs an AI call with bounded retries on transient failures: timeouts,
+ * connection errors, and retryable HTTP statuses (429 rate-limit, 408/409, 5xx).
+ * Honors a Retry-After header when present, else exponential backoff + jitter.
+ * Non-transient errors (400/401/402/403/404 etc.) fail immediately.
+ */
 async function withTimeoutRetry<T>(
   label: string,
   fn: () => Promise<T>,
@@ -304,7 +364,8 @@ async function withTimeoutRetry<T>(
     } catch (err) {
       lastError = err;
       const elapsedMs = Date.now() - started;
-      if (!isTimeoutError(err) || attempt >= attempts) {
+
+      if (!isRetryableError(err) || attempt >= attempts) {
         if (isTimeoutError(err)) {
           throw Object.assign(err instanceof Error ? err : new Error(String(err)), {
             elapsedMs,
@@ -312,10 +373,20 @@ async function withTimeoutRetry<T>(
         }
         throw err;
       }
+
+      const status = getHttpStatus(err);
+      const backoff =
+        getRetryAfterMs(err) ??
+        Math.min(MAX_BACKOFF_MS, 1000 * 2 ** (attempt - 1) + Math.floor(Math.random() * 500));
+      const reason = isTimeoutError(err)
+        ? `timed out (${Math.round(elapsedMs / 1000)}s)`
+        : status
+          ? `HTTP ${status}`
+          : "connection error";
       console.warn(
-        `${label} timed out (attempt ${attempt}/${attempts}, ${Math.round(elapsedMs / 1000)}s), retrying…`
+        `${label} ${reason} (attempt ${attempt}/${attempts}); retrying in ${Math.round(backoff / 1000)}s…`
       );
-      await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+      await new Promise((resolve) => setTimeout(resolve, backoff));
     }
   }
 
@@ -482,49 +553,64 @@ export async function callAI(opts: CallAIOptions) {
       `[ai] DeepSeek reasoning model "${modelId}" → "${effectiveModel}" for JSON output`
     );
   }
-  const providerUsed = getModelProvider(effectiveModel);
 
-  return withTimeoutRetry(`OpenRouter ${effectiveModel}`, async () => {
-    const requestBody: Record<string, unknown> = {
-      model: effectiveModel,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      temperature,
-      max_tokens,
-    };
+  const runOpenRouterModel = (runModel: string) => {
+    const providerUsed = getModelProvider(runModel);
+    return withTimeoutRetry(`OpenRouter ${runModel}`, async () => {
+      const requestBody: Record<string, unknown> = {
+        model: runModel,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        temperature,
+        max_tokens,
+      };
 
-    if (isDeepSeekModel(effectiveModel)) {
-      requestBody.extra_body = { thinking: { type: "disabled" } };
-    }
-    if (tryParseJson && (isDeepSeekModel(effectiveModel) || providerUsed === "openai")) {
-      requestBody.response_format = { type: "json_object" };
-    }
-
-    const resp = await openrouter.chat.completions.create(requestBody as any);
-    const choice = resp.choices?.[0] as
-      | { message?: AssistantMessage; finish_reason?: string; text?: string }
-      | undefined;
-    const message = choice?.message;
-    const text = pickAssistantText(message, choice?.text);
-
-    if (!text) {
-      const finishReason = choice?.finish_reason;
-      if (message?.reasoning_content && finishReason === "length") {
-        throw new Error(
-          "Model ran out of output tokens during reasoning before producing a response. Retry with a faster model or increase max_tokens."
-        );
+      if (isDeepSeekModel(runModel)) {
+        requestBody.extra_body = { thinking: { type: "disabled" } };
       }
-      throw new Error("OpenRouter response was empty");
-    }
+      if (tryParseJson && (isDeepSeekModel(runModel) || providerUsed === "openai")) {
+        requestBody.response_format = { type: "json_object" };
+      }
 
-    const json = tryParseJson ? extractFirstJson(text) : null;
-    return enrichAiResponse({
-      providerUsed,
-      modelUsed: effectiveModel,
-      text,
-      json,
-      raw: resp,
+      const resp = await openrouter.chat.completions.create(requestBody as any);
+      const choice = resp.choices?.[0] as
+        | { message?: AssistantMessage; finish_reason?: string; text?: string }
+        | undefined;
+      const message = choice?.message;
+      const text = pickAssistantText(message, choice?.text);
+
+      if (!text) {
+        const finishReason = choice?.finish_reason;
+        if (message?.reasoning_content && finishReason === "length") {
+          throw new Error(
+            "Model ran out of output tokens during reasoning before producing a response. Retry with a faster model or increase max_tokens."
+          );
+        }
+        throw new Error("OpenRouter response was empty");
+      }
+
+      const json = tryParseJson ? extractFirstJson(text) : null;
+      return enrichAiResponse({ providerUsed, modelUsed: runModel, text, json, raw: resp });
     });
-  });
+  };
+
+  try {
+    return await runOpenRouterModel(effectiveModel);
+  } catch (err) {
+    const fallback = (process.env.AI_FALLBACK_MODEL || "").trim();
+    const status = getHttpStatus(err);
+    // Skip fallback for account/request-level failures a different model on the
+    // SAME OpenRouter account cannot fix (bad key, out of credits, forbidden, bad request).
+    const accountLevel = status === 400 || status === 401 || status === 402 || status === 403;
+    const fallbackModel = fallback && fallback.includes("/") ? fallback : "";
+    if (!fallbackModel || fallbackModel === effectiveModel || accountLevel) {
+      throw err;
+    }
+    const fbEffective = tryParseJson ? resolveJsonFriendlyModel(fallbackModel) : fallbackModel;
+    console.warn(
+      `[ai] Primary model "${effectiveModel}" failed (${status ?? "error"}); falling back to "${fbEffective}"`
+    );
+    return await runOpenRouterModel(fbEffective);
+  }
 }
 
 export { extractFirstJson };

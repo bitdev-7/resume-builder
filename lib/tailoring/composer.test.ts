@@ -42,6 +42,7 @@ describe("composer — skill allow-list filtering", () => {
       topRequirements: [],
       summaryEvidence: [],
       allowedSkills,
+      targetSkills: [],
       categoryHints: ["Backend"],
       projects: [],
     };

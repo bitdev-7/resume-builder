@@ -1,6 +1,7 @@
 import { apiUrl } from "@/lib/api-config";
 import type { AnalysisResult } from "@/lib/types/resume";
 import type { AtsMatchResult } from "@/lib/types/ats-match";
+import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 
 export interface AtsMatchResponse {
   ats: AtsMatchResult;
@@ -14,6 +15,7 @@ export async function fetchAtsMatch(options: {
   apiProvider: string;
   useOpenRouter: boolean;
   accessToken: string;
+  promptOverrides?: PromptOverrides;
 }): Promise<AtsMatchResponse> {
   const response = await fetch(apiUrl("/api/check-ats"), {
     method: "POST",
@@ -27,6 +29,7 @@ export async function fetchAtsMatch(options: {
       apiModel: options.apiModel,
       apiProvider: options.apiProvider,
       useOpenRouter: options.useOpenRouter,
+      ...(options.promptOverrides ? { promptOverrides: options.promptOverrides } : {}),
     }),
   });
 

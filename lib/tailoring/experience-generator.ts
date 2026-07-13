@@ -9,6 +9,7 @@ import {
 import { experienceGenerationAiOutputSchema } from "@/lib/tailoring/schemas";
 import { cleanJsonText } from "@/lib/analyze-json";
 import type { ExperienceGenerationResult } from "@/lib/types/tailoring";
+import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 
 export interface ExperienceGenerationCallResult {
   result: ExperienceGenerationResult;
@@ -19,14 +20,15 @@ export interface ExperienceGenerationCallResult {
 export async function generateExperience(
   input: ExperienceWriterInput,
   aiRequest: ResolvedAIRequest,
-  repairNotes?: string
+  repairNotes?: string,
+  promptOverrides?: PromptOverrides
 ): Promise<ExperienceGenerationCallResult> {
   const userPrompt = repairNotes
     ? `${buildExperienceWriterUserPrompt(input)}\n\nPREVIOUS ATTEMPT HAD THESE PROBLEMS — fix only these, keep everything else the same:\n${repairNotes}`
     : buildExperienceWriterUserPrompt(input);
 
   const messages: AIMessage[] = [
-    { role: "system", content: buildExperienceWriterSystemPrompt() },
+    { role: "system", content: buildExperienceWriterSystemPrompt(promptOverrides) },
     { role: "user", content: userPrompt },
   ];
 
@@ -89,9 +91,12 @@ export async function generateExperience(
 export async function generateExperiencesInParallel(
   inputs: ExperienceWriterInput[],
   aiRequest: ResolvedAIRequest,
-  buildFallback: (input: ExperienceWriterInput) => ExperienceGenerationResult
+  buildFallback: (input: ExperienceWriterInput) => ExperienceGenerationResult,
+  promptOverrides?: PromptOverrides
 ): Promise<{ results: ExperienceGenerationResult[]; costUsd: number }> {
-  const settled = await Promise.allSettled(inputs.map((input) => generateExperience(input, aiRequest)));
+  const settled = await Promise.allSettled(
+    inputs.map((input) => generateExperience(input, aiRequest, undefined, promptOverrides))
+  );
 
   let totalCost = 0;
   const results = inputs.map((input, i) => {

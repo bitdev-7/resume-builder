@@ -26,6 +26,7 @@ import {
   newClientId,
   type ProfileFormState,
   type CompanyFormRow,
+  type EducationFormRow,
 } from "@/lib/mappers/profile-form";
 import type { ParsedResume } from "@/lib/resume-import";
 import { apiUrl } from "@/lib/api-config";
@@ -254,13 +255,17 @@ export default function ProfilePage() {
       if (!session) throw new Error("You must be signed in to upload a resume");
 
       const pdfBase64 = await readFileAsBase64(file);
+      const promptOverrides = profiles.find((p) => p.id === activeProfileId)?.prompt_overrides;
       const response = await fetch(apiUrl("/api/parse-resume"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ pdfBase64 }),
+        body: JSON.stringify({
+          pdfBase64,
+          ...(promptOverrides ? { promptOverrides } : {}),
+        }),
       });
 
       if (!response.ok) {
@@ -290,6 +295,15 @@ export default function ProfilePage() {
       ...prev,
       companies: prev.companies.map((c) =>
         c.clientId === clientId ? { ...c, [field]: value } : c
+      ),
+    }));
+  };
+
+  const updateEducation = (clientId: string, field: keyof EducationFormRow, value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      educations: prev.educations.map((e) =>
+        e.clientId === clientId ? { ...e, [field]: value } : e
       ),
     }));
   };
@@ -517,7 +531,20 @@ export default function ProfilePage() {
                       onClick={() =>
                         setForm((p) => ({
                           ...p,
-                          educations: [...p.educations, { clientId: newClientId(), degree: "", school: "", graduationDate: "", gpa: "" }],
+                          educations: [
+                            ...p.educations,
+                            {
+                              clientId: newClientId(),
+                              degree: "",
+                              school: "",
+                              fieldOfStudy: "",
+                              location: "",
+                              startDate: "",
+                              endDate: "",
+                              gpa: "",
+                              description: "",
+                            },
+                          ],
                         }))
                       }
                       label="Add education"
@@ -532,10 +559,14 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <input placeholder="Degree" value={edu.degree} onChange={(e) => setForm((p) => ({ ...p, educations: p.educations.map((row) => row.clientId === edu.clientId ? { ...row, degree: e.target.value } : row) }))} className="input-shell" />
-                        <input placeholder="School" value={edu.school} onChange={(e) => setForm((p) => ({ ...p, educations: p.educations.map((row) => row.clientId === edu.clientId ? { ...row, school: e.target.value } : row) }))} className="input-shell" />
-                        <input placeholder="Graduation Date (MM/YYYY)" value={edu.graduationDate} onChange={(e) => setForm((p) => ({ ...p, educations: p.educations.map((row) => row.clientId === edu.clientId ? { ...row, graduationDate: e.target.value } : row) }))} className="input-shell" />
-                        <input placeholder="GPA (optional)" value={edu.gpa} onChange={(e) => setForm((p) => ({ ...p, educations: p.educations.map((row) => row.clientId === edu.clientId ? { ...row, gpa: e.target.value } : row) }))} className="input-shell" />
+                        <input placeholder="Degree (e.g. Bachelor of Science)" value={edu.degree} onChange={(e) => updateEducation(edu.clientId, "degree", e.target.value)} className="input-shell" />
+                        <input placeholder="School" value={edu.school} onChange={(e) => updateEducation(edu.clientId, "school", e.target.value)} className="input-shell" />
+                        <input placeholder="Field of study (optional)" value={edu.fieldOfStudy} onChange={(e) => updateEducation(edu.clientId, "fieldOfStudy", e.target.value)} className="input-shell" />
+                        <input placeholder="Location (optional)" value={edu.location} onChange={(e) => updateEducation(edu.clientId, "location", e.target.value)} className="input-shell" />
+                        <input placeholder="Start Date (MM/YYYY)" value={edu.startDate} onChange={(e) => updateEducation(edu.clientId, "startDate", e.target.value)} className="input-shell" />
+                        <input placeholder="End Date (MM/YYYY or Present)" value={edu.endDate} onChange={(e) => updateEducation(edu.clientId, "endDate", e.target.value)} className="input-shell" />
+                        <input placeholder="GPA (optional)" value={edu.gpa} onChange={(e) => updateEducation(edu.clientId, "gpa", e.target.value)} className="input-shell" />
+                        <input placeholder="Description (optional)" value={edu.description} onChange={(e) => updateEducation(edu.clientId, "description", e.target.value)} className="input-shell" />
                       </div>
                     </div>
                   ))}

@@ -18,6 +18,7 @@ import {
   saveResumePromptPreferences,
 } from "@/lib/supabase/services/resume-prompt-settings";
 import { notifySettingsUpdated } from "@/lib/generator-workspace-storage";
+import PromptTemplatesEditor from "@/components/PromptTemplatesEditor";
 
 export default function PromptSettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -215,6 +216,8 @@ export default function PromptSettingsPage() {
           )}
         </form>
       </div>
+
+      <PromptTemplatesEditor userId={user.id} showToast={showToast} />
     </>
   );
 }

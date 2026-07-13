@@ -16,6 +16,7 @@ export interface StoredAnalysisSession {
   requiresTravel: boolean;
   salary: string;
   postedDate: string;
+  desiredTitle: string;
   aiProvider: string;
   aiModel: string;
   useOpenRouter: boolean;

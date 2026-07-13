@@ -193,7 +193,7 @@ describe("validators — skill support", () => {
 });
 
 describe("validators — experience skill policy", () => {
-  it("flags a skill mentioned in a bullet that isn't allowed for that experience", () => {
+  it("allows the writer to introduce a role-appropriate technology not in the allowed list", () => {
     const results: ExperienceGenerationResult[] = [
       {
         experienceId: "exp_1",
@@ -202,6 +202,6 @@ describe("validators — experience skill policy", () => {
     ];
 
     const issues = validateTailoredResume(baseValidateInput(results));
-    expect(issues.some((i) => i.code === "UNSUPPORTED_EXPERIENCE_SKILL")).toBe(true);
+    expect(issues.some((i) => i.code === "UNSUPPORTED_EXPERIENCE_SKILL")).toBe(false);
   });
 });

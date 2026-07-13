@@ -9,6 +9,7 @@ import { callAI, extractFirstJson, formatAIProviderError } from "@/lib/ai-provid
 import { cleanJsonText } from "@/lib/analyze-json";
 import { buildJobPageExtractPrompt } from "@/lib/prompts/job-page-extract";
 import type { JobWorkType } from "@/lib/prompts/job-page-extract";
+import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 import { analyzeJobWorkType } from "@/lib/job-work-type";
 import {
   extractPostedDateFromText,
@@ -103,7 +104,7 @@ export interface ExtractJobPageResult {
 
 export async function extractJobFromPageContent(
   pageContent: string,
-  options?: { useOpenRouter?: boolean }
+  options?: { useOpenRouter?: boolean; promptOverrides?: PromptOverrides }
 ): Promise<ExtractJobPageResult> {
   const trimmed = pageContent.trim();
   if (!trimmed) {
@@ -130,7 +131,7 @@ export async function extractJobFromPageContent(
           content:
             "You extract job posting fields. Respond with a single valid JSON object only — no markdown, no prose, no explanation.",
         },
-        { role: "user", content: buildJobPageExtractPrompt(clipped) },
+        { role: "user", content: buildJobPageExtractPrompt(clipped, options?.promptOverrides) },
       ],
       temperature: 0.1,
       max_tokens: resolveExtractMaxTokens(),

@@ -31,6 +31,7 @@ export function createEmptyProfileBundle(userId: string): ProfileBundle {
       resume_template: null,
       photo_url: null,
       languages: [],
+      prompt_overrides: null,
       is_default: true,
       display_order: 0,
       created_at: timestamp,

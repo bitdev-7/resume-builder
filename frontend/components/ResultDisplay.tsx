@@ -4,6 +4,7 @@ import React from "react";
 import type { AnalysisResult } from "@/lib/types/resume";
 import { ToastContainer, useToast } from "@/components/Toast";
 import { supabase } from "@/lib/supabase";
+import { copyText } from "@/lib/clipboard";
 import { uploadCoverLetterJson } from "@/lib/supabase/storage";
 import { createResumeWithArtifacts } from "@/lib/supabase/services/resumes";
 import { DEFAULT_JOBSITE, type JobsiteId } from "@/lib/jobsites";
@@ -239,11 +240,10 @@ export default function ResultDisplay({
 
   const handleCopyCoverLetter = React.useCallback(async () => {
     if (!coverLetter) return;
-    try {
-      await navigator.clipboard.writeText(coverLetter);
+    if (await copyText(coverLetter)) {
       setCoverLetterCopied(true);
       setTimeout(() => setCoverLetterCopied(false), 2000);
-    } catch {
+    } else {
       showToast("error", "Copy failed");
     }
   }, [coverLetter, showToast]);
@@ -251,11 +251,10 @@ export default function ResultDisplay({
   const handleCopyAnswer = React.useCallback(
     async (index: number, text: string) => {
       if (!text) return;
-      try {
-        await navigator.clipboard.writeText(text);
+      if (await copyText(text)) {
         setCopiedAnswerIndex(index);
         setTimeout(() => setCopiedAnswerIndex(null), 2000);
-      } catch {
+      } else {
         showToast("error", "Copy failed");
       }
     },

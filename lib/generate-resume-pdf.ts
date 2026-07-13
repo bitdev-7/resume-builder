@@ -173,7 +173,12 @@ export async function generateResumePdfBase64(
     );
 
     view.hasEducation = uniqueEducation.length > 0;
-    view.education = uniqueEducation;
+    view.education = uniqueEducation.map((edu) => {
+      const start = String(edu.startDate || "").trim();
+      const end = String(edu.endDate || edu.graduationDate || "").trim();
+      const eduDateRange = start && end ? `${start} – ${end}` : start || end || "";
+      return { ...edu, eduDateRange };
+    });
   } else {
     view.hasEducation = false;
     view.education = [];

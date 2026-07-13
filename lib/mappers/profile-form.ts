@@ -10,6 +10,7 @@ import {
   formatGpa,
   isoDateToDisplay,
 } from "@/lib/mappers/date-format";
+import { randomId } from "@/lib/uuid";
 import {
   userCertificationToName,
   userCompanyToResumeExperience,
@@ -24,8 +25,12 @@ export interface EducationFormRow {
   id?: string;
   degree: string;
   school: string;
-  graduationDate: string;
+  fieldOfStudy: string;
+  location: string;
+  startDate: string;
+  endDate: string;
   gpa: string;
+  description: string;
 }
 
 export interface ProjectFormRow {
@@ -84,7 +89,7 @@ export interface ProfileFormState {
 }
 
 export function newClientId(): string {
-  return crypto.randomUUID();
+  return randomId();
 }
 
 export function createEmptyCompanyRow(): CompanyFormRow {
@@ -145,8 +150,12 @@ export function profileBundleToFormState(bundle: ProfileBundle): ProfileFormStat
         id: edu.id,
         degree: mapped.degree,
         school: mapped.school,
-        graduationDate: mapped.graduationDate,
+        fieldOfStudy: mapped.fieldOfStudy || "",
+        location: mapped.location || "",
+        startDate: mapped.startDate || "",
+        endDate: mapped.endDate || "",
         gpa: mapped.gpa || "",
+        description: mapped.description || "",
       };
     }),
     certifications: bundle.certifications.map((cert) => ({
@@ -205,8 +214,12 @@ export function parsedResumeToFormState(
         clientId: newClientId(),
         degree: e.degree,
         school: e.school,
-        graduationDate: e.graduationDate,
+        fieldOfStudy: "",
+        location: "",
+        startDate: e.startDate,
+        endDate: e.endDate || e.graduationDate,
         gpa: e.gpa,
+        description: "",
       })),
     certifications: parsed.certifications
       .filter((name) => name.trim())
@@ -289,6 +302,7 @@ export function educationFormRowToDbPayload(
   displayOrder: number
 ) {
   const gpaNum = row.gpa.trim() ? Number.parseFloat(row.gpa) : null;
+  const endIso = displayDateToIso(row.endDate);
 
   return {
     id: row.id || newClientId(),
@@ -296,11 +310,14 @@ export function educationFormRowToDbPayload(
     profile_id: profileId,
     school: row.school,
     degree: row.degree || null,
-    field_of_study: null,
+    field_of_study: row.fieldOfStudy || null,
     gpa: gpaNum != null && !Number.isNaN(gpaNum) ? gpaNum : null,
-    location: null,
-    graduation_date: displayDateToIso(row.graduationDate),
-    description: null,
+    location: row.location || null,
+    start_date: displayDateToIso(row.startDate),
+    end_date: endIso,
+    // Keep the legacy graduation_date column in sync with end_date for backward compatibility.
+    graduation_date: endIso,
+    description: row.description || null,
     display_order: displayOrder,
   };
 }

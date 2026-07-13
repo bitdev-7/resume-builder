@@ -103,6 +103,7 @@ describe("Case 16: targeted repair", () => {
           endDate: "Present",
           allowedEvidence: experience.facts,
           allowedSkills: ["Python"],
+          targetSkills: [],
           priorityRequirements: [{ id: "req_1", text: "Python" }],
           targetBulletCount: 1,
         },
@@ -116,6 +117,7 @@ describe("Case 16: targeted repair", () => {
       topRequirements: [],
       summaryEvidence: [],
       allowedSkills: ["Python"],
+      targetSkills: [],
       categoryHints: ["Backend"],
       projects: [],
     };

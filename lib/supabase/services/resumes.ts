@@ -9,6 +9,7 @@ import {
   downloadResumeJson,
 } from "@/lib/supabase/storage";
 import type { UpdatedResume } from "@/lib/types/resume";
+import { randomId } from "@/lib/uuid";
 
 export interface CreateResumeParams {
   userId: string;
@@ -27,7 +28,7 @@ export async function createResumeWithArtifacts(
   params: CreateResumeParams,
   client: SupabaseClient = supabase
 ): Promise<ResumeRecord> {
-  const resumeId = crypto.randomUUID();
+  const resumeId = randomId();
 
   const jdFilePath = await uploadJd(params.userId, resumeId, params.jd, client);
   const resumeFilePath = await uploadResumeJson(

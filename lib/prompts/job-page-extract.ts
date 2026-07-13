@@ -1,18 +1,13 @@
+import {
+  applyPromptPlaceholders,
+  resolveGuidance,
+  type PromptOverrides,
+} from "@/lib/prompts/prompt-overrides";
+
 export type JobWorkType = "onsite" | "hybrid" | "remote" | "unknown";
 
-export function buildJobPageExtractPrompt(pageContent: string): string {
-  return `You extract structured job posting data from raw page text (often copied from LinkedIn, Indeed, Greenhouse, etc.).
-
-Return ONLY valid JSON with this exact shape:
-{
-  "jobTitle": "string",
-  "companyName": "string",
-  "jobDescription": "string",
-  "jobTypes": ["remote" | "hybrid" | "onsite"],
-  "requiresTravel": false,
-  "salary": "string",
-  "postedDate": "string"
-}
+/** EDITABLE default guidance for the job-page extractor prompt. */
+export const JOB_PAGE_EXTRACT_DEFAULT_GUIDANCE = `You extract structured job posting data from raw page text (often copied from LinkedIn, Indeed, Greenhouse, etc.).
 
 Rules:
 - jobTitle: the role title only (e.g. "Senior Software Engineer"). No company name, no location, no employment type.
@@ -27,7 +22,27 @@ Rules:
 - requiresTravel: true if the posting mentions required/expected travel (business travel, % travel, willingness to travel, etc.)
 - salary: compensation text if present (e.g. "$120k–$150k", "$50/hr"). Use "" if not found.
 - postedDate: when the page shows when the job was posted or reposted, copy that value exactly (e.g. "2 days ago", "June 5, 2025", "2025-06-05", "Posted 3 weeks ago" → "3 weeks ago"). Use "" if no posted/reposted date appears in the content. Do not guess.
-- Do not invent facts not supported by the text.
+- Do not invent facts not supported by the text.`;
+
+/** FIXED output contract + data injection — never user-editable. */
+const JOB_PAGE_EXTRACT_CONTRACT = `Return ONLY valid JSON with this exact shape:
+{
+  "jobTitle": "string",
+  "companyName": "string",
+  "jobDescription": "string",
+  "jobTypes": ["remote" | "hybrid" | "onsite"],
+  "requiresTravel": false,
+  "salary": "string",
+  "postedDate": "string"
+}`;
+
+export function buildJobPageExtractPrompt(pageContent: string, overrides?: PromptOverrides): string {
+  const guidance = applyPromptPlaceholders(
+    resolveGuidance(overrides, "jobPageExtract", JOB_PAGE_EXTRACT_DEFAULT_GUIDANCE)
+  );
+  return `${guidance}
+
+${JOB_PAGE_EXTRACT_CONTRACT}
 
 Page content:
 """

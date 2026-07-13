@@ -10,6 +10,7 @@ import { composerAiOutputSchema } from "@/lib/tailoring/schemas";
 import { cleanJsonText } from "@/lib/analyze-json";
 import type { ComposerResult, SkillBudgetConfig } from "@/lib/types/tailoring";
 import { skillKey } from "@/lib/tailoring/skill-ontology";
+import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 
 export const DEFAULT_SKILL_BUDGET: SkillBudgetConfig = {
   maxTotalSkills: 35,
@@ -42,15 +43,21 @@ export function buildDeterministicComposerFallback(input: {
   };
 }
 
+/** Fallback category for skills with no known category — a real, resume-appropriate name (never an "Additional Skills" catch-all). */
+const FALLBACK_SKILL_CATEGORY = "Tools & Technologies";
+
 /**
  * Guarantees completeness of the skills section: every eligible skill (all
- * declared/supported skills plus JD-required skills) must appear. Any the
- * composer omitted are appended under an "Additional Skills" category. This is
- * the safety net behind the "include all my skills + JD-required skills" policy.
+ * declared/supported skills, JD-required skills, and any technology introduced
+ * in the experience bullets) must appear. Any the composer omitted are placed
+ * under their real category — the candidate's own profile category when known
+ * (via categoryByKey), otherwise a "Tools & Technologies" group. This keeps
+ * everything categorized instead of dumping leftovers into "Additional Skills".
  */
 export function ensureAllEligibleSkills(
   composerResult: ComposerResult,
-  eligibleSkillNames: string[]
+  eligibleSkillNames: string[],
+  categoryByKey?: Map<string, string>
 ): ComposerResult {
   const present = new Set<string>();
   for (const skills of Object.values(composerResult.skillCategories)) {
@@ -69,8 +76,11 @@ export function ensureAllEligibleSkills(
   if (missing.length === 0) return composerResult;
 
   const skillCategories = { ...composerResult.skillCategories };
-  const bucket = "Additional Skills";
-  skillCategories[bucket] = [...(skillCategories[bucket] ?? []), ...missing];
+  for (const name of missing) {
+    const known = categoryByKey?.get(skillKey(name))?.trim();
+    const category = known || FALLBACK_SKILL_CATEGORY;
+    skillCategories[category] = [...(skillCategories[category] ?? []), name];
+  }
   return { ...composerResult, skillCategories };
 }
 
@@ -88,14 +98,15 @@ export async function composeResumeTopSection(
   input: ComposerInput,
   aiRequest: ResolvedAIRequest,
   skillBudget: SkillBudgetConfig = DEFAULT_SKILL_BUDGET,
-  repairNotes?: string
+  repairNotes?: string,
+  promptOverrides?: PromptOverrides
 ): Promise<ComposerCallResult> {
   const userPrompt = repairNotes
     ? `${buildComposerUserPrompt(input)}\n\nPREVIOUS ATTEMPT HAD THESE PROBLEMS — fix only these, keep everything else the same:\n${repairNotes}`
     : buildComposerUserPrompt(input);
 
   const messages: AIMessage[] = [
-    { role: "system", content: buildComposerSystemPrompt(skillBudget) },
+    { role: "system", content: buildComposerSystemPrompt(skillBudget, promptOverrides) },
     { role: "user", content: userPrompt },
   ];
 

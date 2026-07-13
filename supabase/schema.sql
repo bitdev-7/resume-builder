@@ -68,6 +68,7 @@ create table if not exists public.resume_profiles (
   resume_template  text,
   photo_url        text,
   languages        jsonb not null default '[]'::jsonb,
+  prompt_overrides jsonb not null default '{}'::jsonb,
   is_default       boolean not null default false,
   display_order    integer not null default 0,
   created_at       timestamptz not null default now(),
@@ -79,6 +80,7 @@ create index if not exists resume_profiles_user_id_idx on public.resume_profiles
 -- Columns added after the resume_profiles table shipped (safe on existing installs).
 alter table public.resume_profiles add column if not exists photo_url text;
 alter table public.resume_profiles add column if not exists languages jsonb not null default '[]'::jsonb;
+alter table public.resume_profiles add column if not exists prompt_overrides jsonb not null default '{}'::jsonb;
 
 alter table public.resume_profiles enable row level security;
 
@@ -97,6 +99,8 @@ create table if not exists public.user_educations (
   field_of_study   text,
   gpa              numeric,
   location         text,
+  start_date       date,
+  end_date         date,
   graduation_date  date,
   description      text,
   display_order    integer not null default 0,
@@ -105,6 +109,10 @@ create table if not exists public.user_educations (
 );
 
 create index if not exists user_educations_user_id_idx on public.user_educations (user_id);
+
+-- Columns added after user_educations shipped (safe on existing installs).
+alter table public.user_educations add column if not exists start_date date;
+alter table public.user_educations add column if not exists end_date date;
 
 alter table public.user_educations enable row level security;
 

@@ -36,11 +36,15 @@ export function userCompanyToResumeExperience(
 export function userEducationToResumeEducation(
   education: UserEducation
 ): ResumeEducation {
+  // end_date is the completion date; fall back to the legacy graduation_date column.
+  const endDate = isoDateToDisplay(education.end_date ?? education.graduation_date);
   return {
     degree: education.degree || "",
     school: education.school,
     location: education.location || undefined,
-    graduationDate: isoDateToDisplay(education.graduation_date),
+    startDate: isoDateToDisplay(education.start_date) || undefined,
+    endDate: endDate || undefined,
+    graduationDate: endDate,
     gpa: formatGpa(education.gpa),
     fieldOfStudy: education.field_of_study || undefined,
     description: education.description || undefined,

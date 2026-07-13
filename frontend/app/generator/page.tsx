@@ -93,6 +93,7 @@ interface AnalysisSession {
   requiresTravel: boolean;
   salary: string;
   postedDate: string;
+  desiredTitle: string;
   aiProvider: string;
   aiModel: string;
   useOpenRouter: boolean;
@@ -182,6 +183,7 @@ export default function GeneratorPage() {
   const [aiProvider, setAiProvider] = useState(getModelProvider(DEFAULT_OPENROUTER_MODEL));
   const [aiModel, setAiModel] = useState(DEFAULT_OPENROUTER_MODEL);
   const [jobsite, setJobsite] = useState<JobsiteId>(DEFAULT_JOBSITE);
+  const [desiredTitle, setDesiredTitle] = useState("");
   const [pageContent, setPageContent] = useState("");
   const [analysing, setAnalysing] = useState(false);
 
@@ -191,6 +193,9 @@ export default function GeneratorPage() {
   const [profileData, setProfileData] = useState<LegacyAnalyzeProfile | null>(null);
   const [profiles, setProfiles] = useState<ResumeProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string>("");
+  const [promptOverrides, setPromptOverrides] = useState<Record<string, string> | undefined>(
+    undefined
+  );
   const [switchingProfile, setSwitchingProfile] = useState(false);
   const [previewSessionId, setPreviewSessionId] = useState<string | null>(null);
   const [resumeContent, setResumeContent] = useState("");
@@ -274,6 +279,7 @@ export default function GeneratorPage() {
           apiProvider: context.aiProvider,
           useOpenRouter: context.useOpenRouter,
           accessToken: context.accessToken,
+          promptOverrides,
         });
         patchSession(sessionId, {
           atsLoading: false,
@@ -287,7 +293,7 @@ export default function GeneratorPage() {
         console.warn("Auto ATS check failed:", message);
       }
     },
-    [patchSession]
+    [patchSession, promptOverrides]
   );
 
   useEffect(() => {
@@ -345,11 +351,15 @@ export default function GeneratorPage() {
 
         setProfiles(loaded.profiles);
         setActiveProfileId(loaded.activeProfileId);
+        setPromptOverrides(
+          loaded.profiles.find((p) => p.id === loaded.activeProfileId)?.prompt_overrides ?? undefined
+        );
         setProfileData(loaded.legacyAnalyzeProfile);
         setResumeContent(loaded.resumeText);
         setResumeTemplate(
           resolveResumeTemplate(loaded.legacyAnalyzeProfile.default_resume?.resume_template)
         );
+        setDesiredTitle(loaded.legacyAnalyzeProfile.default_resume?.headline?.trim() ?? "");
 
         const alertSettings = await loadApplyAlertSettings(user.id);
         if (!cancelled) setApplyAlertSettings(alertSettings);
@@ -419,6 +429,7 @@ export default function GeneratorPage() {
         requiresTravel: extracted.requiresTravel,
         salary: extracted.salary,
         postedDate: extracted.postedDate,
+        desiredTitle: desiredTitle.trim(),
         aiProvider: provider,
         aiModel,
         useOpenRouter,
@@ -433,7 +444,7 @@ export default function GeneratorPage() {
       setPageContent("");
       showToast("success", "Job analysed — added to the list.");
     },
-    [aiModel, aiProvider, jobsite, showToast, useOpenRouter]
+    [aiModel, aiProvider, jobsite, desiredTitle, showToast, useOpenRouter]
   );
 
   const runPreflightBeforeGenerate = useCallback(
@@ -502,7 +513,11 @@ export default function GeneratorPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ pageContent, useOpenRouter }),
+        body: JSON.stringify({
+          pageContent,
+          useOpenRouter,
+          ...(promptOverrides ? { promptOverrides } : {}),
+        }),
       });
 
       if (!response.ok) {
@@ -538,11 +553,15 @@ export default function GeneratorPage() {
         profileId,
       });
       setActiveProfileId(loaded.activeProfileId);
+      setPromptOverrides(
+        loaded.profiles.find((p) => p.id === loaded.activeProfileId)?.prompt_overrides ?? undefined
+      );
       setProfileData(loaded.legacyAnalyzeProfile);
       setResumeContent(loaded.resumeText);
       setResumeTemplate(
         resolveResumeTemplate(loaded.legacyAnalyzeProfile.default_resume?.resume_template)
       );
+      setDesiredTitle(loaded.legacyAnalyzeProfile.default_resume?.headline?.trim() ?? "");
     } catch {
       showToast("error", "Failed to switch profile.");
     } finally {
@@ -607,6 +626,8 @@ export default function GeneratorPage() {
             resumeContent,
             template,
             profileData,
+            ...(session.desiredTitle?.trim() ? { headlineOverride: session.desiredTitle.trim() } : {}),
+            ...(promptOverrides ? { promptOverrides } : {}),
             apiModel: session.aiModel,
             apiProvider: session.aiProvider,
             useOpenRouter: session.useOpenRouter,
@@ -694,7 +715,7 @@ export default function GeneratorPage() {
         showToast("error", `Failed: ${message}`);
       }
     },
-    [sessions, resumeContent, profileData, resumeTemplate, activeProfileId, patchSession, showToast, user?.id, autoAtsAfterResume, runAutoAtsCheck]
+    [sessions, resumeContent, profileData, resumeTemplate, activeProfileId, promptOverrides, patchSession, showToast, user?.id, autoAtsAfterResume, runAutoAtsCheck]
   );
 
   const handleGenerateResume = useCallback(
@@ -881,6 +902,23 @@ export default function GeneratorPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label htmlFor="desiredTitle" className="label-kicker mb-2 block">
+                Title
+              </label>
+              <input
+                id="desiredTitle"
+                type="text"
+                value={desiredTitle}
+                disabled={analysing}
+                onChange={(e) => setDesiredTitle(e.target.value)}
+                placeholder="e.g. Senior Software Engineer"
+                className="input-shell w-full text-xs disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <p className="mt-1 text-[11px] leading-snug text-slate-400 dark:text-slate-500">
+                Shown as your headline on the resume. Defaults to your profile title.
+              </p>
             </div>
           </div>
 

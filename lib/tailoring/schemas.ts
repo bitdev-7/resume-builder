@@ -2,18 +2,25 @@ import { z } from "zod";
 
 /** Zod schemas for validating structured LLM output at each AI-backed pipeline stage. */
 
-export const requirementTypeSchema = z.enum(["must_have", "preferred", "optional", "contextual"]);
+// Tolerant of model variance: an unrecognized value falls back to a safe default
+// rather than failing the whole pipeline (models sometimes swap type/category, e.g.
+// putting "contextual" — a type — into the category field).
+export const requirementTypeSchema = z
+  .enum(["must_have", "preferred", "optional", "contextual"])
+  .catch("contextual");
 
-export const requirementCategorySchema = z.enum([
-  "technology",
-  "architecture",
-  "responsibility",
-  "methodology",
-  "domain",
-  "soft_skill",
-  "education",
-  "experience",
-]);
+export const requirementCategorySchema = z
+  .enum([
+    "technology",
+    "architecture",
+    "responsibility",
+    "methodology",
+    "domain",
+    "soft_skill",
+    "education",
+    "experience",
+  ])
+  .catch("responsibility");
 
 export const jdRequirementSchema = z.object({
   text: z.string().min(1),

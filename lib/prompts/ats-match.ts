@@ -1,20 +1,21 @@
-export function buildAtsMatchPrompt(jd: string, resumeJson: string): string {
-  return `You are an ATS (Applicant Tracking System) resume analyst. Compare the candidate's resume against the job description and estimate how well the resume would parse and rank in a typical ATS.
+import {
+  applyPromptPlaceholders,
+  resolveGuidance,
+  type PromptOverrides,
+} from "@/lib/prompts/prompt-overrides";
+
+/** EDITABLE default guidance for the ATS match prompt. */
+export const ATS_MATCH_DEFAULT_GUIDANCE = `You are an ATS (Applicant Tracking System) resume analyst. Compare the candidate's resume against the job description and estimate how well the resume would parse and rank in a typical ATS.
 
 Evaluate:
 1. Keyword overlap (required skills, tools, technologies, certifications, role terms)
 2. Role alignment (titles, seniority, responsibilities)
 3. Evidence in experience bullets (not just skills lists)
 4. ATS-friendly structure (clear sections, standard headings, measurable bullets)
-5. Critical gaps that would likely filter the candidate out
+5. Critical gaps that would likely filter the candidate out`;
 
-Job description:
-${jd}
-
-Resume (JSON):
-${resumeJson}
-
-Return ONLY valid JSON with this exact shape:
+/** FIXED output contract — never user-editable. */
+const ATS_MATCH_CONTRACT = `Return ONLY valid JSON with this exact shape:
 {
   "score": 0,
   "summary": "One or two sentences overall assessment",
@@ -33,4 +34,18 @@ Rules:
 - Be realistic; do not inflate the score
 - Only use information from the resume JSON; do not invent credentials
 - Output the JSON object directly as your entire response — no analysis text before or after`;
+
+export function buildAtsMatchPrompt(jd: string, resumeJson: string, overrides?: PromptOverrides): string {
+  const guidance = applyPromptPlaceholders(
+    resolveGuidance(overrides, "atsMatch", ATS_MATCH_DEFAULT_GUIDANCE)
+  );
+  return `${guidance}
+
+Job description:
+${jd}
+
+Resume (JSON):
+${resumeJson}
+
+${ATS_MATCH_CONTRACT}`;
 }
