@@ -17,6 +17,8 @@ frontend/.next/
 /build
 backend/dist/
 
+/logs
+
 # misc
 .DS_Store
 *.pem
