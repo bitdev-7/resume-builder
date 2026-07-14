@@ -22,7 +22,10 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const ensuredUserIdRef = useRef<string | null>(null);
+  // The id currently reflected in state. Guards against re-setting `user` when Supabase
+  // fires SIGNED_IN / TOKEN_REFRESHED / USER_UPDATED on tab refocus — a new user object
+  // reference would re-run every effect that depends on `user` (reloading pages).
+  const appliedUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -33,36 +36,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const applySession = async (nextUser: User | null) => {
       if (!active) return;
-      setUser(nextUser);
 
-      if (!nextUser || ensuredUserIdRef.current === nextUser.id) {
-        return;
-      }
-
-      ensuredUserIdRef.current = nextUser.id;
-      try {
-        await ensureProfile(nextUser.id);
-      } catch (error) {
-        console.warn("Could not ensure profile (Supabase may be unreachable):", error);
-      }
-    };
-
-    // onAuthStateChange handles INITIAL_SESSION — avoid duplicate getSession + refresh calls
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      // Token refresh on tab focus should not reset UI or re-run profile loads.
-      if (
-        event === "TOKEN_REFRESHED" &&
-        session?.user?.id &&
-        ensuredUserIdRef.current === session.user.id
-      ) {
+      const nextId = nextUser?.id ?? null;
+      // Only touch state when the signed-in identity actually changes. Focus/refresh
+      // events for the same user are ignored, so nothing downstream reloads.
+      if (nextId === appliedUserIdRef.current) {
         finishLoading();
         return;
       }
 
-      void applySession(session?.user ?? null);
+      appliedUserIdRef.current = nextId;
+      setUser(nextUser);
+
+      if (nextUser) {
+        try {
+          await ensureProfile(nextUser.id);
+        } catch (error) {
+          console.warn("Could not ensure profile (Supabase may be unreachable):", error);
+        }
+      }
       finishLoading();
+    };
+
+    // onAuthStateChange also delivers the INITIAL_SESSION event, so no separate getSession call.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void applySession(session?.user ?? null);
     });
 
     // Fallback: if auth init hangs (network timeout), still render the app
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    ensuredUserIdRef.current = null;
+    appliedUserIdRef.current = null;
     await supabase.auth.signOut();
     setUser(null);
   };

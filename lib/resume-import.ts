@@ -73,15 +73,96 @@ export interface ParseResumeResult {
   costUsd?: number;
 }
 
-/** Truncate very long resume text to keep token usage bounded. */
-const MAX_RESUME_TEXT_CHARS = 24_000;
+function normalizeForCompare(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").replace(/[.;,\s]+$/, "").trim();
+}
+
+/**
+ * Post-parse cleanup: a company "description" should be a real role overview, not a
+ * bullet. Models often copy the first achievement into description — if the description
+ * just duplicates one of the bullets, blank it so it only holds a genuine overview.
+ */
+export function cleanParsedResume(parsed: ParsedResume): ParsedResume {
+  return {
+    ...parsed,
+    companies: parsed.companies.map((c) => {
+      const desc = normalizeForCompare(c.description || "");
+      if (!desc) return c;
+      const duplicatesBullet = c.achievements.some((a) => normalizeForCompare(a) === desc);
+      return duplicatesBullet ? { ...c, description: "" } : c;
+    }),
+  };
+}
+
+/** Truncate very long resume text to keep token usage bounded. Env-overridable. */
+const MAX_RESUME_TEXT_CHARS = Number(process.env.RESUME_PARSE_MAX_INPUT_CHARS || 40_000);
 
 /**
  * A full resume's structured JSON (every bullet as a separate string, plus
- * skills/projects/certs) can be large. 4096 output tokens truncates it and the
- * JSON becomes unparseable, so allow plenty of headroom. Override via env.
+ * skills/projects/certs) can be large, and too small a cap truncates it so the
+ * JSON becomes unparseable. Allow plenty of headroom. Override via env.
  */
-const RESUME_PARSE_MAX_TOKENS = Number(process.env.RESUME_PARSE_MAX_TOKENS || 8192);
+const RESUME_PARSE_MAX_TOKENS = Number(process.env.RESUME_PARSE_MAX_TOKENS || 16_384);
+
+/**
+ * Recover a usable object from truncated/cut-off model JSON. Scans the text
+ * tracking string state and the bracket stack, recording "checkpoints" after
+ * each completed value, then tries to close the structure at the furthest
+ * checkpoint that yields valid JSON. Because parsedResumeSchema is fully
+ * lenient (every field has a default), a partially-recovered object still
+ * fills the profile — far better than failing outright on a long resume.
+ */
+export function salvageTruncatedJson(input: string): unknown | null {
+  const start = input.indexOf("{");
+  if (start < 0) return null;
+  const s = input.slice(start);
+
+  let inStr = false;
+  let esc = false;
+  const stack: ("}" | "]")[] = [];
+  const checkpoints: { end: number; closers: string }[] = [];
+  const record = (end: number) => {
+    checkpoints.push({ end, closers: [...stack].reverse().join("") });
+  };
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') {
+        inStr = false;
+        record(i + 1); // end of a string (key or value)
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inStr = true;
+    } else if (ch === "{") {
+      stack.push("}");
+    } else if (ch === "[") {
+      stack.push("]");
+    } else if (ch === "}" || ch === "]") {
+      stack.pop();
+      record(i + 1);
+    } else {
+      const next = s[i + 1];
+      // end of a bare literal (number / true / false / null)
+      if (/[0-9a-z.]/i.test(ch) && (next === undefined || /[\s,}\]]/.test(next))) record(i + 1);
+    }
+  }
+
+  for (let k = checkpoints.length - 1; k >= 0; k--) {
+    const { end, closers } = checkpoints[k];
+    const candidate = s.slice(0, end).replace(/,\s*$/, "") + closers;
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // try an earlier checkpoint
+    }
+  }
+  return null;
+}
 
 /**
  * Turns raw resume text into structured profile data via one AI call.
@@ -127,6 +208,21 @@ export async function parseResumeText(
   try {
     parsedRaw = JSON.parse(cleanJsonText(raw));
   } catch (parseError) {
+    // The output was likely cut off (long resume). Recover as much as parsed
+    // rather than failing — the user gets a mostly-filled form to finish.
+    const salvaged = salvageTruncatedJson(cleanJsonText(raw));
+    if (salvaged && typeof salvaged === "object") {
+      console.warn("[parse-resume] Model JSON was truncated; recovered partial data.", {
+        model,
+        resumeTextChars: text.length,
+        rawChars: raw.length,
+      });
+      const partial = parsedResumeSchema.safeParse(salvaged);
+      if (partial.success) {
+        return { parsed: cleanParsedResume(partial.data), costUsd: resp.costUsd };
+      }
+    }
+
     const diagnostics = diagnoseJsonParseFailure(raw, parseError);
     console.error("[parse-resume] Could not parse model JSON.", {
       model,
@@ -135,18 +231,19 @@ export async function parseResumeText(
       diagnostics,
       rawSnippet: raw.slice(0, 400),
     });
-    const looksTruncated = /truncat|incomplete|unterminated|unexpected end/i.test(
-      `${diagnostics.likelyCauses?.join(" ") ?? ""} ${
-        parseError instanceof Error ? parseError.message : ""
-      }`
-    );
     throw new Error(
-      looksTruncated
-        ? "The resume is long and the extraction was cut off before finishing. Try again, or shorten the resume PDF (fewer pages) and re-upload."
-        : "Could not read structured data from this resume. Try a different file or fill the profile manually."
+      "Could not read structured data from this resume. Try uploading again, or fill the profile manually."
     );
   }
 
-  const parsed = parsedResumeSchema.parse(parsedRaw);
-  return { parsed, costUsd: resp.costUsd };
+  const parsed = parsedResumeSchema.safeParse(parsedRaw);
+  if (!parsed.success) {
+    // Shape drifted — recover what we can instead of erroring on a long resume.
+    const salvaged = parsedResumeSchema.safeParse(salvageTruncatedJson(raw) ?? {});
+    return {
+      parsed: cleanParsedResume(salvaged.success ? salvaged.data : parsedResumeSchema.parse({})),
+      costUsd: resp.costUsd,
+    };
+  }
+  return { parsed: cleanParsedResume(parsed.data), costUsd: resp.costUsd };
 }

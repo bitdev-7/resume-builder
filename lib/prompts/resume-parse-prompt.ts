@@ -15,6 +15,7 @@ Rules:
 - Dates must be formatted as "MM/YYYY" (zero-padded month). Use "Present" for a current role's end date. If only a year is given, use "01/YYYY". If a date is unknown, use "".
 - For education, capture "startDate" and "endDate" (graduation/completion) when present; also copy the completion date into "graduationDate". Use "" for any that are not stated.
 - For work experience, put each bullet/accomplishment as a separate string in "achievements".
+- A work experience "description" is ONLY a distinct role/company overview sentence that is separate from the bullet points. Never copy a bullet/achievement into "description". If the resume has no separate overview line for a role, set "description" to "".
 - For skills, split into individual skills. Put a category if the resume groups them (e.g. "Backend", "Frontend", "Cloud"); use "Soft Skills" as the category for non-technical skills; otherwise use "".
 - workType must be one of "Remote", "Hybrid", "Onsite", or "" if not stated.
 - "email" is the candidate's contact email if present in the resume, else "".
