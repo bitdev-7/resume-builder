@@ -39,7 +39,7 @@ export function createServerSupabaseClient(accessToken: string): SupabaseClient 
 
 export async function requireAuthClient(
   request: AuthRequest
-): Promise<{ client: SupabaseClient; accessToken: string; userId: string }> {
+): Promise<{ client: SupabaseClient; accessToken: string; userId: string; email: string | null }> {
   const accessToken = getAccessTokenFromRequest(request);
   if (!accessToken) {
     throw new AuthError("Missing authorization token", 401);
@@ -55,7 +55,7 @@ export async function requireAuthClient(
     throw new AuthError("Invalid or expired session", 401);
   }
 
-  return { client, accessToken, userId: user.id };
+  return { client, accessToken, userId: user.id, email: user.email ?? null };
 }
 
 export class AuthError extends Error {
