@@ -4,6 +4,7 @@ import cors from "cors";
 import { registerRoute } from "./next-adapter.js";
 
 import { POST as analyzePost } from "./api/analyze/route.js";
+import { GET as analyzeStatusGet } from "./api/analyze/status/route.js";
 import { POST as extractJobPost } from "./api/extract-job/route.js";
 import { POST as parseResumePost } from "./api/parse-resume/route.js";
 import { POST as answerQuestionsPost } from "./api/answer-questions/route.js";
@@ -35,6 +36,7 @@ app.get("/health", (_req, res) => {
 });
 
 registerRoute(app, "post", "/api/analyze", analyzePost);
+registerRoute(app, "get", "/api/analyze/status/:jobId", analyzeStatusGet);
 registerRoute(app, "post", "/api/extract-job", extractJobPost);
 registerRoute(app, "post", "/api/parse-resume", parseResumePost);
 registerRoute(app, "post", "/api/answer-questions", answerQuestionsPost);

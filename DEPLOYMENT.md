@@ -189,6 +189,18 @@ docker compose exec backend node -e "fetch('http://localhost:4000/health').then(
 - **PDF generation fails**: check backend logs for a Chromium launch error. The image
   installs `chromium` and sets `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`; do not
   override that in the `BACKEND_ENV` secret.
+- **`Failed to proxy .../api/analyze Error: socket hang up (ECONNRESET)` on the VPS
+  but not locally**: the Next.js rewrite proxy defaults to a 30s `proxyTimeout`, which
+  used to abort the long-running AI request. Generation is now **asynchronous** — POST
+  `/api/analyze` returns a `jobId` in seconds and the frontend polls
+  `GET /api/analyze/status/:jobId`, so no single request blocks for minutes and the 30s
+  limit no longer bites. `frontend/next.config.js` still raises `proxyTimeout` via
+  `experimental.proxyTimeout` (default 10 min, override with `PROXY_TIMEOUT_MS`) as a
+  safety net for other long endpoints. It is a build-time setting, so rebuild the
+  frontend image: `docker compose up -d --build`. Locally you typically set
+  `NEXT_PUBLIC_API_URL=http://localhost:4000`, which makes the browser call the backend
+  directly and bypasses the rewrite proxy entirely — that is why the error only
+  appeared on the VPS (where `NEXT_PUBLIC_API_URL` is empty).
 - **Port 80 already in use**: stop the previous PM2/native process, or change the
   published port in `docker-compose.yml`.
 - **Login/Supabase broken in the browser after deploy**: the `NEXT_PUBLIC_*` values in

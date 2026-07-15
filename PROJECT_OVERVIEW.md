@@ -114,10 +114,16 @@ Mounted under `/api/*` (`backend/src/index.ts`). Body limit 50MB. Request/socket
 - **Errors:** `400` if no `pdfBase64`; `422` for unreadable/scanned PDFs (no text) or unparseable output.
 
 ### `POST /api/analyze` (core)
-- **Body:** `{ jd?, pageContent?, jobTitle?, companyName?, profileData (required, ≥1 work experience), template?, apiModel?, apiProvider?, useOpenRouter?, promptTweak?: { tone?, emphasis? } }`.
-- **Logic:** Resolves the AI request → determines the JD (from `jd` or by extracting `pageContent`) → loads the user's generation preferences and composes them (plus any per-run `promptTweak`) into pipeline instructions → runs `runTailoringPipeline` (see [AI_WORKFLOW.md](AI_WORKFLOW.md)) → applies the senior-framing backstop to the summary when that preference is on → resolves the PDF template. PDF is not rendered inline unless `ANALYZE_GENERATE_PDF=true`.
-- **Response (200):** `{ resume, providerUsed, modelUsed, jobTitle, companyName, jobDescription, generationCostUsd, roleArchetype, enrichmentRecommendations, normalizedJobTitle, validationIssues?, pdfBase64?, pdfError? }`.
-- **Errors:** `400` if `profileData` lacks a usable experience or no JD is available; `504` on timeouts; else `500` (with a status-aware message for 402 out-of-credits / 429 rate-limit / 5xx).
+- **Body:** `{ jd?, pageContent?, jobTitle?, companyName?, profileId (required — the resume profile to load server-side), template?, apiModel?, apiProvider?, useOpenRouter?, promptTweak?: { tone?, emphasis? } }`. The client no longer sends `profileData`/`resumeContent`/`promptOverrides`; the backend loads the profile bundle from Supabase (the source of truth) using the authenticated user's JWT and the supplied `profileId` (falling back to the default profile), then builds the legacy analyze profile and prompt overrides via `profileBundleToLegacyAnalyzeProfile` + `sanitizePromptOverrides`.
+- **Logic:** This is **asynchronous**. POST does only fast (non-AI) work: resolves the AI request, loads the profile from Supabase, validates that it has a usable experience and that a JD/pageContent is present, creates an in-memory job, kicks off `runGenerationJob` in the background (detached from the request), and returns `{ jobId }` with `202`. The background job then determines the JD (from `jd` or by extracting `pageContent`) → loads generation preferences → runs `runTailoringPipeline` (see [AI_WORKFLOW.md](AI_WORKFLOW.md)) → applies the senior-framing backstop → applies the headline override → resolves the PDF template. PDF is not rendered inline unless `ANALYZE_GENERATE_PDF=true`. The job result is retrieved by polling `GET /api/analyze/status/:jobId`.
+- **Response (202):** `{ jobId: string }`.
+- **Errors:** `400` if the loaded profile lacks a usable experience, no JD/pageContent is provided, or AI is not configured; `401` on auth failure. Pipeline failures surface via the status endpoint (`status: "failed"`), not as HTTP errors here.
+
+### `GET /api/analyze/status/:jobId`
+- **Auth:** Bearer JWT (same user that created the job).
+- **Logic:** Looks up the in-memory job, enforcing per-user ownership (a job that doesn't exist or belongs to another user returns `404` — existence is not leaked across users).
+- **Response:** `202 { status: "running" }` while in progress; `200 { status: "completed", resume, providerUsed, modelUsed, jobTitle, companyName, jobDescription, generationCostUsd, normalizedJobTitle, roleArchetype, enrichmentRecommendations, validationIssues?, pdfBase64?, pdfError? }` when done; `200 { status: "failed", error }` on failure; `404` if the job is unknown (e.g. lost to a backend restart). Jobs are pruned after ~30 min.
+- **Note:** Because the job store is in-process, a backend restart loses in-flight jobs (the poll then 404s and the user re-submits). Completed resumes are still persisted to `resume_history` as before, so nothing durable is lost.
 
 ### `POST /api/generate-pdf`
 - **Body:** `{ resume: object (required), template?: string }` (template is one of standard / folio / modern / classic / compact / minimal / sidebar).

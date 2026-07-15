@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAIConfigured, resolveAIRequest } from "@/lib/ai-api";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { requireAIConfigured, resolveAIRequest, type ResolvedAIRequest } from "@/lib/ai-api";
 import {
   DEFAULT_RESUME_TEMPLATE,
   isValidResumeTemplate,
@@ -8,19 +9,32 @@ import { generateResumePdfBase64 } from "@/lib/generate-resume-pdf";
 import { extractJobFromPageContent } from "@/lib/extract-job-page";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
 import { loadResumePromptPreferences } from "@/lib/supabase/services/resume-prompt-settings";
+import {
+  ensureDefaultResumeProfile,
+  listResumeProfiles,
+} from "@/lib/supabase/services/resume-profiles";
+import { loadProfileBundleById } from "@/lib/supabase/load-profile-bundle";
+import { profileBundleToLegacyAnalyzeProfile } from "@/lib/mappers/profile-to-resume";
 import { buildResumeExtraInstructions, enforceSeniorFraming } from "@/lib/resume-prompt-settings";
 import { runTailoringPipeline } from "@/lib/tailoring/pipeline";
 import { sanitizePromptOverrides } from "@/lib/prompts/prompt-overrides";
 import type { LegacyAnalyzeProfile } from "@/lib/mappers/profile-to-resume";
+import type { ResumeProfile } from "@/lib/supabase/database.types";
 import type { UpdatedResume } from "@/lib/types/resume";
+import type { AnalyzeJobResult } from "./job-store";
+import {
+  createAnalyzeJob,
+  completeAnalyzeJob,
+  failAnalyzeJob,
+} from "./job-store";
 
 /** Resume + PDF generation can take several minutes. */
 export const maxDuration = 300;
 
 /**
  * The tailoring pipeline needs at least one work experience to build an
- * evidence profile from — this is the shape the frontend always sends
- * (lib/mappers/profile-to-resume.ts: profileBundleToLegacyAnalyzeProfile).
+ * evidence profile from — this is the shape produced by
+ * lib/mappers/profile-to-resume.ts: profileBundleToLegacyAnalyzeProfile.
  */
 function hasUsableProfileData(profileData: unknown): profileData is LegacyAnalyzeProfile {
   if (!profileData || typeof profileData !== "object") return false;
@@ -28,55 +42,83 @@ function hasUsableProfileData(profileData: unknown): profileData is LegacyAnalyz
   return Boolean(p.company_1 || p.company_2 || p.company_3 || p.company_4 || p.company_5);
 }
 
-export async function POST(request: NextRequest) {
+/**
+ * Loads the resume profile server-side from Supabase (the source of truth),
+ * mirroring the frontend's loadProfileForApp logic. The client now sends only
+ * the profileId, not the full resume content.
+ */
+async function loadProfileForGeneration(
+  userId: string,
+  email: string | null,
+  profileId: unknown,
+  client: SupabaseClient
+): Promise<{ profileData: LegacyAnalyzeProfile; promptOverrides: ReturnType<typeof sanitizePromptOverrides> }> {
+  let profiles = await listResumeProfiles(userId, client);
+  if (profiles.length === 0) {
+    profiles = [await ensureDefaultResumeProfile(userId, client)];
+  }
+
+  const activeProfile: ResumeProfile =
+    (typeof profileId === "string" ? profiles.find((p) => p.id === profileId) : undefined) ??
+    profiles.find((p) => p.is_default) ??
+    profiles[0];
+
+  const bundle = await loadProfileBundleById(userId, activeProfile, client);
+  return {
+    profileData: profileBundleToLegacyAnalyzeProfile(bundle, email),
+    promptOverrides: sanitizePromptOverrides(activeProfile.prompt_overrides),
+  };
+}
+
+interface GenerationJobParams {
+  jobId: string;
+  userId: string;
+  client: SupabaseClient;
+  profileData: LegacyAnalyzeProfile;
+  promptOverridesBody: ReturnType<typeof sanitizePromptOverrides>;
+  requestJd: string;
+  pageContent: string;
+  requestJobTitle: string;
+  requestCompanyName: string;
+  requestedTemplate: string;
+  aiRequest: ResolvedAIRequest;
+  promptTweak: { tone?: string; emphasis?: string } | undefined;
+  headlineOverride: unknown;
+}
+
+/**
+ * Runs the slow AI tailoring pipeline in the background and writes the result to the
+ * in-memory job store. Never throws — failures are recorded on the job so the polling
+ * client can surface them. This is what makes /api/analyze asynchronous: POST returns
+ * a jobId immediately and this runs detached from the request lifecycle.
+ */
+async function runGenerationJob(params: GenerationJobParams): Promise<void> {
+  const {
+    jobId,
+    userId,
+    client,
+    profileData,
+    promptOverridesBody,
+    requestJd,
+    pageContent,
+    requestJobTitle,
+    requestCompanyName,
+    requestedTemplate,
+    aiRequest,
+    promptTweak,
+    headlineOverride,
+  } = params;
+
   let pipelineResume: UpdatedResume | undefined;
-
   try {
-    const { userId, client } = await requireAuthClient(request);
-
-    const {
-      jd: requestJd,
-      pageContent,
-      jobTitle: requestJobTitle,
-      companyName: requestCompanyName,
-      profileData,
-      template: requestedTemplate,
-      apiModel,
-      apiProvider,
-      useOpenRouter: useOpenRouterBody,
-      promptTweak,
-      headlineOverride,
-      promptOverrides: promptOverridesBody,
-    } = await request.json();
-
-    if (!hasUsableProfileData(profileData)) {
-      return NextResponse.json(
-        {
-          error:
-            "Profile data with at least one work experience is required. Add a company under Profile first.",
-        },
-        { status: 400 }
-      );
-    }
-
-    const aiRequest = resolveAIRequest({
-      useOpenRouter: useOpenRouterBody,
-      apiModel,
-      apiProvider,
-    });
-    requireAIConfigured(aiRequest.useOpenRouter, aiRequest.provider);
-
-    let jd = typeof requestJd === "string" ? requestJd.trim() : "";
-    let jobTitle = typeof requestJobTitle === "string" ? requestJobTitle.trim() : "";
-    let companyName = typeof requestCompanyName === "string" ? requestCompanyName.trim() : "";
+    let jd = requestJd.trim();
+    let jobTitle = requestJobTitle.trim();
+    let companyName = requestCompanyName.trim();
 
     if (!jd) {
-      const source = typeof pageContent === "string" && pageContent.trim() ? pageContent : "";
+      const source = pageContent.trim();
       if (!source) {
-        return NextResponse.json(
-          { error: "Job page content or job description is required" },
-          { status: 400 }
-        );
+        throw new Error("Job page content or job description is required");
       }
       const extracted = await extractJobFromPageContent(source, {
         useOpenRouter: aiRequest.useOpenRouter,
@@ -87,10 +129,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!jd) {
-      return NextResponse.json(
-        { error: "Could not determine job description for resume generation" },
-        { status: 400 }
-      );
+      throw new Error("Could not determine job description for resume generation");
     }
 
     const promptPrefs = await loadResumePromptPreferences(userId, client);
@@ -115,7 +154,7 @@ export async function POST(request: NextRequest) {
       profileData,
       aiRequest,
       customPromptOverride: extraInstructions || undefined,
-      promptOverrides: sanitizePromptOverrides(promptOverridesBody),
+      promptOverrides: promptOverridesBody,
     });
     console.log(
       `Tailoring pipeline finished in ${Date.now() - pipelineStarted}ms (provider=${pipelineResult.providerUsed}, model=${pipelineResult.modelUsed}, cost=$${pipelineResult.generationCostUsd.toFixed(4)}, archetype=${pipelineResult.roleArchetype.primaryRoleArchetype})`
@@ -161,7 +200,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const result: AnalyzeJobResult = {
       resume: pipelineResume,
       providerUsed: pipelineResult.providerUsed,
       modelUsed: pipelineResult.modelUsed,
@@ -169,7 +208,6 @@ export async function POST(request: NextRequest) {
       companyName,
       jobDescription: jd,
       generationCostUsd: pipelineResult.generationCostUsd,
-      // Additive fields — existing UI ignores unknown response keys.
       normalizedJobTitle: pipelineResult.jobTitle,
       roleArchetype: pipelineResult.roleArchetype,
       enrichmentRecommendations: pipelineResult.enrichmentRecommendations,
@@ -178,26 +216,118 @@ export async function POST(request: NextRequest) {
         : {}),
       ...(pdfBase64 && { pdfBase64 }),
       ...(pdfError && { pdfError }),
+    };
+    completeAnalyzeJob(jobId, result);
+  } catch (error) {
+    console.error("Error in generation job:", error);
+    // If the pipeline produced a resume before a later step failed, still return it.
+    if (typeof pipelineResume !== "undefined") {
+      console.warn("Completing job with resume despite error:", error);
+      completeAnalyzeJob(jobId, {
+        resume: pipelineResume,
+        providerUsed: "",
+        modelUsed: "",
+        jobTitle: requestJobTitle.trim(),
+        companyName: requestCompanyName.trim(),
+        jobDescription: requestJd.trim(),
+        generationCostUsd: 0,
+        normalizedJobTitle: "",
+        roleArchetype: { primaryRoleArchetype: "unknown", secondaryRoleArchetypes: [], confidence: 0 },
+        enrichmentRecommendations: [],
+        pdfError: error instanceof Error ? error.message : "An error occurred",
+      });
+      return;
+    }
+    failAnalyzeJob(
+      jobId,
+      error instanceof Error ? error.message : "An error occurred while generating the resume"
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { userId, client, email } = await requireAuthClient(request);
+
+    const {
+      jd: requestJd,
+      pageContent,
+      jobTitle: requestJobTitle,
+      companyName: requestCompanyName,
+      profileId,
+      template: requestedTemplate,
+      apiModel,
+      apiProvider,
+      useOpenRouter: useOpenRouterBody,
+      promptTweak,
+      headlineOverride,
+    } = await request.json();
+
+    // Fast (non-AI) validation up front so input errors return immediately rather
+    // than surfacing as a failed job after polling.
+    const hasInput =
+      (typeof requestJd === "string" && requestJd.trim()) ||
+      (typeof pageContent === "string" && pageContent.trim());
+    if (!hasInput) {
+      return NextResponse.json(
+        { error: "Job page content or job description is required" },
+        { status: 400 }
+      );
+    }
+
+    const aiRequest = resolveAIRequest({
+      useOpenRouter: useOpenRouterBody,
+      apiModel,
+      apiProvider,
     });
+    requireAIConfigured(aiRequest.useOpenRouter, aiRequest.provider);
+
+    // Profile content is loaded server-side from Supabase (the source of truth)
+    // using the profileId — the client no longer sends the full resume content.
+    const { profileData, promptOverrides: promptOverridesBody } =
+      await loadProfileForGeneration(userId, email, profileId, client);
+
+    if (!hasUsableProfileData(profileData)) {
+      return NextResponse.json(
+        {
+          error:
+            "Profile data with at least one work experience is required. Add a company under Profile first.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Kick off the slow AI pipeline in the background and return a jobId immediately.
+    // The client polls GET /api/analyze/status/:jobId until it completes.
+    const job = createAnalyzeJob(userId);
+    void runGenerationJob({
+      jobId: job.id,
+      userId,
+      client,
+      profileData,
+      promptOverridesBody,
+      requestJd: typeof requestJd === "string" ? requestJd : "",
+      pageContent: typeof pageContent === "string" ? pageContent : "",
+      requestJobTitle: typeof requestJobTitle === "string" ? requestJobTitle : "",
+      requestCompanyName: typeof requestCompanyName === "string" ? requestCompanyName : "",
+      requestedTemplate: typeof requestedTemplate === "string" ? requestedTemplate : "",
+      aiRequest,
+      promptTweak,
+      headlineOverride,
+    });
+
+    return NextResponse.json({ jobId: job.id }, { status: 202 });
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("Error analyzing resume:", error);
-    // If the pipeline already produced a resume before a later step failed, still return it.
-    if (typeof pipelineResume !== "undefined") {
-      console.warn("Returning resume despite error:", error);
-      return NextResponse.json({
-        resume: pipelineResume,
-        pdfError: error instanceof Error ? error.message : "An error occurred",
-      });
-    }
+    console.error("Error starting analyze job:", error);
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? error.message
-            : "An error occurred while analyzing the resume",
+            : "An error occurred while starting resume generation",
       },
       {
         status:

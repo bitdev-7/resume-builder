@@ -135,6 +135,87 @@ function createSessionId(): string {
   return `analysis-${Date.now()}-${sessionCounter}`;
 }
 
+const ANALYZE_POLL_INTERVAL_MS = 2000;
+// Just above the 10-min frontend proxy / backend ceilings; if generation exceeds
+// this, the client gives up rather than polling forever.
+const ANALYZE_POLL_DEADLINE_MS = 11 * 60 * 1000;
+
+/**
+ * Submits an async generation job (POST /api/analyze → { jobId }), then polls
+ * GET /api/analyze/status/:jobId until it completes or fails. The pipeline runs
+ * for minutes, so the backend returns a jobId immediately and runs the work in
+ * the background — this avoids the long-lived request that previously tripped
+ * the Next.js rewrite proxy's timeout.
+ */
+async function pollAnalyzeJob(
+  jobId: string,
+  accessToken: string
+): Promise<AnalysisResponse> {
+  const deadline = Date.now() + ANALYZE_POLL_DEADLINE_MS;
+  const statusUrl = apiUrl(`/api/analyze/status/${encodeURIComponent(jobId)}`);
+
+  while (true) {
+    const response = await fetch(statusUrl, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (response.status === 404) {
+      throw new Error(
+        "Generation was interrupted (job not found). The backend may have restarted — please try again."
+      );
+    }
+
+    if (!response.ok && response.status !== 202) {
+      let errorMessage = "Failed to check generation status";
+      try {
+        const errorData = await response.json();
+        errorMessage =
+          typeof errorData.error === "string" && errorData.error.trim()
+            ? errorData.error
+            : errorMessage;
+      } catch {
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const payload = (await response.json()) as {
+      status: "running" | "completed" | "failed";
+      error?: string;
+      resume?: AnalysisResult;
+      providerUsed?: string;
+      modelUsed?: string;
+      jobTitle?: string;
+      companyName?: string;
+      jobDescription?: string;
+      generationCostUsd?: number;
+      enrichmentRecommendations?: EnrichmentRecommendation[];
+    };
+
+    if (payload.status === "failed") {
+      throw new Error(payload.error || "Resume generation failed");
+    }
+    if (payload.status === "completed" && payload.resume) {
+      return {
+        resume: payload.resume,
+        providerUsed: payload.providerUsed,
+        modelUsed: payload.modelUsed,
+        jobTitle: payload.jobTitle,
+        companyName: payload.companyName,
+        jobDescription: payload.jobDescription,
+        generationCostUsd: payload.generationCostUsd,
+        enrichmentRecommendations: payload.enrichmentRecommendations,
+      };
+    }
+
+    if (Date.now() > deadline) {
+      throw new Error("Resume generation timed out — please try again.");
+    }
+    await new Promise((resolve) => setTimeout(resolve, ANALYZE_POLL_INTERVAL_MS));
+  }
+}
+
 function toSessionView(session: AnalysisSession): AnalysisSessionView {
   return {
     id: session.id,
@@ -612,7 +693,7 @@ export default function GeneratorPage() {
         if (!authSession) throw new Error("You must be signed in to generate a resume");
 
         const analyzeStarted = Date.now();
-        const response = await fetch(apiUrl("/api/analyze"), {
+        const submitResponse = await fetch(apiUrl("/api/analyze"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -623,11 +704,9 @@ export default function GeneratorPage() {
             jobTitle: session.jobTitle,
             companyName: session.companyName,
             pageContent: session.pageContent,
-            resumeContent,
+            profileId: activeProfileId,
             template,
-            profileData,
             ...(session.desiredTitle?.trim() ? { headlineOverride: session.desiredTitle.trim() } : {}),
-            ...(promptOverrides ? { promptOverrides } : {}),
             apiModel: session.aiModel,
             apiProvider: session.aiProvider,
             useOpenRouter: session.useOpenRouter,
@@ -635,21 +714,25 @@ export default function GeneratorPage() {
           }),
         });
 
-        if (!response.ok) {
+        if (!submitResponse.ok) {
           let errorMessage = "Failed to generate resume";
           try {
-            const errorData = await response.json();
+            const errorData = await submitResponse.json();
             errorMessage =
               typeof errorData.error === "string" && errorData.error.trim()
                 ? errorData.error
                 : errorMessage;
           } catch {
-            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            errorMessage = `HTTP ${submitResponse.status}: ${submitResponse.statusText}`;
           }
           throw new Error(errorMessage);
         }
 
-        const data: AnalysisResponse = await response.json();
+        const { jobId } = (await submitResponse.json()) as { jobId: string };
+        if (!jobId) throw new Error("Generation started but no job id was returned");
+
+        // The backend runs the AI pipeline in the background; poll until it finishes.
+        const data: AnalysisResponse = await pollAnalyzeJob(jobId, authSession.access_token);
         const resume = data.resume;
         const analyzeMs = Date.now() - analyzeStarted;
 
@@ -715,7 +798,7 @@ export default function GeneratorPage() {
         showToast("error", `Failed: ${message}`);
       }
     },
-    [sessions, resumeContent, profileData, resumeTemplate, activeProfileId, promptOverrides, patchSession, showToast, user?.id, autoAtsAfterResume, runAutoAtsCheck]
+    [sessions, resumeContent, profileData, resumeTemplate, activeProfileId, patchSession, showToast, user?.id, autoAtsAfterResume, runAutoAtsCheck]
   );
 
   const handleGenerateResume = useCallback(
