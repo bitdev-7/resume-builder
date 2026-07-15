@@ -32,10 +32,16 @@ export function resolveBidStatusForStats(status: string | null | undefined): str
   return status;
 }
 
+export function isBidApplied(status: string | null | undefined): boolean {
+  const resolved = resolveBidStatusForStats(status);
+  return resolved !== "unapplied" && resolved !== "opened";
+}
+
 export function isBidAdvanced(
   record: ResumeRecord,
   interviewCountForBid: number
 ): boolean {
+  if (!isBidApplied(record.bid_status)) return false;
   if (interviewCountForBid > 0) return true;
   return resolveBidStatusForStats(record.bid_status) !== DEFAULT_BID_STATUS;
 }
@@ -58,15 +64,16 @@ export function computeBidSuccessStats(
   interviewsByResume: Map<string, { resume_id: string | null }[]>
 ): BidSuccessStats {
   let interviewBidCount = 0;
+  const appliedRecords = records.filter((record) => isBidApplied(record.bid_status));
 
-  for (const record of records) {
+  for (const record of appliedRecords) {
     const linked = interviewsByResume.get(record.id) ?? [];
     if (isBidAdvanced(record, linked.length)) {
       interviewBidCount += 1;
     }
   }
 
-  const bidCount = records.length;
+  const bidCount = appliedRecords.length;
   const interviewRate =
     bidCount > 0 ? Math.round((interviewBidCount / bidCount) * 1000) / 10 : 0;
 
