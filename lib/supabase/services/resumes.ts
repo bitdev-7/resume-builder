@@ -92,7 +92,7 @@ export async function updateResumeBidStatus(
 
   if (error) throw error;
 
-  const record = data as ResumeRecord & { job_id?: string | null };
+  const record = data as ResumeRecord;
   if (record.job_id) {
     const { error: statusError } = await client.from("user_job_status").upsert(
       {

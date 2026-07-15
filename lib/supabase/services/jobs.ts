@@ -85,13 +85,16 @@ export async function addJobForUser(
 
   if (selectError) throw selectError;
 
-  const createdCatalog = !existingJob;
+  let createdCatalog = false;
   if (!existingJob) {
-    const { error: insertError } = await db
+    const { data: insertedJob, error: insertError } = await db
       .from("jobs")
-      .upsert({ url }, { onConflict: "url", ignoreDuplicates: true });
+      .upsert({ url }, { onConflict: "url", ignoreDuplicates: true })
+      .select("id")
+      .maybeSingle();
 
     if (insertError) throw insertError;
+    createdCatalog = Boolean(insertedJob);
   }
 
   const { data: job, error: jobError } = await db
@@ -103,7 +106,7 @@ export async function addJobForUser(
   if (jobError) throw jobError;
 
   const catalogJob = job as JobRecord;
-  const { data: existingStatus, error: statusError } = await db
+  let { data: existingStatus, error: statusError } = await db
     .from("user_job_status")
     .select("status")
     .eq("user_id", userId)
@@ -112,15 +115,29 @@ export async function addJobForUser(
 
   if (statusError) throw statusError;
 
-  const attached = !existingStatus;
-  if (attached) {
+  let attached = false;
+  if (!existingStatus) {
     const { error: attachError } = await db.from("user_job_status").insert({
       user_id: userId,
       job_id: catalogJob.id,
       status: "unapplied",
     });
 
-    if (attachError) throw attachError;
+    if (attachError?.code === "23505") {
+      const { data: concurrentStatus, error: concurrentStatusError } = await db
+        .from("user_job_status")
+        .select("status")
+        .eq("user_id", userId)
+        .eq("job_id", catalogJob.id)
+        .single();
+
+      if (concurrentStatusError) throw concurrentStatusError;
+      existingStatus = concurrentStatus;
+    } else if (attachError) {
+      throw attachError;
+    } else {
+      attached = true;
+    }
   }
 
   return {

@@ -207,6 +207,7 @@ export interface ResumeRecord {
   id: string;
   user_id: string;
   profile_id: string | null;
+  job_id: string | null;
   ai_type: string | null;
   model: string | null;
   job_site: string | null;
