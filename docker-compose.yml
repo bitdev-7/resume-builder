@@ -43,6 +43,9 @@ services:
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         # Leave empty to use the same-origin Next.js proxy to the backend.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        # next.config.js bakes the /api/* rewrite destination at build time, so this
+        # must be a build arg, not just the runtime `environment:` value below.
+        BACKEND_URL: http://backend:4000
     environment:
       NODE_ENV: production
       # Server-side proxy target used by next.config.js rewrites().

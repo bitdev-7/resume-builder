@@ -24,9 +24,13 @@ COPY lib ./lib
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_API_URL=
+# next.config.js bakes the /api/* rewrite destination at BUILD time, so BACKEND_URL
+# must be present here (not only at runtime) or it defaults to http://localhost:4000.
+ARG BACKEND_URL=http://backend:4000
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
-    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    BACKEND_URL=$BACKEND_URL
 
 RUN npm run build -w resume-frontend
 
