@@ -139,16 +139,29 @@ export default function JobsPage() {
 
   const handleOpen = async (job: UserJobListItem) => {
     if (!user?.id) return;
+
+    const externalUrl = getExternalJobUrl(job.url);
+    const newTab = window.open(externalUrl, "_blank");
+    if (!newTab) {
+      showToast("error", "Popup blocked — allow popups for this site");
+      return;
+    }
+    newTab.opener = null;
+
     setBusyJobId(job.job_id);
     try {
       const updated = await openJobForUser(user.id, job.job_id);
       setJobs((current) =>
         current.map((item) => (item.job_id === updated.job_id ? updated : item))
       );
-      window.open(getExternalJobUrl(updated.url), "_blank", "noopener,noreferrer");
+      const finalUrl = getExternalJobUrl(updated.url);
+      if (finalUrl !== externalUrl) {
+        newTab.location.href = finalUrl;
+      }
     } catch (error) {
       console.error("Failed to open job:", error);
       showToast("error", "Failed to open job");
+      newTab.close();
     } finally {
       setBusyJobId(null);
     }
