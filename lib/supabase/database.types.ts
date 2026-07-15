@@ -4,6 +4,8 @@ import type { JobsiteId } from "@/lib/jobsites";
 export type WorkType = "Remote" | "Hybrid" | "Onsite";
 
 export type BidStatus =
+  | "unapplied"
+  | "opened"
   | "applied"
   | "interviewing"
   | "rejected"
@@ -251,12 +253,27 @@ export const WORK_TYPES: WorkType[] = ["Remote", "Hybrid", "Onsite"];
 export const DEFAULT_BID_STATUS: BidStatus = "applied";
 
 export const BID_STATUSES: BidStatus[] = [
+  "unapplied",
+  "opened",
   "applied",
   "interviewing",
   "rejected",
   "offer",
   "accepted",
 ];
+
+export interface JobRecord {
+  id: string;
+  url: string;
+  created_at: string;
+}
+
+export interface UserJobListItem {
+  job_id: string;
+  url: string;
+  created_at: string;
+  status: BidStatus;
+}
 
 export const INTERVIEW_CALL_TYPES: InterviewCallType[] = [
   "intro",
