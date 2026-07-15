@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import BrandMark from "@/components/BrandMark";
+import { APP_NAME } from "@/lib/brand";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV_ITEMS = [
@@ -48,7 +49,7 @@ export default function AppNav() {
   return (
     <header className="nav-shell">
       <div className="mx-auto flex h-[4.25rem] max-w-[1400px] items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/dashboard" className="group flex items-center gap-3">
+        <Link href="/dashboard" className="group flex items-center gap-3" aria-label={APP_NAME}>
           <BrandMark
             size={36}
             wordmarkClassName="font-display hidden text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:block"
