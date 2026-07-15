@@ -344,6 +344,11 @@ export default function JobsPage() {
                               rel="noopener noreferrer"
                               className="block truncate font-medium text-blue-600 hover:underline dark:text-blue-400"
                               title={job.url}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                if (busy) return;
+                                void handleOpen(job);
+                              }}
                             >
                               {job.url}
                             </a>
