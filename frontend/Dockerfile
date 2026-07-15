@@ -7,6 +7,11 @@ FROM node:20-bookworm-slim
 
 WORKDIR /app
 
+# The root `npm ci` installs all workspaces, including the backend's puppeteer.
+# The frontend never renders PDFs, so skip Puppeteer's ~150MB browser download
+# (which also fails here because the image has no tar/unzip to extract it).
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 COPY package.json package-lock.json ./
 COPY backend/package.json ./backend/package.json
 COPY frontend/package.json ./frontend/package.json
