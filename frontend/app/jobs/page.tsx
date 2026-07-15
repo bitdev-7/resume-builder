@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import JobsGeneratePanel from "@/components/JobsGeneratePanel";
 import { ToastContainer, useToast } from "@/components/Toast";
 import { copyText } from "@/lib/clipboard";
 import { filterJobs, getExternalJobUrl, paginateJobs } from "@/lib/jobs-page-state";
@@ -44,6 +45,7 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
+  const [generateJobId, setGenerateJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -195,6 +197,21 @@ export default function JobsPage() {
       <div className="flex flex-1 items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
       </div>
+    );
+  }
+
+  const generateJob = generateJobId
+    ? jobs.find((job) => job.job_id === generateJobId) ?? null
+    : null;
+
+  if (generateJob) {
+    return (
+      <JobsGeneratePanel
+        jobId={generateJob.job_id}
+        jobUrl={generateJob.url}
+        bidStatus={generateJob.status}
+        onBack={() => setGenerateJobId(null)}
+      />
     );
   }
 
@@ -356,6 +373,14 @@ export default function JobsPage() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setGenerateJobId(job.job_id)}
+                                disabled={busy}
+                                className="btn-compact"
+                              >
+                                Generate
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => void handleOpen(job)}
