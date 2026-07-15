@@ -1,0 +1,78 @@
+name: Deploy to VPS
+
+# Manual only. There is a "Run workflow" button under the Actions tab.
+# Nothing deploys automatically on push.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: vps-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy on VPS
+    runs-on: ubuntu-latest
+
+    # Host / connection details (non-secret) can live in Variables; secrets in Secrets.
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+      APP_DIR: ${{ vars.APP_DIR || '/opt/resume-maker' }}
+
+    steps:
+      - name: Guard - only deploy the develop branch
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/develop" ]; then
+            echo "::error::This workflow can only be run from the 'develop' branch (got ${{ github.ref }})."
+            exit 1
+          fi
+
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Sync code to VPS
+        run: |
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '**/node_modules' \
+            --exclude '.next' \
+            --exclude 'frontend/.next' \
+            --exclude 'backend/dist' \
+            --exclude 'logs' \
+            --exclude '.env' \
+            --exclude 'backend/.env' \
+            --exclude 'frontend/.env.local' \
+            -e "ssh -i ~/.ssh/id_deploy -p $VPS_PORT" \
+            ./ "$VPS_USER@$VPS_HOST:$APP_DIR/"
+
+      - name: Write environment files from secrets
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "mkdir -p $APP_DIR/backend"
+          # Backend runtime env (all backend keys).
+          printf '%s' "${{ secrets.BACKEND_ENV }}" \
+            | ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cat > $APP_DIR/backend/.env"
+          # Root .env: only the NEXT_PUBLIC_* values compose needs to bake into the frontend build.
+          printf '%s' "${{ secrets.FRONTEND_ENV }}" \
+            | ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cat > $APP_DIR/.env"
+
+      - name: Build and start containers
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "cd $APP_DIR && docker compose up -d --build --remove-orphans && docker image prune -f"
+
+      - name: Show container status
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "cd $APP_DIR && docker compose ps"

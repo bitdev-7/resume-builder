@@ -1,0 +1,32 @@
+# Keep the Docker build context small and never ship local state or secrets.
+.git
+.github
+node_modules
+**/node_modules
+.next
+frontend/.next
+backend/dist
+out
+build
+logs
+*.log
+
+# Local env files (production env is injected on the VPS from GitHub Secrets)
+.env
+.env.*
+backend/.env
+backend/.env.*
+frontend/.env.local
+frontend/.env.*.local
+
+# Editor / OS noise
+.DS_Store
+.vscode
+.idea
+*.tsbuildinfo
+
+# Docs and misc not needed inside the image
+*.md
+resume
+scripts
+supabase
