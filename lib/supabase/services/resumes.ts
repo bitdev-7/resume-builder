@@ -14,6 +14,8 @@ import { randomId } from "@/lib/uuid";
 export interface CreateResumeParams {
   userId: string;
   profileId?: string | null;
+  jobId?: string | null;
+  bidStatus?: BidStatus;
   jd: string;
   resume: UpdatedResume;
   aiType?: string | null;
@@ -44,6 +46,7 @@ export async function createResumeWithArtifacts(
       id: resumeId,
       user_id: params.userId,
       profile_id: params.profileId ?? null,
+      job_id: params.jobId ?? null,
       ai_type: params.aiType ?? null,
       model: params.model ?? null,
       job_site: params.jobSite ?? null,
@@ -52,7 +55,7 @@ export async function createResumeWithArtifacts(
       job_company: params.jobCompany ?? null,
       jd_file_path: jdFilePath,
       resume_file_path: resumeFilePath,
-      bid_status: "applied",
+      bid_status: params.bidStatus ?? "applied",
     })
     .select("*")
     .single();
@@ -88,7 +91,23 @@ export async function updateResumeBidStatus(
     .single();
 
   if (error) throw error;
-  return data as ResumeRecord;
+
+  const record = data as ResumeRecord & { job_id?: string | null };
+  if (record.job_id) {
+    const { error: statusError } = await client.from("user_job_status").upsert(
+      {
+        user_id: record.user_id,
+        job_id: record.job_id,
+        status: bidStatus,
+        updated_at: record.updated_at,
+      },
+      { onConflict: "user_id,job_id" }
+    );
+
+    if (statusError) throw statusError;
+  }
+
+  return record;
 }
 
 export async function getResumeArtifacts(

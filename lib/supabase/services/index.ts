@@ -21,6 +21,14 @@ export {
   type CreateResumeParams,
 } from "@/lib/supabase/services/resumes";
 export {
+  nextStatusAfterOpen,
+  listJobsForUser,
+  addJobForUser,
+  openJobForUser,
+  setJobStatusForUser,
+  removeMyJob,
+} from "@/lib/supabase/services/jobs";
+export {
   listInterviews,
   createInterview,
   updateInterview,
