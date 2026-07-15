@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import BrandMark from "@/components/BrandMark";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ToastContainer, useToast } from "@/components/Toast";
 
@@ -51,9 +52,12 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
       <div className="mx-auto flex w-full max-w-5xl flex-1 items-center justify-center px-4 py-6 sm:px-6">
         <div className="grid w-full max-h-full gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
           <section className="animate-rise-in hidden rounded-3xl border border-white/20 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-8 text-white shadow-[0_30px_80px_-40px_rgba(15,23,42,0.8)] lg:block xl:p-10">
-            <p className="mb-4 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
-              Resume Tailor
-            </p>
+            <div className="mb-4">
+              <BrandMark
+                size={40}
+                wordmarkClassName="font-display text-xl font-semibold tracking-tight text-white"
+              />
+            </div>
             <h1 className="font-display mb-4 text-3xl font-semibold leading-tight tracking-tight xl:text-4xl">
               Craft job-ready resumes with a cleaner, faster workflow
             </h1>
@@ -63,6 +67,9 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
           </section>
 
           <section className="glass-panel animate-rise-in w-full p-6 sm:p-8 lg:p-10">
+            <div className="mb-4 lg:hidden">
+              <BrandMark size={36} />
+            </div>
             <h2 className="font-display mb-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">
               Welcome back
             </h2>

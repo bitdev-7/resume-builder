@@ -4,7 +4,7 @@ import { Providers } from "@/components/Providers";
 import AuthenticatedChrome from "@/components/AuthenticatedChrome";
 
 export const metadata: Metadata = {
-  title: "Resume Generator",
+  title: "Cubi",
   description: "Generate optimized resumes tailored to job descriptions with AI",
 };
 

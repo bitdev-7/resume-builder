@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import BrandMark from "@/components/BrandMark";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const NAV_ITEMS = [
@@ -48,12 +49,10 @@ export default function AppNav() {
     <header className="nav-shell">
       <div className="mx-auto flex h-[4.25rem] max-w-[1400px] items-center justify-between gap-4 px-4 sm:px-6">
         <Link href="/dashboard" className="group flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 text-sm font-bold text-white shadow-[0_10px_24px_-14px_rgba(37,99,235,0.9)]">
-            RT
-          </span>
-          <span className="font-display hidden text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:block">
-            Resume Tailor
-          </span>
+          <BrandMark
+            size={36}
+            wordmarkClassName="font-display hidden text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:block"
+          />
         </Link>
 
         <nav className="hidden items-center gap-1 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-1 dark:border-slate-600/50 dark:bg-slate-800/90 md:flex">
