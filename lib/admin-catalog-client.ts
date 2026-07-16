@@ -3,6 +3,8 @@ import type { CatalogPatch } from "@/lib/tailoring/catalog-schemas";
 import type { MergeSummary } from "@/lib/tailoring/catalog-merge";
 import type { CatalogVerifyResult } from "@/lib/tailoring/catalog-verify";
 import type { CatalogSeniority } from "@/lib/tailoring/catalog-research";
+import type { UpdateAllCatalogResult } from "@/lib/tailoring/catalog-update-all";
+import type { CatalogVerifyIssue } from "@/lib/tailoring/catalog-verify";
 
 export interface AdminCatalogFile {
   name: string;
@@ -25,7 +27,7 @@ export interface AdminCatalogApplyResponse {
   version: string;
   filesWritten: string[];
   backupDir: string;
-  summary: MergeSummary;
+  summary?: MergeSummary;
 }
 
 async function adminFetch<T>(
@@ -72,6 +74,38 @@ export function researchAdminCatalog(
   });
 }
 
+export interface AdminCatalogRefineResponse {
+  proposal: CatalogPatch;
+  model: string;
+  costUsd?: number;
+  refinedFromIssues: number;
+}
+
+export function refineAdminCatalog(
+  accessToken: string,
+  input: {
+    proposal: CatalogPatch;
+    issues: CatalogVerifyIssue[];
+    title?: string;
+    seniority?: CatalogSeniority;
+  }
+): Promise<AdminCatalogRefineResponse> {
+  return adminFetch<AdminCatalogRefineResponse>("/api/admin/catalog/refine", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateAllAdminCatalog(
+  accessToken: string,
+  input?: { useOpenRouter?: boolean }
+): Promise<UpdateAllCatalogResult> {
+  return adminFetch<UpdateAllCatalogResult>("/api/admin/catalog/update-all", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input ?? {}),
+  });
+}
+
 export function applyAdminCatalog(
   accessToken: string,
   proposal: CatalogPatch
@@ -79,5 +113,15 @@ export function applyAdminCatalog(
   return adminFetch<AdminCatalogApplyResponse>("/api/admin/catalog/apply", accessToken, {
     method: "POST",
     body: JSON.stringify({ proposal }),
+  });
+}
+
+export function applyAdminCatalogFiles(
+  accessToken: string,
+  files: Record<string, string>
+): Promise<AdminCatalogApplyResponse> {
+  return adminFetch<AdminCatalogApplyResponse>("/api/admin/catalog/apply", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ files }),
   });
 }

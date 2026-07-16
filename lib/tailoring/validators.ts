@@ -8,7 +8,6 @@ import type {
   ValidationIssue,
 } from "@/lib/types/tailoring";
 import { FORBIDDEN_OPENING_VERBS } from "@/lib/prompts/tailoring-policy";
-import { skillKey } from "@/lib/tailoring/skill-ontology";
 
 const METRIC_LIKE_PATTERNS: RegExp[] = [
   /\d+(?:\.\d+)?\s?%/g,
@@ -39,7 +38,7 @@ export interface ValidateTailoredResumeInput {
   experiencePlans: ExperiencePlan[];
   experiencesById: Map<string, CandidateExperience>;
   experienceResults: ExperienceGenerationResult[];
-  /** Skills allowed in the FINAL skills section: supported (evidence) + JD-required. */
+  /** Retained for callers; skills may now include dynamic JD-relevant additions beyond this set. */
   allowedFinalSkillsByKey: Map<string, SkillCandidate>;
   composerResult: ComposerResult;
 }
@@ -56,7 +55,6 @@ export function validateTailoredResume(input: ValidateTailoredResumeInput): Vali
     experiencePlans,
     experiencesById,
     experienceResults,
-    allowedFinalSkillsByKey,
     composerResult,
   } = input;
 
@@ -183,18 +181,9 @@ export function validateTailoredResume(input: ValidateTailoredResumeInput): Vali
   }
   trackVerb(composerResult.summary);
 
-  // 5. Skills support — every final skill must be an allowed/supported skill (defense in depth; composer already filters)
-  Object.entries(composerResult.skillCategories).forEach(([category, skills]) => {
-    skills.forEach((skill, index) => {
-      if (!allowedFinalSkillsByKey.has(skillKey(skill))) {
-        issues.push({
-          code: "UNSUPPORTED_SKILL",
-          path: `skills.${category}[${index}]`,
-          message: `"${skill}" is neither candidate-supported nor JD-required`,
-        });
-      }
-    });
-  });
+  // Skills section may include dynamic JD-relevant skills and may omit unrelated
+  // profile skills. Must-keep skills (JD targets + bullet mentions) are enforced
+  // via ensureAllEligibleSkills in the pipeline.
 
   // 11. Overused action verbs (lightweight — first word of each bullet/summary, cap 3 repeats)
   for (const [verb, count] of verbCounts.entries()) {

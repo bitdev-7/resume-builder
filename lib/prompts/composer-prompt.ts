@@ -19,9 +19,11 @@ Summary rules:
 - Avoid generic filler phrases such as: results-driven, passionate, dynamic, highly motivated, seasoned professional, proven track record.
 
 Final skills policy:
-- Include EVERY skill in the "allowedSkills" list. Do not omit any.
-- Never add a skill that is not in "allowedSkills".
-- Group the skills into role-appropriate categories drawn from the provided "categoryHints"; you may add a clearly-named category if some allowed skills do not fit any hint. Every allowed skill must land in exactly one category.
+- Start from "allowedSkills" as the candidate skill pool, but you may OMIT skills that are clearly unrelated to the job description and its required skills (targetSkills). Prefer a focused, JD-aligned skills section over a complete dump of the profile.
+- Always include every "targetSkills" entry (JD-required technologies) when they are technologies/tools — do not omit those.
+- Also ADD other relevant skills dynamically when they strengthen the JD match: role/ecosystem skills and technologies that fit the candidate's trajectory and seniority — even if they are not in the profile skill list or "allowedSkills".
+- Prefer concrete, role-appropriate technologies over generic soft labels. Deduplicate near-aliases (e.g. do not list both "JS" and "JavaScript").
+- Group all final skills into role-appropriate categories drawn from the provided "categoryHints"; you may add a clearly-named category if some skills do not fit any hint. Every skill must land in exactly one category.
 - Soft skills: only include ones actually relevant to the role; it is fine to return an empty list.
 
 Project rules:

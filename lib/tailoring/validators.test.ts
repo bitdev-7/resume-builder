@@ -169,14 +169,14 @@ describe("validators — evidence/requirement id integrity", () => {
 });
 
 describe("validators — skill support", () => {
-  it("flags a final skill with no supporting evidence", () => {
+  it("allows dynamic skills not in the candidate allow-list", () => {
     const results: ExperienceGenerationResult[] = [
       { experienceId: "exp_1", bullets: [{ text: "Built authentication APIs for the platform", evidenceIds: ["fact_1"], requirementIds: [] }] },
     ];
     const composer = composerResult({ skillCategories: { Backend: ["Python", "Kubernetes"] } });
 
     const issues = validateTailoredResume(baseValidateInput(results, composer));
-    expect(issues.some((i) => i.code === "UNSUPPORTED_SKILL" && i.message.includes("Kubernetes"))).toBe(true);
+    expect(issues.some((i) => i.code === "UNSUPPORTED_SKILL")).toBe(false);
   });
 
   it("does NOT flag a JD-required skill that is present in allowedFinalSkillsByKey (even without evidence)", () => {

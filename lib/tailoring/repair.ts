@@ -15,7 +15,6 @@ import type { ComposerInput } from "@/lib/prompts/composer-prompt";
 import type { ExperienceWriterInput } from "@/lib/prompts/experience-writer-prompt";
 import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 import { validateTailoredResume } from "@/lib/tailoring/validators";
-import { skillKey } from "@/lib/tailoring/skill-ontology";
 import { isHardValidationIssue, type ExperienceGenerationMode } from "@/lib/workflow-settings";
 
 export interface RepairContext {
@@ -68,18 +67,6 @@ function groupExperienceIssues(issues: ValidationIssue[]): Map<string, Validatio
   return grouped;
 }
 
-function filterSkillCategoriesByAllowed(
-  composerResult: ComposerResult,
-  allowedFinalSkillsByKey: Map<string, SkillCandidate>
-): ComposerResult {
-  const skillCategories: Record<string, string[]> = {};
-  for (const [category, skills] of Object.entries(composerResult.skillCategories)) {
-    const filtered = skills.filter((s) => allowedFinalSkillsByKey.has(skillKey(s)));
-    if (filtered.length > 0) skillCategories[category] = filtered;
-  }
-  return { ...composerResult, skillCategories };
-}
-
 /** Deterministic, non-AI fixes applied once repair attempts are exhausted — never hard-fails on issues with a safe mechanical fix. */
 function applyDeterministicBackstop(
   experienceResults: ExperienceGenerationResult[],
@@ -89,7 +76,7 @@ function applyDeterministicBackstop(
 ): { experienceResults: ExperienceGenerationResult[]; composerResult: ComposerResult; remainingIssues: ValidationIssue[] } {
   const dropBulletIndexesByExperience = new Map<string, Set<number>>();
   const remainingIssues: ValidationIssue[] = [];
-  let nextComposerResult = composerResult;
+  const nextComposerResult = composerResult;
 
   for (const issue of issues) {
     const bulletMatch = issue.path.match(EXPERIENCE_BULLET_PATH_RE);
@@ -102,11 +89,6 @@ function applyDeterministicBackstop(
       const [, expId, idxStr] = bulletMatch;
       if (!dropBulletIndexesByExperience.has(expId)) dropBulletIndexesByExperience.set(expId, new Set());
       dropBulletIndexesByExperience.get(expId)!.add(Number(idxStr));
-      continue;
-    }
-
-    if (issue.code === "UNSUPPORTED_SKILL") {
-      nextComposerResult = filterSkillCategoriesByAllowed(nextComposerResult, ctx.allowedFinalSkillsByKey);
       continue;
     }
 
@@ -240,24 +222,19 @@ export async function repairTailoredResume(
     }
 
     if (composerIssues.length > 0) {
-      const onlyUnsupportedSkills = composerIssues.every((i) => i.code === "UNSUPPORTED_SKILL");
-      if (onlyUnsupportedSkills) {
-        composerResult = filterSkillCategoriesByAllowed(composerResult, ctx.allowedFinalSkillsByKey);
-      } else {
-        const notes = composerIssues.map((i) => `- [${i.code}] ${i.message}`).join("\n");
-        try {
-          const { result, costUsd: c } = await composeResumeTopSection(
-            ctx.composerInput,
-            ctx.aiRequest,
-            skillBudget,
-            notes,
-            ctx.promptOverrides
-          );
-          composerResult = result;
-          costUsd += c ?? 0;
-        } catch (err) {
-          console.error("[tailoring] Composer repair failed, keeping previous version:", err);
-        }
+      const notes = composerIssues.map((i) => `- [${i.code}] ${i.message}`).join("\n");
+      try {
+        const { result, costUsd: c } = await composeResumeTopSection(
+          ctx.composerInput,
+          ctx.aiRequest,
+          skillBudget,
+          notes,
+          ctx.promptOverrides
+        );
+        composerResult = result;
+        costUsd += c ?? 0;
+      } catch (err) {
+        console.error("[tailoring] Composer repair failed, keeping previous version:", err);
       }
     }
 

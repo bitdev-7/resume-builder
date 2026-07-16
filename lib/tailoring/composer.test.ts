@@ -15,8 +15,8 @@ const { composeResumeTopSection, ensureAllEligibleSkills, DEFAULT_SKILL_BUDGET }
 
 const aiRequest: ResolvedAIRequest = { useOpenRouter: true, model: "openai/gpt-4.1-mini" };
 
-describe("composer — skill allow-list filtering", () => {
-  it("keeps all allowed skills (no per-category cap) and drops anything outside the allow-list", async () => {
+describe("composer — skill categories", () => {
+  it("keeps allowed skills and dynamic additions (deduped), without an allow-list filter", async () => {
     const allowedSkills = Array.from({ length: 20 }, (_, i) => `Skill${i}`);
 
     callAIMock.mockResolvedValue({
@@ -26,7 +26,7 @@ describe("composer — skill allow-list filtering", () => {
       json: {
         summary: "A".repeat(10),
         skillCategories: {
-          Backend: [...allowedSkills, "NotAllowedSkill"], // 20 allowed + 1 disallowed
+          Backend: [...allowedSkills, "Kubernetes", "Skill0"], // baseline + dynamic + duplicate
         },
         softSkills: [],
         projects: [],
@@ -49,9 +49,8 @@ describe("composer — skill allow-list filtering", () => {
 
     const { result } = await composeResumeTopSection(input, aiRequest, { maxTotalSkills: 35, maxSkillsPerCategory: 10 });
 
-    // All 20 allowed skills are kept (no cap); the disallowed one is dropped.
-    expect(result.skillCategories.Backend).toHaveLength(20);
-    expect(result.skillCategories.Backend).not.toContain("NotAllowedSkill");
+    expect(result.skillCategories.Backend).toHaveLength(21); // 20 allowed + Kubernetes; Skill0 deduped
+    expect(result.skillCategories.Backend).toContain("Kubernetes");
   });
 
   it("uses the default skill budget when none is provided", () => {
@@ -59,8 +58,8 @@ describe("composer — skill allow-list filtering", () => {
   });
 });
 
-describe("ensureAllEligibleSkills — completeness guarantee", () => {
-  it("appends eligible skills the composer omitted, and leaves present ones untouched", () => {
+describe("ensureAllEligibleSkills — must-keep guarantee", () => {
+  it("appends must-keep skills the composer omitted, and leaves present ones untouched", () => {
     const composerResult = {
       summary: "s",
       skillCategories: { Backend: ["Python", "FastAPI"] },

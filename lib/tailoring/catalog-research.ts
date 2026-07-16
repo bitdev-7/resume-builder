@@ -7,6 +7,7 @@ import {
 } from "@/lib/ai-api";
 import { readAllCatalogFilesRaw } from "@/lib/tailoring/catalog-io";
 import { parseCatalogFromFiles } from "@/lib/tailoring/catalog-merge";
+import type { CatalogVerifyIssue } from "@/lib/tailoring/catalog-verify";
 import { catalogPatchSchema, type CatalogPatch } from "@/lib/tailoring/catalog-schemas";
 
 export type CatalogSeniority = "junior" | "mid" | "senior" | "staff";
@@ -15,12 +16,26 @@ export interface CatalogResearchInput {
   title: string;
   seniority?: CatalogSeniority;
   useOpenRouter?: boolean;
+  /** When set, LLM must merge into this existing archetype id. */
+  targetArchetypeId?: string;
 }
 
 export interface CatalogResearchResult {
   proposal: CatalogPatch;
   model: string;
   costUsd?: number;
+}
+
+export interface CatalogRefineInput {
+  proposal: CatalogPatch;
+  issues: CatalogVerifyIssue[];
+  title?: string;
+  seniority?: CatalogSeniority;
+  useOpenRouter?: boolean;
+}
+
+export interface CatalogRefineResult extends CatalogResearchResult {
+  refinedFromIssues: number;
 }
 
 async function buildResearchContext(): Promise<{
@@ -46,7 +61,8 @@ async function buildResearchContext(): Promise<{
 function buildCatalogResearchPrompt(
   title: string,
   seniority: CatalogSeniority | undefined,
-  context: { archetypeIds: string[]; canonicalSkills: string[]; sampleArchetypes: string }
+  context: { archetypeIds: string[]; canonicalSkills: string[]; sampleArchetypes: string },
+  targetArchetypeId?: string
 ): string {
   const seniorityLine = seniority
     ? `Seniority hint: ${seniority} (adjust emphasis — staff roles include architecture/leadership keywords).`
@@ -54,11 +70,15 @@ function buildCatalogResearchPrompt(
 
   const skillSample = context.canonicalSkills.slice(0, 80).join(", ");
 
+  const archetypeConstraint = targetArchetypeId
+    ? `\nIMPORTANT: You MUST set archetype.action to "merge" and archetype.targetId to "${targetArchetypeId}". Refresh market skills for this existing archetype only — do not create a new id.\n`
+    : "";
+
   return `Research current market skills for this job title and produce a catalog patch JSON object.
 
 Job title: "${title}"
 ${seniorityLine}
-
+${archetypeConstraint}
 Existing archetype ids (${context.archetypeIds.length} total):
 ${context.archetypeIds.join(", ")}
 
@@ -94,6 +114,79 @@ Rules:
 7. Ecosystem group names should be descriptive camelCase keys (e.g. backendEcosystem, cloudPlatforms).`;
 }
 
+function buildCatalogRefinePrompt(
+  proposal: CatalogPatch,
+  issues: CatalogVerifyIssue[],
+  context: { archetypeIds: string[]; canonicalSkills: string[] },
+  title?: string
+): string {
+  const issueLines = issues
+    .map((i) => `- [${i.kind}] ${i.file}${i.path ? ` → ${i.path}` : ""}: ${i.message}`)
+    .join("\n");
+
+  const skillSample = context.canonicalSkills.slice(0, 100).join(", ");
+
+  return `A catalog patch failed validation. Fix the patch so every issue is resolved.
+
+${title ? `Original job title: "${title}"\n` : ""}
+Validation issues:
+${issueLines}
+
+Failed patch:
+${JSON.stringify(proposal, null, 2)}
+
+Existing archetype ids:
+${context.archetypeIds.join(", ")}
+
+Existing canonical skills (reuse exact names when possible; sample):
+${skillSample}
+
+Rules:
+1. Return ONE corrected JSON object (same CatalogPatch shape) — no markdown, no prose.
+2. Fix every validation issue listed above.
+3. For cross_check "use merge" / "use create" — correct archetype.action and targetId.
+4. Every relationship from/to must reference a canonical skill in skillAliases or the existing catalog.
+5. Add missing canonical skills to skillAliases (aliases may be []).
+6. Do NOT remove fields; only fix invalid values and add missing entries.`;
+}
+
+async function callCatalogPatchLlm(
+  systemContent: string,
+  userContent: string,
+  useOpenRouter: boolean,
+  stage: string
+): Promise<{ proposal: CatalogPatch; model: string; costUsd?: number }> {
+  const provider = resolveExtractProvider(useOpenRouter);
+  requireAIConfigured(useOpenRouter, provider);
+  const model = resolveExtractModel(useOpenRouter);
+
+  const resp = await callAI({
+    useOpenRouter,
+    model,
+    ...(provider ? { provider } : {}),
+    messages: [
+      { role: "system", content: systemContent },
+      { role: "user", content: userContent },
+    ],
+    temperature: 0.2,
+    max_tokens: 4096,
+    tryParseJson: true,
+    stage,
+  });
+
+  const parsed = catalogPatchSchema.safeParse(resp.json ?? JSON.parse(resp.text));
+  if (!parsed.success) {
+    const detail = parsed.error.issues.map((i) => i.message).join("; ");
+    throw new Error(`LLM returned invalid catalog patch: ${detail}`);
+  }
+
+  return {
+    proposal: parsed.data,
+    model: resp.modelUsed,
+    costUsd: resp.costUsd,
+  };
+}
+
 export async function researchCatalogPatch(
   input: CatalogResearchInput
 ): Promise<CatalogResearchResult> {
@@ -106,37 +199,60 @@ export async function researchCatalogPatch(
   const model = resolveExtractModel(useOpenRouter);
 
   const context = await buildResearchContext();
-  const prompt = buildCatalogResearchPrompt(title, input.seniority, context);
+  const prompt = buildCatalogResearchPrompt(
+    title,
+    input.seniority,
+    context,
+    input.targetArchetypeId
+  );
 
   try {
-    const resp = await callAI({
+    const result = await callCatalogPatchLlm(
+      "You are a technical recruiter and skills taxonomy expert. Respond with a single valid JSON object only — no markdown fences, no prose.",
+      prompt,
       useOpenRouter,
-      model,
-      ...(provider ? { provider } : {}),
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a technical recruiter and skills taxonomy expert. Respond with a single valid JSON object only — no markdown fences, no prose.",
-        },
-        { role: "user", content: prompt },
-      ],
-      temperature: 0.2,
-      max_tokens: 4096,
-      tryParseJson: true,
-      stage: "catalog-research",
-    });
+      "catalog-research"
+    );
 
-    const parsed = catalogPatchSchema.safeParse(resp.json ?? JSON.parse(resp.text));
-    if (!parsed.success) {
-      const detail = parsed.error.issues.map((i) => i.message).join("; ");
-      throw new Error(`LLM returned invalid catalog patch: ${detail}`);
-    }
+    return result;
+  } catch (err: unknown) {
+    const elapsedMs =
+      err && typeof err === "object" && "elapsedMs" in err
+        ? Number((err as { elapsedMs?: number }).elapsedMs)
+        : undefined;
+    throw new Error(formatAIProviderError(err, model, elapsedMs, { useOpenRouter, provider }));
+  }
+}
+
+export async function refineCatalogPatch(input: CatalogRefineInput): Promise<CatalogRefineResult> {
+  if (!input.issues.length) {
+    throw new Error("No validation issues to refine");
+  }
+
+  const useOpenRouter = parseUseOpenRouter(input.useOpenRouter, true);
+  const provider = resolveExtractProvider(useOpenRouter);
+  requireAIConfigured(useOpenRouter, provider);
+  const model = resolveExtractModel(useOpenRouter);
+
+  const context = await buildResearchContext();
+  const prompt = buildCatalogRefinePrompt(
+    input.proposal,
+    input.issues,
+    context,
+    input.title
+  );
+
+  try {
+    const result = await callCatalogPatchLlm(
+      "You fix invalid catalog patch JSON. Respond with a single valid JSON object only — no markdown fences, no prose.",
+      prompt,
+      useOpenRouter,
+      "catalog-refine"
+    );
 
     return {
-      proposal: parsed.data,
-      model: resp.modelUsed,
-      costUsd: resp.costUsd,
+      ...result,
+      refinedFromIssues: input.issues.length,
     };
   } catch (err: unknown) {
     const elapsedMs =

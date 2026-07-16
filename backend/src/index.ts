@@ -24,6 +24,8 @@ import { GET as adminCatalogFilesGet } from "./api/admin/catalog/files/route.js"
 import { POST as adminCatalogVerifyPost } from "./api/admin/catalog/verify/route.js";
 import { POST as adminCatalogResearchPost } from "./api/admin/catalog/research/route.js";
 import { POST as adminCatalogApplyPost } from "./api/admin/catalog/apply/route.js";
+import { POST as adminCatalogRefinePost } from "./api/admin/catalog/refine/route.js";
+import { POST as adminCatalogUpdateAllPost } from "./api/admin/catalog/update-all/route.js";
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -63,6 +65,8 @@ registerRoute(app, "get", "/api/admin/catalog/files", adminCatalogFilesGet);
 registerRoute(app, "post", "/api/admin/catalog/verify", adminCatalogVerifyPost);
 registerRoute(app, "post", "/api/admin/catalog/research", adminCatalogResearchPost);
 registerRoute(app, "post", "/api/admin/catalog/apply", adminCatalogApplyPost);
+registerRoute(app, "post", "/api/admin/catalog/refine", adminCatalogRefinePost);
+registerRoute(app, "post", "/api/admin/catalog/update-all", adminCatalogUpdateAllPost);
 
 const server = app.listen(port, () => {
   console.log(`Resume API backend listening on http://localhost:${port}`);

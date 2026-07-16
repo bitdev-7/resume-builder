@@ -10,6 +10,7 @@ import {
   parseCatalogFromFiles,
   serializeCatalog,
   type MergeSummary,
+  type ParsedCatalog,
 } from "@/lib/tailoring/catalog-merge";
 import { reloadBuiltinCatalogFromParsed } from "@/lib/tailoring/catalog-reload";
 import { verifyCatalogJsonContents, verifyCatalogProposal } from "@/lib/tailoring/catalog-verify";
@@ -19,7 +20,51 @@ export interface CatalogApplyResult {
   version: string;
   filesWritten: string[];
   backupDir: string;
-  summary: MergeSummary;
+  summary?: MergeSummary;
+}
+
+export async function applyParsedCatalog(
+  catalog: ParsedCatalog,
+  options?: { skipVerify?: boolean }
+): Promise<CatalogApplyResult> {
+  const serialized = serializeCatalog(catalog);
+
+  if (!options?.skipVerify) {
+    const verifyResult = verifyCatalogJsonContents(serialized);
+    if (!verifyResult.valid) {
+      throw new Error(
+        verifyResult.issues.map((i) => `${i.file}: ${i.message}`).join("; ") ||
+          "Catalog failed verification"
+      );
+    }
+  }
+
+  const backupDir = await backupCatalogDir();
+  await writeCatalogFilesAtomic(serialized);
+  reloadBuiltinCatalogFromParsed(catalog);
+
+  return {
+    applied: true,
+    version: catalog.version,
+    filesWritten: Object.keys(serialized),
+    backupDir,
+  };
+}
+
+/** Write a full verified catalog snapshot (e.g. from Update All) to disk. */
+export async function applyCatalogFiles(
+  files: Record<string, string>
+): Promise<CatalogApplyResult> {
+  const verifyResult = verifyCatalogJsonContents(files as Parameters<typeof verifyCatalogJsonContents>[0]);
+  if (!verifyResult.valid) {
+    throw new Error(
+      verifyResult.issues.map((i) => `${i.file}: ${i.message}`).join("; ") ||
+        "Catalog files failed verification"
+    );
+  }
+
+  const catalog = parseCatalogFromFiles(files as Parameters<typeof parseCatalogFromFiles>[0]);
+  return applyParsedCatalog(catalog, { skipVerify: true });
 }
 
 export async function applyCatalogPatch(proposal: CatalogPatch): Promise<CatalogApplyResult> {
