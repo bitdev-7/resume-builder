@@ -136,6 +136,7 @@ export async function extractJobFromPageContent(
       temperature: 0.1,
       max_tokens: resolveExtractMaxTokens(),
       tryParseJson: true,
+      stage: "job-extract",
     });
 
     const parsed = parseExtractAiResponse(aiResp);

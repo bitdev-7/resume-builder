@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
           ? 4096
           : 2048,
       tryParseJson: true,
+      stage: "ats-check",
     });
 
     const result = parseAtsFromAiResponse({

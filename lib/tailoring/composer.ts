@@ -120,6 +120,7 @@ export async function composeResumeTopSection(
       temperature: 0.6,
       max_tokens: 2048,
       tryParseJson: true,
+      stage: "composer",
     });
   } catch (err) {
     throw new Error(

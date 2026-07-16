@@ -9,6 +9,11 @@ import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 import { jdAnalysisAiOutputSchema } from "@/lib/tailoring/schemas";
 import type { JDAnalysis, JDRequirement, RequirementType } from "@/lib/types/tailoring";
 import { cleanJsonText } from "@/lib/analyze-json";
+import {
+  buildJdAnalysisCacheKey,
+  getCachedJdAnalysis,
+  setCachedJdAnalysis,
+} from "@/lib/tailoring/jd-analysis-cache";
 
 const BASE_PRIORITY_BY_TYPE: Record<RequirementType, number> = {
   must_have: 10,
@@ -43,8 +48,18 @@ export async function analyzeJobDescription(
   aiRequest: ResolvedAIRequest,
   promptOverrides?: PromptOverrides
 ): Promise<JdAnalyzerResult> {
+  const systemPrompt = buildJdAnalyzerSystemPrompt(promptOverrides);
+
+  // In-process cache: re-generating against the same JD (+ same analyzer guidance) skips the LLM call.
+  const cacheKey = buildJdAnalysisCacheKey(jd, systemPrompt);
+  const cached = getCachedJdAnalysis(cacheKey);
+  if (cached) {
+    console.log("[tailoring] JD analysis cache hit — skipping Stage 1 LLM call");
+    return cached;
+  }
+
   const messages: AIMessage[] = [
-    { role: "system", content: buildJdAnalyzerSystemPrompt(promptOverrides) },
+    { role: "system", content: systemPrompt },
     { role: "user", content: buildJdAnalyzerUserPrompt(jd) },
   ];
 
@@ -61,6 +76,7 @@ export async function analyzeJobDescription(
       temperature: 0.1,
       max_tokens: 2048,
       tryParseJson: true,
+      stage: "jd-analyzer",
     });
     costUsd = resp.costUsd;
     providerUsed = resp.providerUsed;
@@ -113,5 +129,7 @@ export async function analyzeJobDescription(
     rawText: jd,
   };
 
-  return { analysis, costUsd, providerUsed, modelUsed };
+  const result: JdAnalyzerResult = { analysis, costUsd, providerUsed, modelUsed };
+  setCachedJdAnalysis(cacheKey, result);
+  return result;
 }

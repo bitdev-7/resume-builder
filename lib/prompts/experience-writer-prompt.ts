@@ -39,6 +39,27 @@ const EXPERIENCE_WRITER_CONTRACT = `Return ONLY valid JSON matching this exact s
   ]
 }`;
 
+/** EDITABLE default guidance for the batched experience-writer prompt. {{...}} are substituted at build time. */
+export const EXPERIENCE_WRITER_BATCHED_DEFAULT_GUIDANCE = `You are the Experience Writer stage. You receive an array of work experiences and write achievement bullets for EACH one independently.
+
+${EXPERIENCE_WRITER_DEFAULT_GUIDANCE.replace(
+  "You write achievement bullets for ONE work experience at a time.",
+  "For EACH experience in the array, independently produce its bullets using ONLY that experience's allowedEvidence and allowedSkills — never mix evidence or skills across experiences."
+)}
+
+Important batching rules:
+- Return one entry per experience in the input array, keyed by its exact "experienceId".
+- Never invent, drop, rename, or merge experienceIds — every input experienceId must appear in the output, unchanged.
+- Keep each experience's bullets scoped to its own allowedEvidence; do not cite evidenceIds from another experience.`;
+
+/** FIXED output contract for the batched call — never user-editable. */
+const EXPERIENCE_WRITER_BATCHED_CONTRACT = `Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
+{
+  "experiences": [
+    { "experienceId": string, "bullets": [ { "text": string, "evidenceIds": string[], "requirementIds": string[] } ] }
+  ]
+}`;
+
 export function buildExperienceWriterSystemPrompt(overrides?: PromptOverrides): string {
   const guidance = applyPromptPlaceholders(
     resolveGuidance(overrides, "experienceWriter", EXPERIENCE_WRITER_DEFAULT_GUIDANCE)
@@ -48,6 +69,18 @@ export function buildExperienceWriterSystemPrompt(overrides?: PromptOverrides): 
 ${guidance}
 
 ${EXPERIENCE_WRITER_CONTRACT}`;
+}
+
+/** Batched variant system prompt — writes bullets for every experience in one call. */
+export function buildExperienceWriterBatchedSystemPrompt(overrides?: PromptOverrides): string {
+  const guidance = applyPromptPlaceholders(
+    resolveGuidance(overrides, "experienceWriter", EXPERIENCE_WRITER_BATCHED_DEFAULT_GUIDANCE)
+  );
+  return `${buildGlobalEvidencePolicy(overrides)}
+
+${guidance}
+
+${EXPERIENCE_WRITER_BATCHED_CONTRACT}`;
 }
 
 export interface ExperienceWriterInput {
@@ -95,4 +128,36 @@ export function buildExperienceWriterUserPrompt(input: ExperienceWriterInput): s
     : "";
 
   return `${JSON.stringify(payload, null, 2)}${extra}`;
+}
+
+/** Builds the user prompt for the batched experience-writer call (one or more experiences). */
+export function buildExperienceWriterBatchedUserPrompt(inputs: ExperienceWriterInput[]): string {
+  const experiences = inputs.map((input) => ({
+    experienceId: input.experienceId,
+    identity: {
+      title: input.title,
+      company: input.company,
+      startDate: input.startDate,
+      endDate: input.endDate,
+    },
+    allowedEvidence: input.allowedEvidence.map((f) => ({
+      id: f.id,
+      text: f.text,
+      factType: f.factType,
+      metrics: f.metrics?.map((m) => ({ id: m.id, value: m.value })) ?? [],
+    })),
+    allowedSkills: input.allowedSkills,
+    targetSkills: input.targetSkills,
+    priorityRequirements: input.priorityRequirements,
+    targetBulletCount: input.targetBulletCount,
+    extraInstructions: input.extraInstructions?.trim() || undefined,
+  }));
+
+  // Shared extra-instructions (if all inputs carry the same one) are hoisted once at the end.
+  const sharedExtra = inputs.every((i) => i.extraInstructions?.trim()) &&
+    new Set(inputs.map((i) => i.extraInstructions?.trim())).size === 1
+    ? `\n\nADDITIONAL USER-CONFIGURED INSTRUCTIONS (apply to every experience, only if they do not conflict with the evidence policy above):\n${inputs[0].extraInstructions!.trim()}`
+    : "";
+
+  return `${JSON.stringify({ experiences }, null, 2)}${sharedExtra}`;
 }

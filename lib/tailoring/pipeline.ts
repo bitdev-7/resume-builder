@@ -17,7 +17,7 @@ import { buildCandidateEvidenceProfile, getPossessedSkillNames } from "@/lib/tai
 import { expandRoleSkills, getRoleCatalogEntryOrDefault } from "@/lib/tailoring/role-skill-expansion";
 import { resolveSkillEvidence } from "@/lib/tailoring/skill-evidence-resolver";
 import { createTailoringPlan, DEFAULT_BULLET_BUDGET } from "@/lib/tailoring/tailoring-planner";
-import { generateExperiencesInParallel } from "@/lib/tailoring/experience-generator";
+import { generateExperiencesInParallel, generateExperiencesBatched } from "@/lib/tailoring/experience-generator";
 import {
   buildDeterministicComposerFallback,
   composeResumeTopSection,
@@ -30,6 +30,7 @@ import { repairTailoredResume } from "@/lib/tailoring/repair";
 import { assembleFinalResume } from "@/lib/tailoring/assemble";
 import { buildEnrichmentRecommendations } from "@/lib/tailoring/enrichment";
 import { skillKey, detectSkillMentions } from "@/lib/tailoring/skill-ontology";
+import type { ExperienceGenerationMode } from "@/lib/workflow-settings";
 import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 
 export interface RunTailoringPipelineInput {
@@ -42,6 +43,18 @@ export interface RunTailoringPipelineInput {
   promptOverrides?: PromptOverrides;
   skillBudget?: SkillBudgetConfig;
   bulletBudget?: BulletBudgetConfig;
+  /**
+   * When true, the repair loop only re-runs the LLM for hard correctness issues.
+   * Driven by the user's generation-mode setting ("balanced"). Defaults to false
+   * (repair on any issue) when unset, preserving the "accurate" behavior.
+   */
+  hardIssuesOnly?: boolean;
+  /**
+   * How Stage 7 generates experience bullets. Defaults to "batched" (one LLM
+   * call for all roles). "per-experience" uses one call per role (the original
+   * "thorough" workflow).
+   */
+  experienceMode?: ExperienceGenerationMode;
 }
 
 export interface RunTailoringPipelineResult {
@@ -290,16 +303,16 @@ export async function runTailoringPipeline(
 
   const buildFallback = buildFallbackFactory(experiencesById);
 
-  // Stage 7 — Per-Experience Bullet Generation (concurrent)
+  // Stage 7 — Per-Experience Bullet Generation. Batched = one LLM call for all
+  // roles (default); per-experience = one call per role (the "thorough" workflow).
   const writerInputs = plan.experiencePlans
     .map((p) => experienceWriterInputsById.get(p.experienceId))
     .filter((i): i is ExperienceWriterInput => Boolean(i));
-  const { results: initialExperienceResults, costUsd: expCost } = await generateExperiencesInParallel(
-    writerInputs,
-    input.aiRequest,
-    buildFallback,
-    promptOverrides
-  );
+  const experienceMode: ExperienceGenerationMode = input.experienceMode ?? "batched";
+  const { results: initialExperienceResults, costUsd: expCost } =
+    experienceMode === "per-experience"
+      ? await generateExperiencesInParallel(writerInputs, input.aiRequest, buildFallback, promptOverrides)
+      : await generateExperiencesBatched(writerInputs, input.aiRequest, buildFallback, promptOverrides);
   totalCost += expCost;
 
   // Stage 8 — Final Composer (summary/skills/projects), built only after experience bullets exist
@@ -368,6 +381,8 @@ export async function runTailoringPipeline(
     aiRequest: input.aiRequest,
     skillBudget,
     maxAttempts: bulletBudget.maxRepairAttempts,
+    hardIssuesOnly: input.hardIssuesOnly ?? false,
+    experienceMode,
     buildFallback,
     promptOverrides,
   });

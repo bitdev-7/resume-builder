@@ -72,6 +72,7 @@ Return a JSON array with one object per question in the same order: [{"question"
         temperature: 0.3,
         max_tokens: 2048,
         tryParseJson: true,
+        stage: "answer-questions",
       });
 
       if (aiResp.json) {

@@ -66,6 +66,7 @@ Candidate name for sign-off: ${candidateName}`;
         temperature: 0.4,
         max_tokens: 1024,
         tryParseJson: false,
+        stage: "cover-letter",
       });
 
       coverLetter = aiResp.text || "";

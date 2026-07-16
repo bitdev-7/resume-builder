@@ -77,6 +77,8 @@ interface CallAIOptions {
   useOpenRouter?: boolean;
   model?: string;
   provider?: DirectAIProvider;
+  /** Optional human-readable tag identifying which pipeline stage made the call (e.g. "jd-analyzer"). Included in timing logs. */
+  stage?: string;
 }
 
 export interface AIResponse {
@@ -343,6 +345,16 @@ export function formatAIProviderError(
 
 const MAX_BACKOFF_MS = Number(process.env.AI_MAX_BACKOFF_MS || 20_000);
 
+/** Human-readable summary of one completed LLM call, for timing/observability logs. */
+function formatAiCallSummary(stageLabel: string, elapsedMs: number, result: AIResponse): string {
+  const usage = result.usage;
+  const tokenInfo = usage
+    ? `, tokens=${usage.totalTokens ?? "?"} (prompt=${usage.promptTokens ?? "?"}, completion=${usage.completionTokens ?? "?"})`
+    : "";
+  const costInfo = result.costUsd != null ? `, cost=$${result.costUsd.toFixed(5)}` : "";
+  return `[ai] ${stageLabel} call completed in ${elapsedMs}ms (provider=${result.providerUsed}, model=${result.modelUsed}${tokenInfo}${costInfo})`;
+}
+
 /**
  * Runs an AI call with bounded retries on transient failures: timeouts,
  * connection errors, and retryable HTTP statuses (429 rate-limit, 408/409, 5xx).
@@ -360,7 +372,10 @@ async function withTimeoutRetry<T>(
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const started = Date.now();
     try {
-      return await fn();
+      const result = await fn();
+      const elapsedMs = Date.now() - started;
+      console.log(`[ai] ${label} attempt ${attempt}/${attempts} took ${elapsedMs}ms`);
+      return result;
     } catch (err) {
       lastError = err;
       const elapsedMs = Date.now() - started;
@@ -519,7 +534,22 @@ async function callDirectAI(
   throw new Error(`Unsupported provider: ${provider}`);
 }
 
-export async function callAI(opts: CallAIOptions) {
+export async function callAI(opts: CallAIOptions): Promise<AIResponse> {
+  const stageLabel = opts.stage ? opts.stage : "ai-call";
+  const callStarted = Date.now();
+  try {
+    const result = await callAICore(opts);
+    const elapsedMs = Date.now() - callStarted;
+    console.log(formatAiCallSummary(stageLabel, elapsedMs, result));
+    return result;
+  } catch (err) {
+    const elapsedMs = Date.now() - callStarted;
+    console.error(`[ai] ${stageLabel} call FAILED after ${elapsedMs}ms`);
+    throw err;
+  }
+}
+
+async function callAICore(opts: CallAIOptions): Promise<AIResponse> {
   const {
     messages,
     temperature = 0.7,
@@ -529,6 +559,7 @@ export async function callAI(opts: CallAIOptions) {
     provider,
   } = opts;
 
+  const stageLabel = opts.stage ? opts.stage : "ai-call";
   const useOpenRouter = resolveOpenRouterMode(opts);
 
   if (!useOpenRouter) {
@@ -536,7 +567,7 @@ export async function callAI(opts: CallAIOptions) {
       throw new Error("AI provider is required when not using OpenRouter");
     }
     const directModel = model || "";
-    return withTimeoutRetry(`${provider} ${directModel}`, () =>
+    return withTimeoutRetry(`${stageLabel}: ${provider} ${directModel}`, () =>
       callDirectAI(provider, directModel, {
         messages,
         temperature,
@@ -556,7 +587,7 @@ export async function callAI(opts: CallAIOptions) {
 
   const runOpenRouterModel = (runModel: string) => {
     const providerUsed = getModelProvider(runModel);
-    return withTimeoutRetry(`OpenRouter ${runModel}`, async () => {
+    return withTimeoutRetry(`${stageLabel}: OpenRouter ${runModel}`, async () => {
       const requestBody: Record<string, unknown> = {
         model: runModel,
         messages: messages.map((m) => ({ role: m.role, content: m.content })),

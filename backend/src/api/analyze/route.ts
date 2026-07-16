@@ -9,6 +9,8 @@ import { generateResumePdfBase64 } from "@/lib/generate-resume-pdf";
 import { extractJobFromPageContent } from "@/lib/extract-job-page";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
 import { loadResumePromptPreferences } from "@/lib/supabase/services/resume-prompt-settings";
+import { loadWorkflowSettings } from "@/lib/supabase/services/workflow-settings";
+import { workflowSettingsToPipelineOptions } from "@/lib/workflow-settings";
 import {
   ensureDefaultResumeProfile,
   listResumeProfiles,
@@ -133,6 +135,8 @@ async function runGenerationJob(params: GenerationJobParams): Promise<void> {
     }
 
     const promptPrefs = await loadResumePromptPreferences(userId, client);
+    const workflowSettings = await loadWorkflowSettings(userId, client);
+    const workflowOptions = workflowSettingsToPipelineOptions(workflowSettings);
     // Per-generation tone/emphasis tweak from the preview's Regenerate panel,
     // layered on top of the saved preferences (does not persist).
     const tweakTone =
@@ -155,9 +159,12 @@ async function runGenerationJob(params: GenerationJobParams): Promise<void> {
       aiRequest,
       customPromptOverride: extraInstructions || undefined,
       promptOverrides: promptOverridesBody,
+      bulletBudget: workflowOptions.bulletBudget,
+      hardIssuesOnly: workflowOptions.hardIssuesOnly,
+      experienceMode: workflowOptions.experienceMode,
     });
     console.log(
-      `Tailoring pipeline finished in ${Date.now() - pipelineStarted}ms (provider=${pipelineResult.providerUsed}, model=${pipelineResult.modelUsed}, cost=$${pipelineResult.generationCostUsd.toFixed(4)}, archetype=${pipelineResult.roleArchetype.primaryRoleArchetype})`
+      `Tailoring pipeline finished in ${Date.now() - pipelineStarted}ms (provider=${pipelineResult.providerUsed}, model=${pipelineResult.modelUsed}, cost=$${pipelineResult.generationCostUsd.toFixed(4)}, archetype=${pipelineResult.roleArchetype.primaryRoleArchetype}, mode=${workflowSettings.mode})`
     );
 
     pipelineResume = pipelineResult.resume;

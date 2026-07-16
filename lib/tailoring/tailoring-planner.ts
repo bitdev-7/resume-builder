@@ -18,7 +18,7 @@ import { getBulletCountForTenure, getTenureYears } from "@/lib/resume-bullets";
 export const DEFAULT_BULLET_BUDGET: BulletBudgetConfig = {
   minBulletsPerExperience: 2,
   maxBulletsPerExperience: 9,
-  maxRepairAttempts: 2,
+  maxRepairAttempts: 1,
 };
 
 const STOPWORDS = new Set([

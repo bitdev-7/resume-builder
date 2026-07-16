@@ -12,6 +12,7 @@ type SettingsNavItem = {
 
 const SETTINGS_NAV: readonly SettingsNavItem[] = [
   { href: "/settings", label: "General", exact: true },
+  { href: "/settings/generation", label: "Generation" },
   { href: "/settings/prompt", label: "Prompt" },
 ];
 
