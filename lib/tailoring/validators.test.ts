@@ -111,7 +111,7 @@ describe("validators — metric grounding", () => {
     expect(issues.filter((i) => i.code === "UNGROUNDED_METRIC")).toHaveLength(0);
   });
 
-  it("Case 11: an invented metric not present in evidence is flagged", () => {
+  it("Case 11: an invented metric on a reference-based bullet is flagged", () => {
     const results: ExperienceGenerationResult[] = [
       {
         experienceId: "exp_1",
@@ -124,6 +124,21 @@ describe("validators — metric grounding", () => {
 
     const issues = validateTailoredResume(baseValidateInput(results));
     expect(issues.some((i) => i.code === "UNGROUNDED_METRIC" && i.message.includes("37%"))).toBe(true);
+  });
+
+  it("allows invented metrics on creatively generated bullets (empty evidenceIds)", () => {
+    const results: ExperienceGenerationResult[] = [
+      {
+        experienceId: "exp_1",
+        bullets: [
+          { text: "Reduced latency by 37% across services", evidenceIds: [], requirementIds: [] },
+          { text: "Built authentication APIs for the platform", evidenceIds: ["fact_1"], requirementIds: [] },
+        ],
+      },
+    ];
+
+    const issues = validateTailoredResume(baseValidateInput(results));
+    expect(issues.filter((i) => i.code === "UNGROUNDED_METRIC")).toHaveLength(0);
   });
 });
 
@@ -154,14 +169,14 @@ describe("validators — evidence/requirement id integrity", () => {
 });
 
 describe("validators — skill support", () => {
-  it("flags a final skill with no supporting evidence", () => {
+  it("allows dynamic skills not in the candidate allow-list", () => {
     const results: ExperienceGenerationResult[] = [
       { experienceId: "exp_1", bullets: [{ text: "Built authentication APIs for the platform", evidenceIds: ["fact_1"], requirementIds: [] }] },
     ];
     const composer = composerResult({ skillCategories: { Backend: ["Python", "Kubernetes"] } });
 
     const issues = validateTailoredResume(baseValidateInput(results, composer));
-    expect(issues.some((i) => i.code === "UNSUPPORTED_SKILL" && i.message.includes("Kubernetes"))).toBe(true);
+    expect(issues.some((i) => i.code === "UNSUPPORTED_SKILL")).toBe(false);
   });
 
   it("does NOT flag a JD-required skill that is present in allowedFinalSkillsByKey (even without evidence)", () => {

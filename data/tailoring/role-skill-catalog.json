@@ -1,0 +1,2423 @@
+{
+  "full_stack_python_engineer": {
+    "id": "full_stack_python_engineer",
+    "label": "Full Stack Python Engineer",
+    "titleKeywords": [
+      "full stack python",
+      "full-stack python",
+      "python full stack",
+      "full stack",
+      "python",
+      "engineer",
+      "developer",
+      "software engineer"
+    ],
+    "core": [
+      "Python",
+      "REST APIs",
+      "SQL",
+      "Git",
+      "JavaScript",
+      "React",
+      "Django",
+      "Flask",
+      "FastAPI",
+      "Docker",
+      "Kubernetes",
+      "CI/CD",
+      "Pytest",
+      "HTML",
+      "CSS",
+      "PostgreSQL",
+      "Redis",
+      "MongoDB",
+      "Testing",
+      "TypeScript",
+      "GraphQL",
+      "Microservices",
+      "CloudFormation",
+      "AWS",
+      "Azure",
+      "GCP",
+      "Linux",
+      "Bash",
+      "Scripting"
+    ],
+    "ecosystem": {
+      "backendEcosystem": [
+        "Django",
+        "FastAPI",
+        "Flask",
+        "Pydantic",
+        "OpenAPI",
+        "PostgreSQL",
+        "Redis",
+        "Python",
+        "MySQL",
+        "MongoDB",
+        "SQL",
+        "REST APIs",
+        "GraphQL",
+        "Microservices"
+      ],
+      "frontendEcosystem": [
+        "JavaScript",
+        "TypeScript",
+        "React",
+        "HTML",
+        "CSS",
+        "Vue.js",
+        "Angular"
+      ],
+      "deliveryEcosystem": [
+        "Docker",
+        "CI/CD",
+        "Testing",
+        "Pytest"
+      ],
+      "devOpsEcosystem": [
+        "Docker",
+        "Kubernetes",
+        "CI/CD",
+        "GitHub Actions",
+        "GitLab CI",
+        "Jenkins",
+        "Git",
+        "Linux",
+        "Bash",
+        "Scripting",
+        "AWS",
+        "Azure",
+        "GCP",
+        "CloudFormation"
+      ],
+      "testingEcosystem": [
+        "Pytest",
+        "Testing",
+        "Jest"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ]
+    },
+    "marketRelevant": [
+      "GraphQL",
+      "MongoDB",
+      "Kubernetes",
+      "Python",
+      "JavaScript",
+      "React",
+      "Django",
+      "FastAPI",
+      "Flask",
+      "REST APIs",
+      "SQL",
+      "PostgreSQL",
+      "Docker",
+      "CI/CD",
+      "Git",
+      "Pytest",
+      "AWS",
+      "TypeScript",
+      "Redis",
+      "Testing",
+      "Azure",
+      "GCP",
+      "Microservices",
+      "Linux",
+      "Bash",
+      "Scripting"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Backend",
+      "Frontend",
+      "Data",
+      "Cloud & DevOps",
+      "Testing & Tools",
+      "devops",
+      "testing",
+      "cloud",
+      "databases",
+      "programming_languages"
+    ]
+  },
+  "python_backend_engineer": {
+    "id": "python_backend_engineer",
+    "label": "Python Backend Engineer",
+    "titleKeywords": [
+      "python backend",
+      "python developer",
+      "python engineer",
+      "python",
+      "backend",
+      "engineer",
+      "backend engineer",
+      "backend developer",
+      "api developer"
+    ],
+    "core": [
+      "Python",
+      "REST APIs",
+      "SQL",
+      "Git",
+      "Django",
+      "Flask",
+      "FastAPI",
+      "PostgreSQL",
+      "Redis",
+      "Docker",
+      "Kubernetes",
+      "CI/CD",
+      "Pytest",
+      "Microservices",
+      "Distributed Systems",
+      "Testing",
+      "RabbitMQ",
+      "Kafka",
+      "MongoDB"
+    ],
+    "ecosystem": {
+      "backendEcosystem": [
+        "Django",
+        "FastAPI",
+        "Flask",
+        "Pydantic",
+        "PostgreSQL",
+        "Redis",
+        "MongoDB",
+        "MySQL",
+        "RabbitMQ",
+        "Kafka",
+        "Docker",
+        "Kubernetes",
+        "CI/CD",
+        "GitHub Actions",
+        "GitLab CI",
+        "Jenkins",
+        "Pytest",
+        "Testing",
+        "Linux",
+        "Bash",
+        "Scripting",
+        "Microservices",
+        "Distributed Systems"
+      ],
+      "deliveryEcosystem": [
+        "Docker",
+        "CI/CD",
+        "Testing",
+        "Pytest"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "infrastructureAsCode": [
+        "Terraform",
+        "CloudFormation",
+        "Pulumi"
+      ],
+      "monitoringLogging": [
+        "Prometheus",
+        "Grafana"
+      ],
+      "containerizationAndOrchestration": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "ciCdTools": [
+        "GitHub Actions",
+        "GitLab CI",
+        "Jenkins"
+      ],
+      "testingFrameworks": [
+        "Pytest"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "scriptingAndAutomation": [
+        "Bash",
+        "Scripting"
+      ]
+    },
+    "marketRelevant": [
+      "Kubernetes",
+      "GraphQL",
+      "Kafka",
+      "Python",
+      "Django",
+      "FastAPI",
+      "Flask",
+      "REST APIs",
+      "PostgreSQL",
+      "Redis",
+      "Docker",
+      "CI/CD",
+      "Git",
+      "Pytest",
+      "Microservices",
+      "Distributed Systems",
+      "AWS",
+      "Terraform",
+      "RabbitMQ",
+      "Testing",
+      "Azure",
+      "GCP"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Backend",
+      "Data",
+      "Cloud & DevOps",
+      "Testing & Tools",
+      "python",
+      "api",
+      "microservices",
+      "cloud",
+      "devops",
+      "testing",
+      "backend development",
+      "api development",
+      "cloud computing",
+      "containerization",
+      "orchestration",
+      "message brokers",
+      "database management",
+      "testing and quality assurance",
+      "ci/cd pipelines",
+      "version control"
+    ]
+  },
+  "backend_engineer": {
+    "id": "backend_engineer",
+    "label": "Backend Engineer",
+    "titleKeywords": [
+      "backend",
+      "back-end",
+      "back end",
+      "server-side",
+      "api",
+      "microservices",
+      "database",
+      "cloud",
+      "scalable",
+      "performance",
+      "engineer"
+    ],
+    "core": [
+      "REST APIs",
+      "SQL",
+      "Git",
+      "Testing",
+      "Node.js",
+      "Python",
+      "Java",
+      "Docker",
+      "Kubernetes",
+      "Microservices",
+      "Distributed Systems",
+      "CI/CD",
+      "Cloud (AWS, Azure, GCP)",
+      "NoSQL",
+      "GraphQL",
+      "Redis",
+      "Message Queues"
+    ],
+    "ecosystem": {
+      "dataStores": [
+        "PostgreSQL",
+        "MySQL",
+        "Redis",
+        "MongoDB"
+      ],
+      "delivery": [
+        "Docker",
+        "CI/CD"
+      ],
+      "backendLanguages": [
+        "Python",
+        "Java",
+        "Node.js",
+        "C#"
+      ],
+      "databases": [
+        "PostgreSQL",
+        "MySQL",
+        "Redis",
+        "MongoDB",
+        "SQL",
+        "NoSQL"
+      ],
+      "apiTechnologies": [
+        "REST APIs",
+        "GraphQL",
+        "OpenAPI"
+      ],
+      "containerizationAndOrchestration": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "ciCdTools": [
+        "Jenkins",
+        "GitHub Actions",
+        "GitLab CI",
+        "CI/CD"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "monitoringAndLogging": [
+        "Prometheus",
+        "Grafana"
+      ],
+      "testingFrameworks": [
+        "Pytest",
+        "Testing",
+        "Jest"
+      ],
+      "messagingSystems": [
+        "Kafka",
+        "RabbitMQ"
+      ],
+      "scriptingAndAutomation": [
+        "Bash",
+        "Scripting"
+      ],
+      "backendEcosystem": [
+        "Node.js",
+        "Python",
+        "REST APIs",
+        "GraphQL",
+        "Microservices",
+        "Docker",
+        "Kubernetes",
+        "Redis",
+        "Message Queues",
+        "Testing",
+        "SQL",
+        "NoSQL",
+        "Distributed Systems"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "messageQueueSystems": [
+        "Kafka",
+        "RabbitMQ",
+        "ActiveMQ"
+      ]
+    },
+    "marketRelevant": [
+      "Kubernetes",
+      "Kafka",
+      "GraphQL",
+      "Microservices",
+      "Distributed Systems",
+      "Cloud",
+      "Containerization",
+      "API Design",
+      "Database Management",
+      "CI/CD",
+      "Monitoring",
+      "Messaging Queues",
+      "Testing Automation",
+      "Docker",
+      "Cloud (AWS, Azure, GCP)",
+      "Redis"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Backend",
+      "Data",
+      "Cloud & DevOps",
+      "Testing & Tools",
+      "backendLanguages",
+      "databases",
+      "apiTechnologies",
+      "containerizationAndOrchestration",
+      "ciCdTools",
+      "cloudPlatforms",
+      "monitoringAndLogging",
+      "testingFrameworks",
+      "messagingSystems",
+      "scriptingAndAutomation",
+      "cloud",
+      "devops",
+      "messaging",
+      "testing",
+      "automation"
+    ]
+  },
+  "frontend_engineer": {
+    "id": "frontend_engineer",
+    "label": "Frontend Engineer",
+    "titleKeywords": [
+      "frontend",
+      "front-end",
+      "front end",
+      "ui engineer",
+      "frontend engineer",
+      "web developer",
+      "javascript developer",
+      "engineer",
+      "ui",
+      "client-side",
+      "web",
+      "javascript",
+      "typescript",
+      "react",
+      "vue",
+      "angular"
+    ],
+    "core": [
+      "JavaScript",
+      "HTML",
+      "CSS",
+      "Git",
+      "TypeScript",
+      "React",
+      "Vue.js",
+      "Angular",
+      "Jest",
+      "Testing",
+      "Webpack",
+      "Babel",
+      "ES6+",
+      "Accessibility",
+      "Responsive Design"
+    ],
+    "ecosystem": {
+      "frameworks": [
+        "React",
+        "Vue.js",
+        "Angular"
+      ],
+      "typing": [
+        "TypeScript"
+      ],
+      "tooling": [
+        "Testing",
+        "Jest",
+        "CI/CD"
+      ],
+      "frontendFrameworks": [
+        "React",
+        "Vue.js",
+        "Angular",
+        "Svelte"
+      ],
+      "testingTools": [
+        "Jest",
+        "Cypress",
+        "Testing Library",
+        "Testing",
+        "React Testing Library"
+      ],
+      "buildTools": [
+        "Webpack",
+        "Vite",
+        "Rollup",
+        "Babel"
+      ],
+      "stateManagement": [
+        "Redux",
+        "MobX",
+        "Recoil",
+        "Vuex",
+        "Pinia",
+        "Context API"
+      ],
+      "cssTechnologies": [
+        "CSS",
+        "Sass",
+        "Less",
+        "Tailwind CSS",
+        "Styled Components"
+      ],
+      "packageManagers": [
+        "npm",
+        "Yarn",
+        "pnpm"
+      ],
+      "versionControl": [
+        "Git",
+        "GitHub",
+        "GitLab",
+        "Bitbucket"
+      ],
+      "ciCdTools": [
+        "GitHub Actions",
+        "GitLab CI",
+        "Jenkins",
+        "CircleCI"
+      ],
+      "webApis": [
+        "REST APIs",
+        "GraphQL",
+        "WebSockets"
+      ],
+      "performanceOptimization": [
+        "Lighthouse",
+        "Webpack Bundle Analyzer"
+      ],
+      "accessibilityTools": [
+        "axe",
+        "Lighthouse Accessibility"
+      ],
+      "browserDevTools": [
+        "Chrome DevTools",
+        "Firefox Developer Tools"
+      ],
+      "webStandards": [
+        "HTML",
+        "CSS",
+        "Accessibility",
+        "Responsive Design"
+      ],
+      "apiIntegration": [
+        "REST APIs",
+        "GraphQL",
+        "Axios",
+        "Fetch API"
+      ]
+    },
+    "marketRelevant": [
+      "GraphQL",
+      "Node.js",
+      "JavaScript",
+      "TypeScript",
+      "React",
+      "Vue.js",
+      "Angular",
+      "HTML",
+      "CSS",
+      "Git",
+      "Jest",
+      "Cypress",
+      "Redux",
+      "Webpack",
+      "REST APIs",
+      "npm",
+      "Tailwind CSS",
+      "GitHub Actions",
+      "Accessibility",
+      "Responsive Design"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Frontend",
+      "Testing & Tools",
+      "Cloud & DevOps",
+      "frontend development",
+      "web development",
+      "ui engineering",
+      "javascript frameworks",
+      "testing",
+      "build tools",
+      "state management",
+      "css preprocessors",
+      "version control",
+      "ci/cd",
+      "web apis",
+      "performance",
+      "accessibility",
+      "frontendDevelopment",
+      "webDevelopment",
+      "uiEngineering",
+      "clientSideDevelopment",
+      "javascriptEcosystem",
+      "buildTools",
+      "stateManagement",
+      "cssPreprocessors",
+      "apiIntegration"
+    ]
+  },
+  "full_stack_engineer": {
+    "id": "full_stack_engineer",
+    "label": "Full Stack Engineer",
+    "titleKeywords": [
+      "full stack",
+      "full-stack",
+      "fullstack",
+      "engineer",
+      "developer",
+      "software engineer",
+      "web developer"
+    ],
+    "core": [
+      "JavaScript",
+      "REST APIs",
+      "SQL",
+      "Git",
+      "TypeScript",
+      "Node.js",
+      "React",
+      "GraphQL",
+      "PostgreSQL",
+      "MySQL",
+      "MongoDB",
+      "Docker",
+      "Kubernetes",
+      "CI/CD",
+      "NoSQL",
+      "Testing",
+      "Microservices",
+      "Cloud Platforms"
+    ],
+    "ecosystem": {
+      "frontendEcosystem": [
+        "TypeScript",
+        "React",
+        "Vue.js",
+        "Angular",
+        "HTML",
+        "CSS"
+      ],
+      "backendEcosystem": [
+        "Node.js",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis"
+      ],
+      "deliveryEcosystem": [
+        "Docker",
+        "CI/CD",
+        "Testing"
+      ],
+      "frontendFrameworks": [
+        "React",
+        "Vue.js",
+        "Angular"
+      ],
+      "backendFrameworks": [
+        "Node.js",
+        "Express",
+        "NestJS"
+      ],
+      "databases": [
+        "PostgreSQL",
+        "MySQL",
+        "MongoDB",
+        "Redis"
+      ],
+      "apiTechnologies": [
+        "REST APIs",
+        "GraphQL",
+        "OpenAPI"
+      ],
+      "containerizationAndOrchestration": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "ciCdTools": [
+        "GitHub Actions",
+        "GitLab CI",
+        "Jenkins"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "scriptingLanguages": [
+        "Bash",
+        "Scripting"
+      ],
+      "testingFrameworks": [
+        "Jest",
+        "Testing",
+        "Pytest"
+      ],
+      "programmingLanguages": [
+        "JavaScript",
+        "TypeScript",
+        "Python"
+      ],
+      "infrastructureAsCode": [
+        "Terraform",
+        "CloudFormation",
+        "Pulumi"
+      ],
+      "monitoringTools": [
+        "Prometheus",
+        "Grafana"
+      ],
+      "operatingSystemsAndScripting": [
+        "Linux",
+        "Bash",
+        "Scripting"
+      ]
+    },
+    "marketRelevant": [
+      "GraphQL",
+      "Kubernetes",
+      "JavaScript",
+      "TypeScript",
+      "Node.js",
+      "React",
+      "REST APIs",
+      "SQL",
+      "PostgreSQL",
+      "MySQL",
+      "MongoDB",
+      "Docker",
+      "CI/CD",
+      "Git",
+      "AWS",
+      "Azure",
+      "GCP",
+      "Express",
+      "NestJS",
+      "Redis",
+      "OpenAPI",
+      "GitHub Actions",
+      "GitLab CI",
+      "Jenkins",
+      "Bash",
+      "NoSQL",
+      "Testing",
+      "Microservices",
+      "Cloud Platforms"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Frontend",
+      "Backend",
+      "Cloud & DevOps",
+      "Testing & Tools",
+      "frontendDevelopment",
+      "backendDevelopment",
+      "databaseManagement",
+      "apiDesign",
+      "containerization",
+      "orchestration",
+      "continuousIntegration",
+      "cloudComputing",
+      "versionControl",
+      "scripting",
+      "databases",
+      "devops",
+      "cloud",
+      "testing",
+      "programming languages",
+      "api design",
+      "monitoring"
+    ]
+  },
+  "java_backend_engineer": {
+    "id": "java_backend_engineer",
+    "label": "Java Backend Engineer",
+    "titleKeywords": [
+      "java developer",
+      "java engineer",
+      "java backend",
+      "java",
+      "backend",
+      "engineer",
+      "software engineer",
+      "developer",
+      "spring",
+      "microservices",
+      "backend developer"
+    ],
+    "core": [
+      "Java",
+      "SQL",
+      "Git",
+      "REST APIs",
+      "Spring",
+      "Spring Boot",
+      "Microservices",
+      "Distributed Systems",
+      "Docker",
+      "Kubernetes",
+      "CI/CD",
+      "Testing",
+      "Kafka",
+      "RabbitMQ",
+      "Redis"
+    ],
+    "ecosystem": {
+      "framework": [
+        "Spring",
+        "Spring Boot"
+      ],
+      "dataStores": [
+        "PostgreSQL",
+        "MySQL",
+        "Redis"
+      ],
+      "delivery": [
+        "Docker",
+        "CI/CD",
+        "Testing"
+      ],
+      "backendEcosystem": [
+        "Java",
+        "Spring",
+        "Spring Boot",
+        "Microservices",
+        "Distributed Systems",
+        "REST APIs",
+        "SQL",
+        "Kafka",
+        "RabbitMQ",
+        "Redis"
+      ],
+      "containerizationAndOrchestration": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "ciCdTools": [
+        "Jenkins",
+        "GitHub Actions",
+        "GitLab CI",
+        "CI/CD"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "testingFrameworks": [
+        "Testing",
+        "JUnit"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "scriptingAndAutomation": [
+        "Bash",
+        "Scripting"
+      ]
+    },
+    "marketRelevant": [
+      "Kafka",
+      "Kubernetes",
+      "Java",
+      "Spring Boot",
+      "Microservices",
+      "Docker",
+      "CI/CD",
+      "SQL",
+      "REST APIs",
+      "Git",
+      "Cloud Platforms",
+      "Testing",
+      "Redis",
+      "Distributed Systems"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Backend",
+      "Data",
+      "Cloud & DevOps",
+      "Testing & Tools",
+      "java",
+      "microservices",
+      "cloud",
+      "devops",
+      "messaging",
+      "containerization",
+      "databases",
+      "testing"
+    ]
+  },
+  "dotnet_engineer": {
+    "id": "dotnet_engineer",
+    "label": ".NET Engineer",
+    "titleKeywords": [
+      ".net",
+      "dotnet",
+      "c# developer",
+      "c# engineer",
+      "C#",
+      "ASP.NET",
+      "Entity Framework",
+      "MVC",
+      "Blazor",
+      "Azure",
+      "Microservices",
+      "core",
+      "web api"
+    ],
+    "core": [
+      "C#",
+      ".NET",
+      "SQL",
+      "Git",
+      "ASP.NET Core",
+      "Entity Framework",
+      "REST APIs",
+      "Microservices",
+      "Azure",
+      "Docker",
+      "CI/CD",
+      "Unit Testing",
+      "Azure DevOps",
+      "Blazor",
+      "gRPC"
+    ],
+    "ecosystem": {
+      "dataStores": [
+        "PostgreSQL",
+        "MySQL",
+        "Redis"
+      ],
+      "delivery": [
+        "Docker",
+        "CI/CD",
+        "Testing"
+      ],
+      "backendEcosystem": [
+        "C#",
+        ".NET",
+        "ASP.NET Core",
+        "Entity Framework",
+        "LINQ",
+        "Microservices",
+        "gRPC",
+        "Blazor"
+      ],
+      "frontendEcosystem": [
+        "Blazor",
+        "Razor",
+        "JavaScript",
+        "HTML",
+        "CSS"
+      ],
+      "cloudPlatforms": [
+        "Azure",
+        "AWS",
+        "GCP"
+      ],
+      "databases": [
+        "SQL Server",
+        "PostgreSQL",
+        "MySQL",
+        "Redis",
+        "MongoDB",
+        "SQL"
+      ],
+      "devOpsTools": [
+        "Docker",
+        "Kubernetes",
+        "CI/CD",
+        "GitHub Actions",
+        "Azure DevOps"
+      ],
+      "testingFrameworks": [
+        "xUnit",
+        "NUnit",
+        "MSTest",
+        "Moq",
+        "Unit Testing"
+      ],
+      "containerizationAndOrchestration": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "ciCdTools": [
+        "CI/CD",
+        "Azure DevOps",
+        "GitHub Actions",
+        "Jenkins"
+      ],
+      "versionControl": [
+        "Git"
+      ]
+    },
+    "marketRelevant": [
+      "Azure",
+      "Kubernetes",
+      "C#",
+      ".NET",
+      "ASP.NET Core",
+      "Entity Framework",
+      "SQL",
+      "Git",
+      "REST APIs",
+      "Microservices",
+      "Docker",
+      "Blazor",
+      "xUnit",
+      "CI/CD",
+      "Unit Testing",
+      "gRPC"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Backend",
+      "Data",
+      "Cloud & DevOps",
+      "Testing & Tools",
+      "backend development",
+      "cloud computing",
+      "microservices architecture",
+      "devops",
+      "frontend development",
+      "database management",
+      "testing",
+      "cloud",
+      "databases",
+      "containerization"
+    ]
+  },
+  "devops_engineer": {
+    "id": "devops_engineer",
+    "label": "DevOps Engineer",
+    "titleKeywords": [
+      "devops",
+      "site reliability",
+      "sre",
+      "platform engineer",
+      "Infrastructure",
+      "Automation",
+      "CI/CD",
+      "Cloud",
+      "Containerization",
+      "Monitoring",
+      "Scripting"
+    ],
+    "core": [
+      "Linux",
+      "Git",
+      "CI/CD",
+      "Scripting",
+      "Bash",
+      "Docker",
+      "Kubernetes",
+      "Terraform",
+      "AWS",
+      "Azure",
+      "GCP",
+      "Prometheus",
+      "Grafana"
+    ],
+    "ecosystem": {
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "containers": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "infrastructureAsCode": [
+        "Terraform",
+        "CloudFormation",
+        "Pulumi"
+      ],
+      "observability": [
+        "Prometheus",
+        "Grafana"
+      ],
+      "containerizationTools": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "ciCdTools": [
+        "Jenkins",
+        "GitHub Actions",
+        "GitLab CI"
+      ],
+      "monitoringTools": [
+        "Prometheus",
+        "Grafana"
+      ],
+      "scriptingLanguages": [
+        "Bash",
+        "Python",
+        "Scripting"
+      ],
+      "configurationManagement": [
+        "Ansible",
+        "Chef",
+        "Puppet"
+      ],
+      "versionControl": [
+        "Git"
+      ]
+    },
+    "marketRelevant": [
+      "Python",
+      "GitHub Actions",
+      "GitLab CI",
+      "Jenkins",
+      "Docker",
+      "Kubernetes",
+      "Terraform",
+      "AWS",
+      "Azure",
+      "GCP",
+      "CI/CD",
+      "Git",
+      "Linux",
+      "Bash",
+      "Prometheus",
+      "Grafana",
+      "Ansible",
+      "Infrastructure as Code",
+      "Cloud Automation",
+      "Container Orchestration",
+      "Continuous Integration",
+      "Continuous Delivery",
+      "Monitoring and Alerting",
+      "Configuration Management",
+      "Security and Compliance Automation"
+    ],
+    "skillCategoryHints": [
+      "Cloud Platforms",
+      "Containers & Orchestration",
+      "Infrastructure as Code",
+      "CI/CD",
+      "Observability",
+      "Scripting & Systems",
+      "DevOps",
+      "Cloud Infrastructure",
+      "Automation",
+      "Containerization",
+      "Monitoring",
+      "Scripting",
+      "CI/CD Pipelines",
+      "Monitoring and Logging",
+      "Scripting and Automation",
+      "Version Control"
+    ]
+  },
+  "data_engineer": {
+    "id": "data_engineer",
+    "label": "Data Engineer",
+    "titleKeywords": [
+      "data engineer",
+      "data engineering",
+      "data",
+      "engineer",
+      "etl",
+      "pipeline",
+      "big data",
+      "analytics",
+      "database",
+      "cloud",
+      "streaming",
+      "etl developer",
+      "data pipeline engineer",
+      "big data engineer"
+    ],
+    "core": [
+      "Python",
+      "SQL",
+      "Git",
+      "ETL",
+      "Data Pipelines",
+      "Apache Spark",
+      "Apache Kafka",
+      "Airflow",
+      "Cloud Data Platforms",
+      "Data Warehousing",
+      "Docker",
+      "Kubernetes",
+      "Apache Airflow",
+      "Kafka",
+      "AWS",
+      "GCP",
+      "Azure",
+      "Snowflake",
+      "Redshift",
+      "dbt",
+      "Scala",
+      "Hadoop"
+    ],
+    "ecosystem": {
+      "dataProcessing": [
+        "Pandas",
+        "NumPy"
+      ],
+      "warehousing": [
+        "PostgreSQL",
+        "MySQL"
+      ],
+      "orchestration": [
+        "CI/CD"
+      ],
+      "cloud": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "programmingLanguages": [
+        "Python",
+        "SQL",
+        "Java",
+        "Scala"
+      ],
+      "dataProcessingFrameworks": [
+        "Apache Spark",
+        "Apache Flink",
+        "Apache Beam",
+        "Hadoop"
+      ],
+      "orchestrationTools": [
+        "Apache Airflow",
+        "Luigi",
+        "Prefect"
+      ],
+      "streamingPlatforms": [
+        "Apache Kafka",
+        "AWS Kinesis"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "containerizationAndOrchestration": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "databasesAndWarehousing": [
+        "PostgreSQL",
+        "MySQL",
+        "Snowflake",
+        "Redshift",
+        "BigQuery",
+        "MongoDB"
+      ],
+      "infrastructureAsCode": [
+        "Terraform",
+        "CloudFormation"
+      ],
+      "monitoringAndLogging": [
+        "Prometheus",
+        "Grafana",
+        "ELK Stack"
+      ],
+      "scriptingAndAutomation": [
+        "Bash",
+        "Scripting"
+      ],
+      "messageBrokers": [
+        "Kafka",
+        "RabbitMQ"
+      ],
+      "containerization": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "dataWarehousing": [
+        "Snowflake",
+        "Redshift",
+        "BigQuery"
+      ],
+      "etlTools": [
+        "dbt",
+        "Airbyte",
+        "Fivetran"
+      ],
+      "versionControl": [
+        "Git"
+      ]
+    },
+    "marketRelevant": [
+      "Kafka",
+      "Docker",
+      "Kubernetes",
+      "ETL",
+      "Data Pipelines",
+      "Apache Spark",
+      "Apache Kafka",
+      "Apache Airflow",
+      "Cloud Data Platforms",
+      "Data Warehousing",
+      "Python",
+      "SQL",
+      "Git",
+      "AWS",
+      "GCP",
+      "Azure",
+      "Snowflake",
+      "dbt",
+      "Hadoop"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Data Processing",
+      "Warehousing",
+      "Orchestration",
+      "Cloud",
+      "Databases",
+      "Data Engineering",
+      "Big Data",
+      "Cloud Computing",
+      "Data Pipelines",
+      "Streaming",
+      "ETL",
+      "Infrastructure as Code",
+      "Containerization",
+      "Programming Languages",
+      "Data Processing Frameworks",
+      "Orchestration Tools",
+      "Message Brokers",
+      "Cloud Platforms",
+      "Data Warehousing",
+      "ETL Tools",
+      "Version Control"
+    ]
+  },
+  "machine_learning_engineer": {
+    "id": "machine_learning_engineer",
+    "label": "Machine Learning Engineer",
+    "titleKeywords": [
+      "machine learning",
+      "ml engineer",
+      "ml",
+      "machine learning engineer",
+      "mlops",
+      "deep learning",
+      "data scientist",
+      "ai engineer"
+    ],
+    "core": [
+      "Python",
+      "Machine Learning",
+      "Git",
+      "TensorFlow",
+      "PyTorch",
+      "Deep Learning",
+      "NLP",
+      "Computer Vision",
+      "Data Preprocessing",
+      "Model Deployment",
+      "MLOps",
+      "Scikit-learn",
+      "Pandas",
+      "NumPy",
+      "Distributed Systems",
+      "Docker",
+      "Kubernetes"
+    ],
+    "ecosystem": {
+      "frameworks": [
+        "PyTorch",
+        "TensorFlow",
+        "Pandas",
+        "NumPy"
+      ],
+      "delivery": [
+        "Docker",
+        "CI/CD",
+        "Testing"
+      ],
+      "cloud": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "mlFrameworks": [
+        "TensorFlow",
+        "PyTorch",
+        "Scikit-learn",
+        "Keras",
+        "XGBoost",
+        "LightGBM"
+      ],
+      "dataProcessing": [
+        "Pandas",
+        "NumPy",
+        "SQL"
+      ],
+      "deploymentTools": [
+        "Docker",
+        "Kubernetes",
+        "CI/CD"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "mlOpsTools": [
+        "MLflow",
+        "Kubeflow",
+        "Seldon"
+      ],
+      "programmingLanguages": [
+        "Python"
+      ],
+      "specializedSkills": [
+        "NLP",
+        "Computer Vision",
+        "Deep Learning"
+      ],
+      "dataScienceLibraries": [
+        "Pandas",
+        "NumPy",
+        "Matplotlib",
+        "Seaborn"
+      ],
+      "containerization": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "modelServing": [
+        "TensorFlow Serving",
+        "TorchServe",
+        "ONNX"
+      ],
+      "orchestration": [
+        "Kubeflow",
+        "MLflow"
+      ],
+      "dataStorage": [
+        "SQL",
+        "NoSQL",
+        "Redis",
+        "MongoDB"
+      ],
+      "monitoring": [
+        "Prometheus",
+        "Grafana"
+      ]
+    },
+    "marketRelevant": [
+      "Kubernetes",
+      "Python",
+      "Machine Learning",
+      "Deep Learning",
+      "TensorFlow",
+      "PyTorch",
+      "NLP",
+      "Computer Vision",
+      "MLOps",
+      "Docker",
+      "CI/CD",
+      "Git",
+      "AWS",
+      "Azure",
+      "GCP",
+      "Scikit-learn",
+      "Pandas",
+      "NumPy",
+      "Model Deployment",
+      "Data Preprocessing",
+      "Distributed Systems",
+      "MLflow",
+      "Kubeflow"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "ML Frameworks",
+      "Data",
+      "Cloud & DevOps",
+      "Testing & Tools",
+      "machine learning",
+      "deep learning",
+      "data science",
+      "mlops",
+      "cloud computing",
+      "software engineering",
+      "data engineering",
+      "model deployment",
+      "containerization",
+      "orchestration",
+      "monitoring"
+    ]
+  },
+  "ai_engineer": {
+    "id": "ai_engineer",
+    "label": "AI Engineer",
+    "titleKeywords": [
+      "ai engineer",
+      "ai lead",
+      "llm engineer",
+      "genai engineer",
+      "gen ai engineer",
+      "ai agent engineer",
+      "applied ai engineer",
+      "ai solutions engineer",
+      "AI",
+      "Artificial Intelligence",
+      "Machine Learning",
+      "Deep Learning",
+      "NLP",
+      "Computer Vision",
+      "AI Architect",
+      "Senior AI Engineer",
+      "Artificial Intelligence Engineer",
+      "AI Specialist",
+      "Machine Learning Engineer",
+      "Deep Learning Engineer",
+      "Prompt Engineering",
+      "LLM",
+      "AI Agents"
+    ],
+    "core": [
+      "Python",
+      "LLM",
+      "AI Agents",
+      "Prompt Engineering",
+      "REST APIs",
+      "Git",
+      "Machine Learning",
+      "Deep Learning",
+      "NLP",
+      "Computer Vision",
+      "PyTorch",
+      "TensorFlow",
+      "LangChain",
+      "LlamaIndex",
+      "RAG",
+      "Embeddings",
+      "Vector Database",
+      "OpenAI API",
+      "Hugging Face",
+      "Anthropic API",
+      "Model Context Protocol",
+      "Pinecone",
+      "Weaviate",
+      "pgvector"
+    ],
+    "ecosystem": {
+      "orchestration": [
+        "LangChain",
+        "LlamaIndex"
+      ],
+      "retrieval": [
+        "RAG",
+        "Vector Database",
+        "Pinecone",
+        "Weaviate",
+        "pgvector",
+        "Embeddings"
+      ],
+      "modelProviders": [
+        "OpenAI API",
+        "Anthropic API",
+        "Hugging Face"
+      ],
+      "delivery": [
+        "Docker",
+        "CI/CD",
+        "Testing"
+      ],
+      "cloud": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "mlFrameworks": [
+        "PyTorch",
+        "TensorFlow"
+      ],
+      "llmTools": [
+        "LLM",
+        "LangChain",
+        "LlamaIndex",
+        "RAG",
+        "Prompt Engineering",
+        "AI Agents",
+        "Model Context Protocol",
+        "OpenAI API",
+        "Anthropic API"
+      ],
+      "vectorDbEcosystem": [
+        "Vector Database",
+        "Pinecone",
+        "Weaviate",
+        "pgvector",
+        "Embeddings"
+      ],
+      "apiEcosystem": [
+        "OpenAI API",
+        "Anthropic API",
+        "Hugging Face"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "devTools": [
+        "Git",
+        "REST APIs"
+      ],
+      "programmingLanguages": [
+        "Python"
+      ],
+      "machineLearningFrameworks": [
+        "PyTorch",
+        "TensorFlow",
+        "Hugging Face"
+      ],
+      "largeLanguageModelTools": [
+        "LLM",
+        "LangChain",
+        "LlamaIndex",
+        "OpenAI API",
+        "Anthropic API"
+      ],
+      "vectorDatabaseTechnologies": [
+        "Pinecone",
+        "Weaviate",
+        "pgvector"
+      ],
+      "aiConcepts": [
+        "AI Agents",
+        "Prompt Engineering",
+        "RAG",
+        "Embeddings",
+        "Model Context Protocol",
+        "LLM"
+      ],
+      "apiTechnologies": [
+        "REST APIs"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "aiFrameworks": [
+        "TensorFlow",
+        "PyTorch",
+        "Hugging Face"
+      ],
+      "vectorDatabases": [
+        "Pinecone",
+        "Weaviate",
+        "pgvector"
+      ],
+      "apiAndIntegration": [
+        "REST APIs",
+        "OpenAI API",
+        "Anthropic API"
+      ]
+    },
+    "marketRelevant": [
+      "Model Context Protocol",
+      "Kubernetes",
+      "FastAPI",
+      "Python",
+      "LLM",
+      "Prompt Engineering",
+      "AI Agents",
+      "LangChain",
+      "RAG",
+      "Embeddings",
+      "Vector Database",
+      "OpenAI API",
+      "Hugging Face",
+      "Anthropic API",
+      "PyTorch",
+      "TensorFlow",
+      "Machine Learning",
+      "Deep Learning",
+      "NLP",
+      "Computer Vision",
+      "Pinecone",
+      "Weaviate",
+      "pgvector",
+      "REST APIs",
+      "Git"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "LLMs & Prompt Engineering",
+      "AI Agents & Orchestration",
+      "Retrieval & Vector DBs",
+      "Cloud & DevOps",
+      "Testing & Tools",
+      "Artificial Intelligence",
+      "Machine Learning",
+      "Natural Language Processing",
+      "Deep Learning",
+      "Large Language Models",
+      "Vector Databases",
+      "Cloud Platforms",
+      "API Integration",
+      "Software Development",
+      "AI Architecture",
+      "Prompt Engineering",
+      "Programming Languages",
+      "Machine Learning Frameworks",
+      "Large Language Model Tools",
+      "AI Concepts",
+      "API Technologies",
+      "Version Control",
+      "AI Frameworks",
+      "NLP",
+      "Computer Vision"
+    ]
+  },
+  "mobile_engineer": {
+    "id": "mobile_engineer",
+    "label": "Mobile Engineer",
+    "titleKeywords": [
+      "mobile engineer",
+      "mobile developer",
+      "mobile",
+      "engineer",
+      "ios",
+      "android",
+      "swift",
+      "kotlin",
+      "objective-c",
+      "react native",
+      "flutter",
+      "mobile app"
+    ],
+    "core": [
+      "Git",
+      "Testing",
+      "Swift",
+      "Kotlin",
+      "Objective-C",
+      "iOS",
+      "Android",
+      "CI/CD",
+      "React Native",
+      "Flutter",
+      "Mobile App Development"
+    ],
+    "ecosystem": {
+      "ios": [
+        "Swift",
+        "iOS",
+        "Objective-C"
+      ],
+      "android": [
+        "Kotlin",
+        "Android"
+      ],
+      "delivery": [
+        "CI/CD"
+      ],
+      "mobilePlatforms": [
+        "iOS",
+        "Android"
+      ],
+      "mobileLanguages": [
+        "Swift",
+        "Kotlin",
+        "Objective-C",
+        "Java",
+        "Dart"
+      ],
+      "mobileFrameworks": [
+        "React Native",
+        "Flutter",
+        "Xamarin"
+      ],
+      "ciCdTools": [
+        "Jenkins",
+        "GitHub Actions",
+        "GitLab CI",
+        "CI/CD",
+        "Fastlane",
+        "Bitrise"
+      ],
+      "testingTools": [
+        "JUnit",
+        "Espresso",
+        "XCTest",
+        "Appium",
+        "Testing"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "crossPlatformFrameworks": [
+        "React Native",
+        "Flutter",
+        "Xamarin"
+      ],
+      "devTools": [
+        "Git",
+        "Xcode",
+        "Android Studio",
+        "Fastlane",
+        "Jenkins",
+        "Bitrise"
+      ]
+    },
+    "marketRelevant": [
+      "Swift",
+      "Kotlin",
+      "Objective-C",
+      "iOS",
+      "Android",
+      "React Native",
+      "Flutter",
+      "CI/CD",
+      "Testing",
+      "Git",
+      "Mobile App Development",
+      "Xcode",
+      "Android Studio",
+      "Fastlane",
+      "Appium"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Mobile",
+      "Testing & Tools",
+      "Cloud & DevOps",
+      "mobileDevelopment",
+      "programmingLanguages",
+      "mobileFrameworks",
+      "ciCd",
+      "testing",
+      "versionControl",
+      "crossPlatformDevelopment"
+    ]
+  },
+  "ios_engineer": {
+    "id": "ios_engineer",
+    "label": "iOS Engineer",
+    "titleKeywords": [
+      "ios engineer",
+      "ios developer",
+      "iOS",
+      "iPhone",
+      "iPad",
+      "Swift",
+      "Objective-C",
+      "Mobile",
+      "Apple",
+      "Xcode",
+      "Cocoa Touch",
+      "UIKit",
+      "SwiftUI"
+    ],
+    "core": [
+      "Swift",
+      "iOS",
+      "Git",
+      "Objective-C",
+      "Xcode",
+      "REST APIs",
+      "Testing",
+      "UIKit",
+      "SwiftUI",
+      "Mobile"
+    ],
+    "ecosystem": {
+      "legacy": [
+        "Objective-C"
+      ],
+      "delivery": [
+        "CI/CD",
+        "Testing"
+      ],
+      "programmingLanguages": [
+        "Swift",
+        "Objective-C"
+      ],
+      "mobileDevelopmentTools": [
+        "Xcode",
+        "CocoaPods",
+        "Fastlane",
+        "TestFlight"
+      ],
+      "testingFrameworks": [
+        "XCTest",
+        "Quick",
+        "Nimble"
+      ],
+      "ciCdTools": [
+        "Fastlane",
+        "Jenkins",
+        "GitHub Actions"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "apiTechnologies": [
+        "REST APIs",
+        "GraphQL"
+      ],
+      "mobilePlatforms": [
+        "iOS",
+        "iPadOS",
+        "watchOS",
+        "tvOS"
+      ],
+      "iosDevelopmentTools": [
+        "Xcode",
+        "Instruments",
+        "CocoaPods",
+        "Swift Package Manager",
+        "Fastlane"
+      ],
+      "uiFrameworks": [
+        "UIKit",
+        "SwiftUI",
+        "Core Data"
+      ],
+      "testingTools": [
+        "XCTest",
+        "Quick",
+        "Nimble"
+      ],
+      "mobileEcosystem": [
+        "iOS",
+        "Apple Developer Program",
+        "App Store Connect"
+      ]
+    },
+    "marketRelevant": [
+      "Swift",
+      "Objective-C",
+      "Xcode",
+      "Git",
+      "REST APIs",
+      "Testing",
+      "CocoaPods",
+      "Fastlane",
+      "TestFlight",
+      "XCTest",
+      "GraphQL",
+      "CI/CD",
+      "UIKit",
+      "SwiftUI",
+      "Swift Package Manager",
+      "Mobile",
+      "App Store Connect"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Mobile",
+      "Testing & Tools",
+      "mobileDevelopment",
+      "programmingLanguages",
+      "ciCd",
+      "testing",
+      "versionControl",
+      "apiIntegration",
+      "uiFrameworks"
+    ]
+  },
+  "android_engineer": {
+    "id": "android_engineer",
+    "label": "Android Engineer",
+    "titleKeywords": [
+      "android engineer",
+      "android developer",
+      "android",
+      "mobile",
+      "kotlin",
+      "java",
+      "android studio",
+      "jetpack",
+      "compose",
+      "mobile engineer",
+      "android sdk",
+      "mobile development"
+    ],
+    "core": [
+      "Kotlin",
+      "Android",
+      "Git",
+      "Java",
+      "Android Studio",
+      "Jetpack Compose",
+      "REST APIs",
+      "Testing",
+      "Android SDK",
+      "MVVM",
+      "Coroutines",
+      "Dependency Injection"
+    ],
+    "ecosystem": {
+      "delivery": [
+        "CI/CD",
+        "Testing"
+      ],
+      "programmingLanguages": [
+        "Kotlin",
+        "Java"
+      ],
+      "androidFrameworks": [
+        "Jetpack Compose",
+        "Android SDK",
+        "Android NDK",
+        "Jetpack",
+        "Dagger",
+        "Hilt",
+        "Room",
+        "LiveData",
+        "ViewModel",
+        "Navigation Component"
+      ],
+      "mobileDevelopmentTools": [
+        "Android Studio",
+        "Gradle",
+        "ADB"
+      ],
+      "testingTools": [
+        "JUnit",
+        "Espresso",
+        "Mockito"
+      ],
+      "backendIntegration": [
+        "REST APIs",
+        "GraphQL"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "mobileTools": [
+        "Android Studio",
+        "Gradle",
+        "ADB"
+      ],
+      "architecturePatterns": [
+        "MVVM",
+        "MVP",
+        "Clean Architecture"
+      ]
+    },
+    "marketRelevant": [
+      "Android",
+      "Kotlin",
+      "Java",
+      "Jetpack Compose",
+      "Android Studio",
+      "REST APIs",
+      "Git",
+      "Testing",
+      "Mobile Development",
+      "CI/CD",
+      "MVVM",
+      "Coroutines",
+      "Dependency Injection"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Mobile",
+      "Testing & Tools",
+      "mobileDevelopment",
+      "programmingLanguages",
+      "testing",
+      "versionControl",
+      "backendIntegration",
+      "androidDevelopment",
+      "softwareArchitecture"
+    ]
+  },
+  "qa_automation_engineer": {
+    "id": "qa_automation_engineer",
+    "label": "QA Automation Engineer",
+    "titleKeywords": [
+      "qa automation",
+      "test automation",
+      "sdet",
+      "QA",
+      "Quality Assurance",
+      "Automation",
+      "Software Development Engineer in Test",
+      "Test",
+      "Selenium",
+      "Cypress",
+      "Automation Engineer"
+    ],
+    "core": [
+      "Testing",
+      "Git",
+      "CI/CD",
+      "Pytest",
+      "Selenium",
+      "Cypress",
+      "JUnit",
+      "Test Automation",
+      "Java",
+      "Python",
+      "JavaScript",
+      "API Testing",
+      "Performance Testing",
+      "Security Testing",
+      "TestNG",
+      "REST APIs",
+      "Docker"
+    ],
+    "ecosystem": {
+      "languages": [
+        "Python",
+        "JavaScript"
+      ],
+      "tooling": [
+        "Pytest",
+        "Jest"
+      ],
+      "automationFrameworks": [
+        "Selenium",
+        "Cypress",
+        "JUnit",
+        "TestNG",
+        "Pytest"
+      ],
+      "programmingLanguages": [
+        "Java",
+        "Python",
+        "JavaScript",
+        "TypeScript"
+      ],
+      "ciCdTools": [
+        "Jenkins",
+        "GitHub Actions",
+        "GitLab CI",
+        "CircleCI"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "testingTypes": [
+        "API Testing",
+        "Performance Testing",
+        "Security Testing",
+        "UI Testing",
+        "Regression Testing"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "containerization": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "scriptingLanguages": [
+        "Bash",
+        "Scripting"
+      ],
+      "apiTestingTools": [
+        "Postman",
+        "REST APIs"
+      ]
+    },
+    "marketRelevant": [
+      "Docker",
+      "Test Automation",
+      "Selenium",
+      "Cypress",
+      "Pytest",
+      "JUnit",
+      "CI/CD",
+      "API Testing",
+      "Performance Testing",
+      "Security Testing",
+      "Git",
+      "Kubernetes",
+      "Java",
+      "Python",
+      "JavaScript",
+      "REST APIs"
+    ],
+    "skillCategoryHints": [
+      "Languages",
+      "Testing & Tools",
+      "Cloud & DevOps",
+      "Testing",
+      "Automation",
+      "Programming",
+      "CI/CD",
+      "Cloud",
+      "Containers",
+      "Scripting",
+      "Version Control",
+      "Containerization",
+      "API Testing"
+    ]
+  },
+  "senior_backend_engineer": {
+    "id": "senior_backend_engineer",
+    "label": "Senior Backend Engineer",
+    "titleKeywords": [
+      "senior",
+      "staff",
+      "backend",
+      "engineer",
+      "lead",
+      "architect",
+      "scalable",
+      "microservices",
+      "distributed systems",
+      "backend engineer",
+      "senior backend"
+    ],
+    "core": [
+      "Python",
+      "Java",
+      "REST APIs",
+      "SQL",
+      "Git",
+      "Docker",
+      "Kubernetes",
+      "CI/CD",
+      "Testing",
+      "Microservices",
+      "Distributed Systems",
+      "Cloud Architecture",
+      "System Design",
+      "Performance Optimization",
+      "Security Best Practices",
+      "Message Queues",
+      "Monitoring",
+      "Node.js",
+      "PostgreSQL",
+      "MySQL",
+      "Redis",
+      "CloudFormation",
+      "Terraform",
+      "AWS",
+      "Azure",
+      "GCP",
+      "Kafka",
+      "RabbitMQ",
+      "Prometheus",
+      "Grafana",
+      "Linux",
+      "Bash",
+      "Scripting",
+      "Go",
+      "GraphQL",
+      "NoSQL",
+      "MongoDB"
+    ],
+    "ecosystem": {
+      "backendEcosystem": [
+        "Python",
+        "Java",
+        "REST APIs",
+        "SQL",
+        "Docker",
+        "Kubernetes",
+        "Microservices",
+        "Distributed Systems",
+        "Message Queues",
+        "Testing",
+        "Node.js",
+        "PostgreSQL",
+        "MySQL",
+        "Redis",
+        "Kafka",
+        "RabbitMQ",
+        "Go",
+        "GraphQL",
+        "NoSQL",
+        "MongoDB"
+      ],
+      "cloudPlatforms": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "ciCdTools": [
+        "Jenkins",
+        "GitHub Actions",
+        "GitLab CI",
+        "CI/CD"
+      ],
+      "monitoringTools": [
+        "Prometheus",
+        "Grafana"
+      ],
+      "versionControl": [
+        "Git"
+      ],
+      "securityPractices": [
+        "Security Best Practices"
+      ],
+      "programmingParadigms": [
+        "System Design",
+        "Performance Optimization"
+      ],
+      "containerizationAndOrchestration": [
+        "Docker",
+        "Kubernetes"
+      ],
+      "ciCdAndVersionControl": [
+        "CI/CD",
+        "Git",
+        "GitHub Actions",
+        "GitLab CI",
+        "Jenkins"
+      ],
+      "infrastructureAsCode": [
+        "Terraform",
+        "CloudFormation",
+        "Pulumi"
+      ],
+      "monitoringAndLogging": [
+        "Prometheus",
+        "Grafana"
+      ],
+      "operatingSystemsAndScripting": [
+        "Linux",
+        "Bash",
+        "Scripting"
+      ],
+      "testingFrameworks": [
+        "Testing",
+        "Pytest",
+        "Jest"
+      ],
+      "messagingSystems": [
+        "Kafka",
+        "RabbitMQ"
+      ]
+    },
+    "marketRelevant": [
+      "Microservices",
+      "Distributed Systems",
+      "Cloud Architecture",
+      "System Design",
+      "Performance Optimization",
+      "Security Best Practices",
+      "Message Queues",
+      "Monitoring",
+      "Cloud Platforms",
+      "Containerization",
+      "Infrastructure as Code",
+      "Event-Driven Architecture",
+      "Monitoring and Observability",
+      "CI/CD Pipelines",
+      "Scalability",
+      "Cloud Native",
+      "API Design",
+      "Observability"
+    ],
+    "skillCategoryHints": [
+      "backend",
+      "architecture",
+      "leadership",
+      "cloud",
+      "devops",
+      "security",
+      "performance",
+      "senior",
+      "microservices",
+      "distributed systems",
+      "containerization",
+      "monitoring",
+      "ci/cd",
+      "infrastructure as code",
+      "messaging",
+      "databases",
+      "programming_languages"
+    ]
+  }
+}

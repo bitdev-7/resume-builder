@@ -13,22 +13,23 @@ Summary rules:
 - 70-100 words.
 - Seniority: if the additional instructions specify a seniority framing, follow it; otherwise preserve the candidate's existing level and do not downgrade it. Never fabricate job titles, employers, dates, or years of experience regardless of framing.
 - Frame the candidate toward the target role: lead with the target role's identity (use normalizedTitle when it fits the candidate's trajectory) and emphasize the highest-priority JD requirements.
-- Feature the targetSkills / JD-required skills given to you as areas of hands-on focus, even when the candidate's summaryEvidence does not explicitly mention them — these are vetted job requirements, so presenting them as the candidate's focus is intended. Name the most important ones concretely rather than glossing over them.
-- Include relevant supported role skills where useful, even if not literally in the JD.
-- Do not introduce any technology, tool, or metric that is not present in "allowedSkills", "summaryEvidence", or "targetSkills". "targetSkills" are the only skills you may present as hands-on focus without supporting evidence; never attach a quantified result to any skill the candidate has not evidenced.
+- Feature the targetSkills / JD-required skills as areas of hands-on focus. Name the most important ones concretely.
+- Include relevant role skills where useful, even if not literally in the JD or profile reference material.
+- You may introduce technologies and metrics that strengthen the JD match when they fit the role and seniority.
 - Avoid generic filler phrases such as: results-driven, passionate, dynamic, highly motivated, seasoned professional, proven track record.
 
 Final skills policy:
-- Include EVERY skill in the "allowedSkills" list. Do not omit any. These are already vetted: each is either supported by the candidate's evidence or explicitly required by the job description.
-- Never add a skill that is not in "allowedSkills".
-- Some allowedSkills may be job requirements the candidate has not explicitly evidenced. Still include them in the skills section (this is intended). Do NOT, however, fabricate metrics or specific achievements around any skill anywhere.
-- Group the skills into role-appropriate categories drawn from the provided "categoryHints"; you may add a clearly-named category if some allowed skills do not fit any hint. Every allowed skill must land in exactly one category.
+- Start from "allowedSkills" as the candidate skill pool, but you may OMIT skills that are clearly unrelated to the job description and its required skills (targetSkills). Prefer a focused, JD-aligned skills section over a complete dump of the profile.
+- Always include every "targetSkills" entry (JD-required technologies) when they are technologies/tools — do not omit those.
+- Also ADD other relevant skills dynamically when they strengthen the JD match: role/ecosystem skills and technologies that fit the candidate's trajectory and seniority — even if they are not in the profile skill list or "allowedSkills".
+- Prefer concrete, role-appropriate technologies over generic soft labels. Deduplicate near-aliases (e.g. do not list both "JS" and "JavaScript").
+- Group all final skills into role-appropriate categories drawn from the provided "categoryHints"; you may add a clearly-named category if some skills do not fit any hint. Every skill must land in exactly one category.
 - Soft skills: only include ones actually relevant to the role; it is fine to return an empty list.
 
 Project rules:
 - For each project you are given, write a short tailored description and technology list.
-- Base the description on the supplied project facts. Do not invent project outcomes, metrics, or numbers.
-- Technologies: include the project's real technologies, and ALSO add the "targetSkills" (JD-required technologies) to the projects' technology lists so that EVERY targetSkill appears somewhere in the projects section. Spread them across the projects where they best fit (a given targetSkill only needs to appear on one project), and reference the most relevant ones naturally in the descriptions (e.g. "built with a Go backend and a Next.js frontend"). Never invent a quantified result around a targetSkill.
+- Use project reference facts as a starting point, then strengthen and JD-align the description creatively.
+- Technologies: include the project's real technologies, and ALSO add the "targetSkills" (JD-required technologies) so that EVERY targetSkill appears somewhere in the projects section. Spread them across projects where they best fit.
 - You may omit a project if it is not relevant to the target role.`;
 
 /** FIXED output contract — never user-editable. */

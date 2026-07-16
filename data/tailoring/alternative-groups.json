@@ -1,0 +1,506 @@
+[
+  {
+    "group": "cloud_platform",
+    "relationship": "alternatives",
+    "skills": [
+      "AWS",
+      "Azure",
+      "GCP"
+    ]
+  },
+  {
+    "group": "message_queue",
+    "relationship": "alternatives",
+    "skills": [
+      "Kafka",
+      "RabbitMQ",
+      "ActiveMQ"
+    ]
+  },
+  {
+    "group": "infrastructure_as_code",
+    "relationship": "alternatives",
+    "skills": [
+      "Terraform",
+      "Pulumi",
+      "CloudFormation"
+    ]
+  },
+  {
+    "group": "frontend_framework",
+    "relationship": "alternatives",
+    "skills": [
+      "React",
+      "Vue.js",
+      "Angular"
+    ]
+  },
+  {
+    "group": "ci_cd_platform",
+    "relationship": "alternatives",
+    "skills": [
+      "Jenkins",
+      "GitHub Actions",
+      "GitLab CI"
+    ]
+  },
+  {
+    "group": "mlFrameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "PyTorch",
+      "TensorFlow"
+    ]
+  },
+  {
+    "group": "vectorDatabases",
+    "relationship": "alternatives",
+    "skills": [
+      "Pinecone",
+      "Weaviate",
+      "pgvector"
+    ]
+  },
+  {
+    "group": "llmApiProviders",
+    "relationship": "alternatives",
+    "skills": [
+      "OpenAI API",
+      "Anthropic API",
+      "Hugging Face"
+    ]
+  },
+  {
+    "group": "message_queue_platforms",
+    "relationship": "alternatives",
+    "skills": [
+      "Kafka",
+      "RabbitMQ",
+      "ActiveMQ"
+    ]
+  },
+  {
+    "group": "ci_cd_platforms",
+    "relationship": "alternatives",
+    "skills": [
+      "Jenkins",
+      "GitHub Actions",
+      "GitLab CI"
+    ]
+  },
+  {
+    "group": "android_ui_frameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "Jetpack Compose",
+      "XML Layouts"
+    ]
+  },
+  {
+    "group": "backendLanguages",
+    "relationship": "alternatives",
+    "skills": [
+      "Python",
+      "Java",
+      "Node.js",
+      "C#"
+    ]
+  },
+  {
+    "group": "databases",
+    "relationship": "alternatives",
+    "skills": [
+      "PostgreSQL",
+      "MySQL",
+      "MongoDB",
+      "Redis",
+      "SQL Server",
+      "SQL"
+    ]
+  },
+  {
+    "group": "ciCdTools",
+    "relationship": "alternatives",
+    "skills": [
+      "Jenkins",
+      "GitHub Actions",
+      "GitLab CI",
+      "CircleCI",
+      "Azure DevOps"
+    ]
+  },
+  {
+    "group": "cloudPlatforms",
+    "relationship": "alternatives",
+    "skills": [
+      "AWS",
+      "Azure",
+      "GCP"
+    ]
+  },
+  {
+    "group": "dataProcessingFrameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "Apache Spark",
+      "Apache Flink",
+      "Apache Beam"
+    ]
+  },
+  {
+    "group": "orchestrationTools",
+    "relationship": "alternatives",
+    "skills": [
+      "Apache Airflow",
+      "Luigi"
+    ]
+  },
+  {
+    "group": "streamingPlatforms",
+    "relationship": "alternatives",
+    "skills": [
+      "Apache Kafka",
+      "AWS Kinesis"
+    ]
+  },
+  {
+    "group": "cloudDataWarehouses",
+    "relationship": "alternatives",
+    "skills": [
+      "Snowflake",
+      "Redshift",
+      "BigQuery"
+    ]
+  },
+  {
+    "group": "configurationManagement",
+    "relationship": "alternatives",
+    "skills": [
+      "Ansible",
+      "Chef",
+      "Puppet"
+    ]
+  },
+  {
+    "group": "testingFrameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "xUnit",
+      "NUnit",
+      "MSTest"
+    ]
+  },
+  {
+    "group": "frontendFrameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "React",
+      "Vue.js",
+      "Angular",
+      "Svelte"
+    ]
+  },
+  {
+    "group": "stateManagement",
+    "relationship": "alternatives",
+    "skills": [
+      "Redux",
+      "MobX",
+      "Recoil",
+      "Vuex",
+      "Pinia",
+      "Context API"
+    ]
+  },
+  {
+    "group": "cssTechnologies",
+    "relationship": "alternatives",
+    "skills": [
+      "Sass",
+      "Less",
+      "Tailwind CSS",
+      "Styled Components",
+      "CSS"
+    ]
+  },
+  {
+    "group": "packageManagers",
+    "relationship": "alternatives",
+    "skills": [
+      "npm",
+      "Yarn",
+      "pnpm"
+    ]
+  },
+  {
+    "group": "frontendLanguages",
+    "relationship": "alternatives",
+    "skills": [
+      "JavaScript",
+      "TypeScript"
+    ]
+  },
+  {
+    "group": "pythonWebFrameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "Django",
+      "Flask",
+      "FastAPI"
+    ]
+  },
+  {
+    "group": "sqlDatabases",
+    "relationship": "alternatives",
+    "skills": [
+      "PostgreSQL",
+      "MySQL"
+    ]
+  },
+  {
+    "group": "ios_testing_frameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "XCTest",
+      "Quick",
+      "Nimble"
+    ]
+  },
+  {
+    "group": "message_brokers",
+    "relationship": "alternatives",
+    "skills": [
+      "Kafka",
+      "RabbitMQ",
+      "ActiveMQ"
+    ]
+  },
+  {
+    "group": "ci_cd_tools",
+    "relationship": "alternatives",
+    "skills": [
+      "Jenkins",
+      "GitHub Actions",
+      "GitLab CI"
+    ]
+  },
+  {
+    "group": "cloud_platforms",
+    "relationship": "alternatives",
+    "skills": [
+      "AWS",
+      "Azure",
+      "GCP"
+    ]
+  },
+  {
+    "group": "deep_learning_frameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "TensorFlow",
+      "PyTorch",
+      "Keras"
+    ]
+  },
+  {
+    "group": "mlops_platforms",
+    "relationship": "alternatives",
+    "skills": [
+      "MLflow",
+      "Kubeflow",
+      "Seldon"
+    ]
+  },
+  {
+    "group": "mobileCrossPlatformFrameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "React Native",
+      "Flutter",
+      "Xamarin"
+    ]
+  },
+  {
+    "group": "mobileNativeLanguages",
+    "relationship": "alternatives",
+    "skills": [
+      "Swift",
+      "Objective-C"
+    ]
+  },
+  {
+    "group": "androidLanguages",
+    "relationship": "alternatives",
+    "skills": [
+      "Kotlin",
+      "Java"
+    ]
+  },
+  {
+    "group": "python_backend_frameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "Django",
+      "Flask",
+      "FastAPI"
+    ]
+  },
+  {
+    "group": "automationFrameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "Selenium",
+      "Cypress",
+      "JUnit",
+      "TestNG",
+      "Pytest"
+    ]
+  },
+  {
+    "group": "cloudInfrastructureAsCode",
+    "relationship": "alternatives",
+    "skills": [
+      "Terraform",
+      "CloudFormation",
+      "Pulumi"
+    ]
+  },
+  {
+    "group": "messageQueues",
+    "relationship": "alternatives",
+    "skills": [
+      "Kafka",
+      "RabbitMQ",
+      "ActiveMQ"
+    ]
+  },
+  {
+    "group": "llmApis",
+    "relationship": "alternatives",
+    "skills": [
+      "OpenAI API",
+      "Anthropic API"
+    ]
+  },
+  {
+    "group": "dependencyInjectionLibraries",
+    "relationship": "alternatives",
+    "skills": [
+      "Dagger",
+      "Hilt"
+    ]
+  },
+  {
+    "group": "architecturePatterns",
+    "relationship": "alternatives",
+    "skills": [
+      "MVVM",
+      "MVP",
+      "Clean Architecture"
+    ]
+  },
+  {
+    "group": "apiDesign",
+    "relationship": "alternatives",
+    "skills": [
+      "REST APIs",
+      "GraphQL"
+    ]
+  },
+  {
+    "group": "cloudProviders",
+    "relationship": "alternatives",
+    "skills": [
+      "AWS",
+      "Azure",
+      "GCP"
+    ]
+  },
+  {
+    "group": "etlOrchestrationTools",
+    "relationship": "alternatives",
+    "skills": [
+      "Apache Airflow",
+      "Prefect",
+      "dbt",
+      "Airbyte",
+      "Fivetran"
+    ]
+  },
+  {
+    "group": "cloudDataWarehousing",
+    "relationship": "alternatives",
+    "skills": [
+      "Snowflake",
+      "Redshift",
+      "BigQuery"
+    ]
+  },
+  {
+    "group": "infrastructureAsCodeTools",
+    "relationship": "alternatives",
+    "skills": [
+      "Terraform",
+      "CloudFormation",
+      "Pulumi"
+    ]
+  },
+  {
+    "group": "backendFrameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "Express",
+      "NestJS"
+    ]
+  },
+  {
+    "group": "ios_dependency_management",
+    "relationship": "alternatives",
+    "skills": [
+      "CocoaPods",
+      "Swift Package Manager"
+    ]
+  },
+  {
+    "group": "ml_frameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "TensorFlow",
+      "PyTorch",
+      "Keras"
+    ]
+  },
+  {
+    "group": "gradient_boosting_frameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "XGBoost",
+      "LightGBM"
+    ]
+  },
+  {
+    "group": "crossPlatformFrameworks",
+    "relationship": "alternatives",
+    "skills": [
+      "React Native",
+      "Flutter",
+      "Xamarin"
+    ]
+  },
+  {
+    "group": "messageBrokers",
+    "relationship": "alternatives",
+    "skills": [
+      "RabbitMQ",
+      "Kafka"
+    ]
+  },
+  {
+    "group": "apiDesignTools",
+    "relationship": "alternatives",
+    "skills": [
+      "REST APIs",
+      "GraphQL"
+    ]
+  }
+]

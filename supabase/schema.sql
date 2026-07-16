@@ -1,10 +1,6 @@
--- Resume Maker — database schema
---
--- This project's Supabase database was missing all application tables
--- (confirmed via PGRST205 "Could not find the table 'public.profiles' in
--- the schema cache"). No migration/schema file existed anywhere in the repo,
--- so this was reconstructed from lib/supabase/database.types.ts and the
--- query shapes in lib/supabase/services/*.
+-- Resume Maker — database schema (canonical, up to date with migrations
+-- 002–009 and 012). Prefer this file for a full idempotent bootstrap;
+-- migrations/ remains the incremental history for existing projects.
 --
 -- How to run: Supabase Dashboard → SQL Editor → paste this file → Run.
 -- Safe to re-run: every statement is idempotent (IF NOT EXISTS / OR REPLACE).
@@ -18,11 +14,8 @@ create table if not exists public.profiles (
   id               uuid primary key references auth.users (id) on delete cascade,
   full_name        text,
   email            text,
-  headline         text,
   phone            text,
-  linkedin_url     text,
-  summary          text,
-  location         text,
+  role             text not null default 'user',
   default_settings jsonb not null default '{}'::jsonb,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
@@ -30,7 +23,47 @@ create table if not exists public.profiles (
 
 -- Columns added after initial release (safe on existing installs).
 alter table public.profiles add column if not exists email text;
-alter table public.profiles add column if not exists headline text;
+alter table public.profiles add column if not exists role text not null default 'user';
+
+alter table public.profiles
+  drop constraint if exists profiles_role_check;
+
+alter table public.profiles
+  add constraint profiles_role_check check (role in ('admin', 'user'));
+
+-- Redundant account fields moved to resume_profiles (migration 012).
+alter table public.profiles drop column if exists headline;
+alter table public.profiles drop column if exists linkedin_url;
+alter table public.profiles drop column if exists summary;
+alter table public.profiles drop column if exists location;
+
+-- Block JWT clients from changing role (service_role can still promote manually)
+create or replace function public.prevent_profile_role_escalation()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if tg_op = 'UPDATE' and new.role is distinct from old.role then
+    if coalesce(auth.role(), '') <> 'service_role' then
+      raise exception 'Cannot change profiles.role';
+    end if;
+  end if;
+  if tg_op = 'INSERT' and new.role is distinct from 'user' then
+    if coalesce(auth.role(), '') <> 'service_role' then
+      raise exception 'Cannot set profiles.role on insert';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_prevent_role_escalation on public.profiles;
+create trigger profiles_prevent_role_escalation
+  before insert or update on public.profiles
+  for each row
+  execute function public.prevent_profile_role_escalation();
 
 alter table public.profiles enable row level security;
 
@@ -94,6 +127,7 @@ create policy "resume_profiles_all_own" on public.resume_profiles
 create table if not exists public.user_educations (
   id               uuid primary key default gen_random_uuid(),
   user_id          uuid not null references public.profiles (id) on delete cascade,
+  profile_id       uuid references public.resume_profiles (id) on delete cascade,
   school           text not null,
   degree           text,
   field_of_study   text,
@@ -126,6 +160,7 @@ create policy "user_educations_all_own" on public.user_educations
 create table if not exists public.user_skills (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null references public.profiles (id) on delete cascade,
+  profile_id     uuid references public.resume_profiles (id) on delete cascade,
   skill_name     text not null,
   category       text,
   proficiency    text,
@@ -147,6 +182,7 @@ create policy "user_skills_all_own" on public.user_skills
 create table if not exists public.user_certifications (
   id                    uuid primary key default gen_random_uuid(),
   user_id               uuid not null references public.profiles (id) on delete cascade,
+  profile_id            uuid references public.resume_profiles (id) on delete cascade,
   certification_name    text not null,
   issuing_organization  text,
   issue_date            date,
@@ -171,6 +207,7 @@ create policy "user_certifications_all_own" on public.user_certifications
 create table if not exists public.user_projects (
   id             uuid primary key default gen_random_uuid(),
   user_id        uuid not null references public.profiles (id) on delete cascade,
+  profile_id     uuid references public.resume_profiles (id) on delete cascade,
   project_name   text not null,
   description    text,
   technologies   text[],
@@ -197,6 +234,7 @@ create policy "user_projects_all_own" on public.user_projects
 create table if not exists public.user_companies (
   id                uuid primary key default gen_random_uuid(),
   user_id           uuid not null references public.profiles (id) on delete cascade,
+  profile_id        uuid references public.resume_profiles (id) on delete cascade,
   company_name      text not null,
   title             text,
   company_location  text,
@@ -225,6 +263,7 @@ create policy "user_companies_all_own" on public.user_companies
 create table if not exists public.resume_history (
   id                 uuid primary key default gen_random_uuid(),
   user_id            uuid not null references public.profiles (id) on delete cascade,
+  profile_id         uuid references public.resume_profiles (id) on delete set null,
   ai_type            text,
   model              text,
   job_site           text,
@@ -234,7 +273,10 @@ create table if not exists public.resume_history (
   jd_file_path       text,
   resume_file_path   text,
   bid_status         text not null default 'applied'
-                       check (bid_status in ('applied', 'interviewing', 'rejected', 'offer', 'accepted')),
+                       check (bid_status in (
+                         'unapplied', 'opened', 'applied', 'interviewing',
+                         'rejected', 'offer', 'accepted'
+                       )),
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
 );
@@ -404,3 +446,66 @@ alter table public.ai_usage_logs enable row level security;
 drop policy if exists "ai_usage_logs_all_own" on public.ai_usage_logs;
 create policy "ai_usage_logs_all_own" on public.ai_usage_logs
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Skill catalog + role archetype additions (global, any authenticated user)
+-- ─────────────────────────────────────────────────────────────────────────
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+create table if not exists public.skill_catalog_additions (
+  id             uuid primary key default gen_random_uuid(),
+  canonical_name text not null,
+  aliases        text[] not null default '{}',
+  created_by     uuid references public.profiles (id) on delete set null,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  version        integer not null default 1,
+  constraint skill_catalog_additions_canonical_name_unique unique (canonical_name)
+);
+
+create index if not exists skill_catalog_additions_canonical_name_idx
+  on public.skill_catalog_additions (canonical_name);
+
+drop trigger if exists "skill_catalog_additions_set_updated_at" on public.skill_catalog_additions;
+create trigger "skill_catalog_additions_set_updated_at"
+  before update on public.skill_catalog_additions
+  for each row execute function public.set_updated_at();
+
+alter table public.skill_catalog_additions enable row level security;
+
+drop policy if exists "skill_catalog_additions_auth_all" on public.skill_catalog_additions;
+create policy "skill_catalog_additions_auth_all" on public.skill_catalog_additions
+  for all to authenticated using (true) with check (true);
+
+create table if not exists public.role_archetype_additions (
+  id                   text primary key,
+  label                text not null,
+  title_keywords       text[] not null default '{}',
+  core                 text[] not null default '{}',
+  ecosystem            jsonb not null default '{}'::jsonb,
+  market_relevant      text[] not null default '{}',
+  skill_category_hints text[] not null default '{}',
+  created_by           uuid references public.profiles (id) on delete set null,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now(),
+  version              integer not null default 1
+);
+
+drop trigger if exists "role_archetype_additions_set_updated_at" on public.role_archetype_additions;
+create trigger "role_archetype_additions_set_updated_at"
+  before update on public.role_archetype_additions
+  for each row execute function public.set_updated_at();
+
+alter table public.role_archetype_additions enable row level security;
+
+drop policy if exists "role_archetype_additions_auth_all" on public.role_archetype_additions;
+create policy "role_archetype_additions_auth_all" on public.role_archetype_additions
+  for all to authenticated using (true) with check (true);

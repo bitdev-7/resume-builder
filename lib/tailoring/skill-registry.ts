@@ -9,15 +9,15 @@ import {
   registerRelationship,
   resetMentionMatchersCache,
   unregisterSkillAlias,
-  getSkillAliasesSnapshot,
+  getBuiltinSkillAliasesSnapshot,
   type SkillRelationship,
 } from "@/lib/tailoring/skill-ontology";
 import {
-  ROLE_SKILL_CATALOG,
   ROLE_SKILL_CATALOG_VERSION,
   isBuiltinArchetypeId,
   registerArchetype,
   unregisterArchetype,
+  getBuiltinRoleCatalog,
 } from "@/lib/tailoring/role-skill-catalog";
 
 /**
@@ -246,11 +246,11 @@ export function getEffectiveCatalog(): EffectiveCatalog {
   return {
     version: ROLE_SKILL_CATALOG_VERSION,
     defaults: {
-      skills: Object.entries(getSkillAliasesSnapshot()).map(([canonicalName, aliases]) => ({
+      skills: Object.entries(getBuiltinSkillAliasesSnapshot()).map(([canonicalName, aliases]) => ({
         canonicalName,
         aliases,
       })),
-      archetypes: Object.values(ROLE_SKILL_CATALOG),
+      archetypes: Object.values(getBuiltinRoleCatalog()),
     },
     additions: { skills, archetypes },
   };

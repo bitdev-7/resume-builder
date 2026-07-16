@@ -7,9 +7,11 @@ export async function updateProfile(
   updates: ProfileUpdate,
   client: SupabaseClient = supabase
 ): Promise<Profile> {
+  // Never allow clients to set role via this helper (DB trigger is the backstop).
+  const { role: _role, ...safeUpdates } = updates;
   const { data, error } = await client
     .from("profiles")
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update({ ...safeUpdates, updated_at: new Date().toISOString() })
     .eq("id", userId)
     .select("*")
     .single();

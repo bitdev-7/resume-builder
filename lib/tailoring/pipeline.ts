@@ -405,11 +405,11 @@ export async function runTailoringPipeline(
     }
   }
 
-  // Guarantee every eligible skill (declared/supported + JD-required + introduced)
-  // appears in the final skills section, each under its real category.
+  // Guarantee JD-required target skills and technologies used in experience bullets
+  // appear in the skills section. Unrelated profile skills may stay omitted.
   const finalComposerResult = ensureAllEligibleSkills(
     repairOutcome.composerResult,
-    [...resumeEligibleSkills.map((c) => c.canonicalName), ...introducedSkillNames],
+    [...targetSkillNames, ...introducedSkillNames],
     profileSkillCategoryByKey
   );
 
@@ -421,9 +421,10 @@ export async function runTailoringPipeline(
     resume.projects = ensureTargetSkillsInProjects(resume.projects, targetSkillNames);
   }
 
-  // Stage 12 — Gap / Enrichment Recommendations (exclude skills we already added to the resume)
+  // Stage 12 — Gap / Enrichment Recommendations (exclude skills already on the resume)
+  const skillsOnResume = Object.values(finalComposerResult.skillCategories).flat();
   const addedSkillKeys = new Set([
-    ...resumeEligibleSkills.map((c) => skillKey(c.canonicalName)),
+    ...skillsOnResume.map((n) => skillKey(n)),
     ...Array.from(introducedSkillNames).map((n) => skillKey(n)),
   ]);
   const enrichmentRecommendations = buildEnrichmentRecommendations(plan).filter(

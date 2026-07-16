@@ -3,16 +3,19 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { ensureProfile } from "@/lib/supabase/ensure-profile";
+import type { AppRole } from "@/lib/supabase/database.types";
 import type { User } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: User | null;
+  role: AppRole | null;
   loading: boolean;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  role: null,
   loading: true,
   signOut: async () => {},
 });
@@ -21,6 +24,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   // The id currently reflected in state. Guards against re-setting `user` when Supabase
   // fires SIGNED_IN / TOKEN_REFRESHED / USER_UPDATED on tab refocus — a new user object
@@ -50,10 +54,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (nextUser) {
         try {
-          await ensureProfile(nextUser.id);
+          const profile = await ensureProfile(nextUser.id);
+          if (active) {
+            setRole(profile?.role === "admin" ? "admin" : profile ? "user" : null);
+          }
         } catch (error) {
           console.warn("Could not ensure profile (Supabase may be unreachable):", error);
+          if (active) setRole(null);
         }
+      } else {
+        setRole(null);
       }
       finishLoading();
     };
@@ -79,10 +89,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     appliedUserIdRef.current = null;
     await supabase.auth.signOut();
     setUser(null);
+    setRole(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={{ user, role, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

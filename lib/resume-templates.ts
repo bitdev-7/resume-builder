@@ -38,7 +38,7 @@ export const RESUME_TEMPLATES = [
 
 export type ResumeTemplateId = (typeof RESUME_TEMPLATES)[number]["id"];
 
-export const DEFAULT_RESUME_TEMPLATE: ResumeTemplateId = "standard";
+export const DEFAULT_RESUME_TEMPLATE: ResumeTemplateId = "modern";
 
 export function isValidResumeTemplate(id: string): id is ResumeTemplateId {
   return RESUME_TEMPLATES.some((t) => t.id === id);

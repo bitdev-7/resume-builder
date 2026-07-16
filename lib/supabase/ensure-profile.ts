@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
-import type { Profile } from "@/lib/supabase/database.types";
+import type { AppRole, Profile } from "@/lib/supabase/database.types";
 import { isSupabaseNetworkError } from "@/lib/supabase/network";
 
 /**
@@ -27,6 +27,7 @@ export async function ensureProfile(
     if (existing) {
       return {
         ...existing,
+        role: (existing.role === "admin" ? "admin" : "user") as AppRole,
         default_settings: existing.default_settings ?? {},
       } as Profile;
     }
@@ -44,6 +45,7 @@ export async function ensureProfile(
 
     return {
       ...created,
+      role: (created.role === "admin" ? "admin" : "user") as AppRole,
       default_settings: created.default_settings ?? {},
     } as Profile;
   } catch (error) {

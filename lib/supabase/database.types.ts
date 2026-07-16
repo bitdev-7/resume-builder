@@ -27,15 +27,14 @@ export interface DefaultSettings {
   [key: string]: unknown;
 }
 
+export type AppRole = "admin" | "user";
+
 export interface Profile {
   id: string;
   full_name: string | null;
   email: string | null;
-  headline: string | null;
   phone: string | null;
-  linkedin_url: string | null;
-  summary: string | null;
-  location: string | null;
+  role: AppRole;
   default_settings: DefaultSettings;
   created_at: string;
   updated_at: string;
@@ -45,23 +44,25 @@ export interface ProfileInsert {
   id: string;
   full_name?: string | null;
   email?: string | null;
-  headline?: string | null;
   phone?: string | null;
-  linkedin_url?: string | null;
-  summary?: string | null;
-  location?: string | null;
+  role?: AppRole;
   default_settings?: DefaultSettings;
 }
 
 export interface ProfileUpdate {
   full_name?: string | null;
   email?: string | null;
-  headline?: string | null;
   phone?: string | null;
-  linkedin_url?: string | null;
-  summary?: string | null;
-  location?: string | null;
+  /** Only service-role / manual SQL should set this; client updates must omit. */
+  role?: AppRole;
   default_settings?: DefaultSettings;
+}
+
+export interface AdminUserSummary {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: AppRole;
 }
 
 export interface ResumeLanguage {

@@ -128,8 +128,7 @@ describe("tailoring planner — bullet allocation is not tenure-only", () => {
     expect(relevantPlan.targetBulletCount).toBeGreaterThan(irrelevantPlan.targetBulletCount);
   });
 
-  it("never allocates more bullets than the tenure-based ceiling", () => {
-    // Compute a start date ~6 months before "now" so this stays correct regardless of when the test runs.
+  it("allocates at least minBulletsPerExperience for JD-relevant roles regardless of short tenure", () => {
     const now = new Date();
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
     const recentStartDate = `${sixMonthsAgo.getMonth() + 1}/${sixMonthsAgo.getFullYear()}`;
@@ -142,8 +141,8 @@ describe("tailoring planner — bullet allocation is not tenure-only", () => {
           title: "Backend Engineer",
           company: "Acme",
           startDate: recentStartDate,
-          endDate: "Present", // < 1 year tenure -> ceiling of 4
-          facts: Array.from({ length: 10 }, (_, i) => ({
+          endDate: "Present",
+          facts: Array.from({ length: 2 }, (_, i) => ({
             id: `fact_${i}`,
             text: `Built Python service component ${i}`,
             factType: "responsibility" as const,
@@ -159,6 +158,7 @@ describe("tailoring planner — bullet allocation is not tenure-only", () => {
     };
 
     const plan = createTailoringPlan(profile, jdAnalysis(), roleArchetype(), [skillCandidate("Python", "direct", ["req_1"])]);
-    expect(plan.experiencePlans[0].targetBulletCount).toBeLessThanOrEqual(4);
+    expect(plan.experiencePlans[0].targetBulletCount).toBeGreaterThanOrEqual(DEFAULT_BULLET_BUDGET.minBulletsPerExperience);
+    expect(plan.experiencePlans[0].targetBulletCount).toBeLessThanOrEqual(DEFAULT_BULLET_BUDGET.maxBulletsPerExperience);
   });
 });

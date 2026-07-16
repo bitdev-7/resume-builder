@@ -26,8 +26,8 @@ function legacyEducation(overrides: Partial<UserEducation> = {}): UserEducation 
 function bundleWith(educations: UserEducation[]): ProfileBundle {
   return {
     profile: {
-      id: "p1", full_name: null, email: null, headline: null, phone: null,
-      linkedin_url: null, summary: null, location: null, default_settings: {},
+      id: "p1", full_name: null, email: null, phone: null,
+      role: "user", default_settings: {},
       created_at: "", updated_at: "",
     },
     resumeProfile: {
