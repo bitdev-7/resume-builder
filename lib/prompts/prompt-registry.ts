@@ -25,7 +25,7 @@ export const PROMPT_DEFINITIONS: PromptDefinition[] = [
     key: "globalPolicy",
     label: "Global tailoring policy",
     description:
-      "Shared rules injected into JD analysis, experience writing, and the composer. Controls JD-driven creative tailoring and writing style.",
+      "Shared rules injected into JD analysis, experience writing, and the composer. Controls JD alignment, factual integrity, and technology timeline consistency.",
     defaultGuidance: GLOBAL_POLICY_DEFAULT_GUIDANCE,
   },
   {
@@ -38,7 +38,7 @@ export const PROMPT_DEFINITIONS: PromptDefinition[] = [
     key: "experienceWriter",
     label: "Experience bullet writer",
     description:
-      "Writes the achievement bullets for each work experience. Use {{STRONG_ACTION_VERBS}} and {{FORBIDDEN_OPENING_VERBS}} to reference the enforced verb lists.",
+      "Writes achievement bullets for each work experience with JD alignment and technology timeline consistency. Use {{STRONG_ACTION_VERBS}} and {{FORBIDDEN_OPENING_VERBS}} for the enforced verb lists.",
     defaultGuidance: EXPERIENCE_WRITER_DEFAULT_GUIDANCE,
   },
   {

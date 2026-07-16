@@ -48,10 +48,15 @@ export function downloadPdfViaBrowser(pdfBase64: string, fileName: string): void
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
+  link.rel = "noopener";
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Chrome often aborts the download if the blob URL is revoked synchronously after
+  // click(). Keep the URL alive long enough for the download to start.
+  window.setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, 2_000);
 }
 
 const SAVE_PDF_API_TIMEOUT_MS = 120_000;
@@ -99,12 +104,22 @@ export function downloadTextFile(content: string, fileName: string): void {
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
+  link.rel = "noopener";
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  window.setTimeout(() => {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, 2_000);
 }
 
+/**
+ * Always trigger a browser download for the user, then optionally mirror the file
+ * into the backend host Downloads folder when signed in.
+ *
+ * Previously, a successful server save skipped the browser download — which looks
+ * intermittent (local backend "works", remote/VPS "Download" appears to do nothing).
+ */
 export async function savePdfToDownloadsFolder(
   pdfBase64: string,
   options: {
@@ -118,6 +133,9 @@ export async function savePdfToDownloadsFolder(
   const paths = options.fileName?.trim()
     ? buildJobFolderDownloadPaths(options.companyName, options.jobRole, options.fileName.trim())
     : buildResumeDownloadPaths(options.companyName, options.jobRole, options.personName);
+
+  const browserFileName = `${paths.dirName} - ${paths.fileName}`;
+  downloadPdfViaBrowser(pdfBase64, browserFileName);
 
   if (options.accessToken) {
     try {
@@ -133,11 +151,10 @@ export async function savePdfToDownloadsFolder(
         options.accessToken
       );
     } catch (error) {
-      console.warn("Server save to Downloads failed, falling back to browser download:", error);
+      console.warn("Server save to Downloads failed (browser download succeeded):", error);
     }
   }
 
-  downloadPdfViaBrowser(pdfBase64, `${paths.dirName} - ${paths.fileName}`);
   return {
     paths,
     savedPath: `Downloads\\${paths.dirName}\\${paths.fileName}`,
@@ -297,6 +314,8 @@ export async function saveTextToDownloadsFolder(
     fileName
   );
 
+  downloadTextFile(content, `${paths.dirName} - ${paths.fileName}`);
+
   if (options.accessToken) {
     const response = await fetch(apiUrl("/api/save-text"), {
       method: "POST",
@@ -319,7 +338,6 @@ export async function saveTextToDownloadsFolder(
     }
   }
 
-  downloadTextFile(content, `${paths.dirName} - ${paths.fileName}`);
   return {
     paths,
     savedPath: `Downloads\\${paths.dirName}\\${paths.fileName}`,
