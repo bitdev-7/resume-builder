@@ -50,3 +50,7 @@ yarn-error.log*
 next-env.d.ts
 lib/**/*.js
 
+# local agent worktrees / progress ledgers
+.worktrees/
+.superpowers/
+
