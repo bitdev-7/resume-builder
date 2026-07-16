@@ -39,6 +39,22 @@ describe("skill ontology — conservative auto-entailment", () => {
     const entailed = resolveAutoEntailedSkills(["FastAPI"]);
     expect(entailed.has("Python")).toBe(true);
   });
+
+  it("LangChain and LlamaIndex conservatively entail Python", () => {
+    const entailed = resolveAutoEntailedSkills(["LangChain", "LlamaIndex"]);
+    expect(entailed.has("Python")).toBe(true);
+  });
+
+  it("RAG strongly implies Embeddings but does not entail a specific vector DB", () => {
+    const entailed = resolveAutoEntailedSkills(["RAG"]);
+    expect(entailed.has("Embeddings")).toBe(true);
+    expect(entailed.has("Pinecone")).toBe(false);
+  });
+
+  it("Pinecone strongly implies Vector Database", () => {
+    const entailed = resolveAutoEntailedSkills(["Pinecone"]);
+    expect(entailed.has("Vector Database")).toBe(true);
+  });
 });
 
 describe("skill ontology — alternative groups are relevance-only", () => {
@@ -69,5 +85,23 @@ describe("normalizeSkillName / detectSkillMentions", () => {
   it("does not spuriously match unrelated substrings", () => {
     const mentions = detectSkillMentions("Wrote documentation for the onboarding process");
     expect(mentions).not.toContain("Go");
+  });
+
+  it("normalizes LLM-era aliases to canonical names", () => {
+    expect(normalizeSkillName("llms")).toBe("LLM");
+    expect(normalizeSkillName("large language models")).toBe("LLM");
+    expect(normalizeSkillName("ai agent")).toBe("AI Agents");
+    expect(normalizeSkillName("retrieval augmented generation")).toBe("RAG");
+    expect(normalizeSkillName("openai")).toBe("OpenAI API");
+    expect(normalizeSkillName("vector db")).toBe("Vector Database");
+  });
+
+  it("detects LLM/AI skill mentions in free text", () => {
+    const mentions = detectSkillMentions(
+      "Built RAG pipelines with LangChain and Pinecone for LLM-powered AI agents using the OpenAI API"
+    );
+    expect(mentions).toEqual(
+      expect.arrayContaining(["RAG", "LangChain", "Pinecone", "LLM", "AI Agents", "OpenAI API"])
+    );
   });
 });

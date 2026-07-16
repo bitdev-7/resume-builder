@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/jobs", label: "Jobs" },
   { href: "/history", label: "History" },
-  { href: "/statistics", label: "Statistics" },
+  { href: "/statistics", label: "AI usage" },
 ] as const;
 
 function getInitials(email: string | undefined): string {
@@ -28,9 +28,14 @@ function getInitials(email: string | undefined): string {
 
 export default function AppNav() {
   const pathname = usePathname();
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const navItems = [
+    ...NAV_ITEMS,
+    ...(role === "admin" ? ([{ href: "/admin", label: "Admin" }] as const) : []),
+  ];
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -57,7 +62,7 @@ export default function AppNav() {
         </Link>
 
         <nav className="hidden items-center gap-1 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-1 dark:border-slate-600/50 dark:bg-slate-800/90 md:flex">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active =
               pathname === item.href ||
               (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
@@ -105,7 +110,7 @@ export default function AppNav() {
                 Change password
               </Link>
               <div className="my-1 border-t border-slate-100 dark:border-slate-600/50 md:hidden">
-                {NAV_ITEMS.map((item) => (
+                {navItems.map((item) => (
                   <Link key={item.href} href={item.href} className="dropdown-item">
                     {item.label}
                   </Link>

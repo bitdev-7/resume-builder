@@ -47,12 +47,11 @@ export function buildDeterministicComposerFallback(input: {
 const FALLBACK_SKILL_CATEGORY = "Tools & Technologies";
 
 /**
- * Guarantees completeness of the skills section: every eligible skill (all
- * declared/supported skills, JD-required skills, and any technology introduced
- * in the experience bullets) must appear. Any the composer omitted are placed
- * under their real category — the candidate's own profile category when known
- * (via categoryByKey), otherwise a "Tools & Technologies" group. This keeps
- * everything categorized instead of dumping leftovers into "Additional Skills".
+ * Guarantees selected skills appear in the skills section: typically JD-required
+ * target skills and technologies introduced in experience bullets. Any omitted
+ * names are placed under their real category (profile category when known,
+ * otherwise "Tools & Technologies"). Unrelated profile skills may be omitted
+ * by the composer and are intentionally not forced back here.
  */
 export function ensureAllEligibleSkills(
   composerResult: ComposerResult,
@@ -91,8 +90,8 @@ export interface ComposerCallResult {
 
 /**
  * Stage 8 — summary/skills/projects. Runs only after experience bullets exist.
- * Filters the model's skill selection against the allowed set as a defense-in-depth
- * measure (deterministic validation in validators.ts is the authoritative gate).
+ * Keeps composer-chosen skills (including JD-relevant additions beyond allowedSkills).
+ * ensureAllEligibleSkills later forces only must-keep skills (e.g. JD targets + bullet mentions).
  */
 export async function composeResumeTopSection(
   input: ComposerInput,
@@ -120,6 +119,7 @@ export async function composeResumeTopSection(
       temperature: 0.6,
       max_tokens: 2048,
       tryParseJson: true,
+      stage: "composer",
     });
   } catch (err) {
     throw new Error(
@@ -148,20 +148,25 @@ export async function composeResumeTopSection(
     throw new Error(`Composer output failed validation: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
   }
 
-  // Keep only allowed skills (defense in depth). No per-category cap: the allowed
-  // set is already intentionally bounded (the candidate's own skills + JD-required),
-  // and the policy is to include all of them.
-  const allowedKeys = new Set(input.allowedSkills.map(skillKey));
-  const filteredSkillCategories: Record<string, string[]> = {};
+  // Keep composer skills as returned (allowed baseline + dynamic JD-relevant additions).
+  // Deduplicate within each category by skill key; drop empty categories.
+  const seenKeys = new Set<string>();
+  const skillCategories: Record<string, string[]> = {};
   for (const [category, skills] of Object.entries(parsed.data.skillCategories)) {
-    const filtered = skills.filter((s) => allowedKeys.has(skillKey(s)));
-    if (filtered.length > 0) filteredSkillCategories[category] = filtered;
+    const unique: string[] = [];
+    for (const s of skills) {
+      const key = skillKey(s);
+      if (!key || seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      unique.push(s);
+    }
+    if (unique.length > 0) skillCategories[category] = unique;
   }
 
   return {
     result: {
       summary: parsed.data.summary,
-      skillCategories: filteredSkillCategories,
+      skillCategories,
       softSkills: parsed.data.softSkills,
       projects: parsed.data.projects,
     },

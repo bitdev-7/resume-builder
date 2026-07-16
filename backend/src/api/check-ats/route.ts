@@ -9,10 +9,11 @@ import {
   parseAtsFromAiResponse,
 } from "@/lib/types/ats-match";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
+import { runWithAiUsageContextAsync } from "@/lib/ai-usage-context";
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuthClient(request);
+    const { userId, client } = await requireAuthClient(request);
 
     const {
       resume,
@@ -55,19 +56,24 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    const aiResp = await callAI({
-      useOpenRouter: aiRequest.useOpenRouter,
-      model: aiRequest.model,
-      ...(aiRequest.provider ? { provider: aiRequest.provider } : {}),
-      messages,
-      temperature: 0.2,
-      max_tokens:
-        aiRequest.provider === "deepseek" ||
-        aiRequest.model.toLowerCase().includes("deepseek")
-          ? 4096
-          : 2048,
-      tryParseJson: true,
-    });
+    const aiResp = await runWithAiUsageContextAsync(
+      { userId, source: "ats_check", client },
+      () =>
+        callAI({
+          useOpenRouter: aiRequest.useOpenRouter,
+          model: aiRequest.model,
+          ...(aiRequest.provider ? { provider: aiRequest.provider } : {}),
+          messages,
+          temperature: 0.2,
+          max_tokens:
+            aiRequest.provider === "deepseek" ||
+            aiRequest.model.toLowerCase().includes("deepseek")
+              ? 4096
+              : 2048,
+          tryParseJson: true,
+          stage: "ats-check",
+        })
+    );
 
     const result = parseAtsFromAiResponse({
       json: aiResp.json,

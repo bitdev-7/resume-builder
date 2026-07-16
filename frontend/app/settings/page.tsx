@@ -10,16 +10,16 @@ import {
 } from "@/lib/apply-alert-settings";
 import { DEFAULT_AI_SETTINGS, type AiSettings } from "@/lib/ai-settings";
 import {
-  loadApplyAlertSettings,
-} from "@/lib/supabase/services/apply-alert-settings";
-import { loadAiSettings } from "@/lib/supabase/services/ai-settings";
-import { saveGeneralSettings } from "@/lib/supabase/services/general-settings";
+  loadGeneralSettings,
+  saveGeneralSettings,
+} from "@/lib/supabase/services/general-settings";
 import { notifySettingsUpdated } from "@/lib/generator-workspace-storage";
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fullName, setFullName] = useState("");
   const [settings, setSettings] = useState<ApplyAlertSettings>(DEFAULT_APPLY_ALERT_SETTINGS);
   const [aiSettings, setAiSettings] = useState<AiSettings>(DEFAULT_AI_SETTINGS);
   const { toasts, showToast, dismissToast } = useToast();
@@ -34,12 +34,10 @@ export default function SettingsPage() {
     if (!user) return;
     setLoading(true);
     try {
-      const [loadedAlerts, loadedAi] = await Promise.all([
-        loadApplyAlertSettings(user.id),
-        loadAiSettings(user.id),
-      ]);
-      setSettings(loadedAlerts);
-      setAiSettings(loadedAi);
+      const loaded = await loadGeneralSettings(user.id);
+      setFullName(loaded.fullName);
+      setSettings(loaded.alerts);
+      setAiSettings(loaded.ai);
     } catch (err) {
       console.error("Failed to load settings:", err);
       showToast("error", "Failed to load settings.");
@@ -55,7 +53,8 @@ export default function SettingsPage() {
     setSaving(true);
 
     try {
-      const saved = await saveGeneralSettings(user.id, settings, aiSettings);
+      const saved = await saveGeneralSettings(user.id, settings, aiSettings, fullName);
+      setFullName(saved.fullName);
       setSettings(saved.alerts);
       setAiSettings(saved.ai);
       notifySettingsUpdated();
@@ -85,7 +84,7 @@ export default function SettingsPage() {
             General
           </h2>
           <p className="page-subtitle">
-            Application alerts and AI provider preferences.
+            Account details, application alerts, and AI provider preferences.
           </p>
         </div>
 
@@ -96,6 +95,32 @@ export default function SettingsPage() {
               </div>
             ) : (
               <>
+                <section className="card space-y-4 p-5">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                      Account
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-300">
+                      Your display name for this account (shown in admin and account lists).
+                    </p>
+                  </div>
+
+                  <div className="max-w-md">
+                    <label htmlFor="full-name" className="field-label">
+                      Full name
+                    </label>
+                    <input
+                      id="full-name"
+                      type="text"
+                      autoComplete="name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="e.g. Jane Doe"
+                      className="input-shell"
+                    />
+                  </div>
+                </section>
+
                 <section className="card space-y-4 p-5">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">

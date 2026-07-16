@@ -27,15 +27,14 @@ export interface DefaultSettings {
   [key: string]: unknown;
 }
 
+export type AppRole = "admin" | "user";
+
 export interface Profile {
   id: string;
   full_name: string | null;
   email: string | null;
-  headline: string | null;
   phone: string | null;
-  linkedin_url: string | null;
-  summary: string | null;
-  location: string | null;
+  role: AppRole;
   default_settings: DefaultSettings;
   created_at: string;
   updated_at: string;
@@ -45,23 +44,25 @@ export interface ProfileInsert {
   id: string;
   full_name?: string | null;
   email?: string | null;
-  headline?: string | null;
   phone?: string | null;
-  linkedin_url?: string | null;
-  summary?: string | null;
-  location?: string | null;
+  role?: AppRole;
   default_settings?: DefaultSettings;
 }
 
 export interface ProfileUpdate {
   full_name?: string | null;
   email?: string | null;
-  headline?: string | null;
   phone?: string | null;
-  linkedin_url?: string | null;
-  summary?: string | null;
-  location?: string | null;
+  /** Only service-role / manual SQL should set this; client updates must omit. */
+  role?: AppRole;
   default_settings?: DefaultSettings;
+}
+
+export interface AdminUserSummary {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: AppRole;
 }
 
 export interface ResumeLanguage {
@@ -287,3 +288,104 @@ export const INTERVIEW_CALL_TYPES: InterviewCallType[] = [
 
 export const JD_STORAGE_BUCKET = "jds";
 export const RESUME_STORAGE_BUCKET = "resumes";
+
+/** One row per LLM call, written from the central `callAI` recorder. */
+export interface AiUsageLog {
+  id: string;
+  user_id: string;
+  profile_id: string | null;
+  source: string;
+  stage: string;
+  provider: string | null;
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost_usd: number;
+  cost_source: "provider" | "estimated";
+  duration_ms: number | null;
+  success: boolean;
+  error: string | null;
+  created_at: string;
+}
+
+export interface AiUsageLogInsert {
+  user_id: string;
+  profile_id?: string | null;
+  source?: string;
+  stage?: string;
+  provider?: string | null;
+  model: string;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  cost_usd?: number;
+  cost_source?: "provider" | "estimated";
+  duration_ms?: number | null;
+  success?: boolean;
+  error?: string | null;
+}
+
+/**
+ * User-editable addition to the skill ontology (canonical skill + aliases).
+ * Layered on top of the built-in SKILL_ALIASES defaults, which stay read-only.
+ * One shared global set; any authenticated user can read/write.
+ */
+export interface SkillCatalogAddition {
+  id: string;
+  canonical_name: string;
+  aliases: string[];
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+}
+
+export interface SkillCatalogAdditionInsert {
+  canonical_name: string;
+  aliases?: string[];
+  created_by?: string | null;
+}
+
+export interface SkillCatalogAdditionUpdate {
+  canonical_name?: string;
+  aliases?: string[];
+}
+
+/**
+ * User-editable addition to the role-skill catalog (a custom archetype).
+ * `ecosystem` is a map of group name -> skills, mirroring RoleSkillCatalogEntry.
+ */
+export interface RoleArchetypeAddition {
+  id: string;
+  label: string;
+  title_keywords: string[];
+  core: string[];
+  ecosystem: Record<string, string[]>;
+  market_relevant: string[];
+  skill_category_hints: string[];
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  version: number;
+}
+
+export interface RoleArchetypeAdditionInsert {
+  id: string;
+  label: string;
+  title_keywords?: string[];
+  core?: string[];
+  ecosystem?: Record<string, string[]>;
+  market_relevant?: string[];
+  skill_category_hints?: string[];
+  created_by?: string | null;
+}
+
+export interface RoleArchetypeAdditionUpdate {
+  label?: string;
+  title_keywords?: string[];
+  core?: string[];
+  ecosystem?: Record<string, string[]>;
+  market_relevant?: string[];
+  skill_category_hints?: string[];
+}

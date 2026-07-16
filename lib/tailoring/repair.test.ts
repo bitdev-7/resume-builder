@@ -83,11 +83,11 @@ const validExperienceResults: ExperienceGenerationResult[] = [
 const aiRequest: ResolvedAIRequest = { useOpenRouter: true, model: "openai/gpt-4.1-mini" };
 
 describe("Case 16: targeted repair", () => {
-  it("repairs only the skills section for an UNSUPPORTED_SKILL issue, leaving valid experience bullets untouched", async () => {
-    const composerResultWithBadSkill: ComposerResult = {
+  it("leaves dynamic skills intact and does not re-invoke composer for skills-only concerns", async () => {
+    const composerResultWithExtraSkill: ComposerResult = {
       summary:
         "Backend engineer with hands-on experience building Python services focused on reliability, clean API design, and maintainable systems. Comfortable owning features end to end, from initial design through deployment and monitoring in production. Works closely with cross-functional teams to translate business requirements into well-tested backend components, prioritizing clarity, consistency, and long-term maintainability across the codebase and infrastructure supporting critical workflows daily for the organization and its customers worldwide today.",
-      skillCategories: { Backend: ["Python", "Kubernetes"] }, // Kubernetes is not in supportedSkillsByKey
+      skillCategories: { Backend: ["Python", "Kubernetes"] },
       softSkills: [],
       projects: [],
     };
@@ -122,7 +122,7 @@ describe("Case 16: targeted repair", () => {
       projects: [],
     };
 
-    const outcome = await repairTailoredResume(validExperienceResults, composerResultWithBadSkill, {
+    const outcome = await repairTailoredResume(validExperienceResults, composerResultWithExtraSkill, {
       jdAnalysis,
       experiencePlans,
       experiencesById: new Map([["exp_1", experience]]),
@@ -134,11 +134,8 @@ describe("Case 16: targeted repair", () => {
       buildFallback: (input) => ({ experienceId: input.experienceId, bullets: [{ text: "FALLBACK", evidenceIds: [], requirementIds: [] }], usedFallback: true }),
     });
 
-    // Cheap deterministic fix: unsupported skill dropped without another AI call.
     expect(composeMock).not.toHaveBeenCalled();
-    expect(outcome.composerResult.skillCategories.Backend).toEqual(["Python"]);
-
-    // Experience bullets were already valid — untouched, no repair call made.
+    expect(outcome.composerResult.skillCategories.Backend).toEqual(["Python", "Kubernetes"]);
     expect(generateExperienceMock).not.toHaveBeenCalled();
     expect(outcome.experienceResults).toEqual(validExperienceResults);
   });

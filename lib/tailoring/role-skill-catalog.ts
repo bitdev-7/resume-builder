@@ -1,196 +1,20 @@
 import type { RoleSkillCatalogEntry } from "@/lib/types/tailoring";
+import catalogVersion from "../../data/tailoring/catalog-version.json";
+import roleCatalogJson from "../../data/tailoring/role-skill-catalog.json";
 
 /**
- * Versioned role-skill catalog. Membership means "relevant to the role" —
- * it does NOT mean the candidate knows it, has used it professionally, or
- * that it may be inserted into experience bullets without evidence.
- *
- * Extend by adding a new entry; nothing else needs to change (role archetype
- * detection, skill expansion, and enrichment all read from this catalog).
+ * Versioned role-skill catalog. Built-in defaults live in
+ * data/tailoring/role-skill-catalog.json; DB additions are merged at runtime
+ * via skill-registry.ts.
  */
-export const ROLE_SKILL_CATALOG_VERSION = "2026-07-10.1";
+export let ROLE_SKILL_CATALOG_VERSION = catalogVersion.version;
 
-export const ROLE_SKILL_CATALOG: Record<string, RoleSkillCatalogEntry> = {
-  full_stack_python_engineer: {
-    id: "full_stack_python_engineer",
-    label: "Full Stack Python Engineer",
-    titleKeywords: ["full stack python", "full-stack python", "python full stack"],
-    core: ["Python", "REST APIs", "SQL", "Git"],
-    ecosystem: {
-      backendEcosystem: ["Django", "FastAPI", "Flask", "Pydantic", "OpenAPI", "PostgreSQL", "Redis"],
-      frontendEcosystem: ["JavaScript", "TypeScript", "React", "HTML", "CSS"],
-      deliveryEcosystem: ["Docker", "CI/CD", "Testing", "Pytest"],
-    },
-    marketRelevant: ["GraphQL", "MongoDB", "Kubernetes"],
-    skillCategoryHints: ["Languages", "Backend", "Frontend", "Data", "Cloud & DevOps", "Testing & Tools"],
-  },
-  python_backend_engineer: {
-    id: "python_backend_engineer",
-    label: "Python Backend Engineer",
-    titleKeywords: ["python backend", "python developer", "python engineer"],
-    core: ["Python", "REST APIs", "SQL", "Git"],
-    ecosystem: {
-      backendEcosystem: ["Django", "FastAPI", "Flask", "Pydantic", "PostgreSQL", "Redis", "MongoDB"],
-      deliveryEcosystem: ["Docker", "CI/CD", "Testing", "Pytest"],
-    },
-    marketRelevant: ["Kubernetes", "GraphQL", "Kafka"],
-    skillCategoryHints: ["Languages", "Backend", "Data", "Cloud & DevOps", "Testing & Tools"],
-  },
-  backend_engineer: {
-    id: "backend_engineer",
-    label: "Backend Engineer",
-    titleKeywords: ["backend", "back-end", "back end"],
-    core: ["REST APIs", "SQL", "Git", "Testing"],
-    ecosystem: {
-      dataStores: ["PostgreSQL", "MySQL", "Redis", "MongoDB"],
-      delivery: ["Docker", "CI/CD"],
-    },
-    marketRelevant: ["Kubernetes", "Kafka", "GraphQL"],
-    skillCategoryHints: ["Languages", "Backend", "Data", "Cloud & DevOps", "Testing & Tools"],
-  },
-  frontend_engineer: {
-    id: "frontend_engineer",
-    label: "Frontend Engineer",
-    titleKeywords: ["frontend", "front-end", "front end", "ui engineer"],
-    core: ["JavaScript", "HTML", "CSS", "Git"],
-    ecosystem: {
-      frameworks: ["React", "Vue.js", "Angular"],
-      typing: ["TypeScript"],
-      tooling: ["Testing", "Jest", "CI/CD"],
-    },
-    marketRelevant: ["GraphQL", "Node.js"],
-    skillCategoryHints: ["Languages", "Frontend", "Testing & Tools", "Cloud & DevOps"],
-  },
-  full_stack_engineer: {
-    id: "full_stack_engineer",
-    label: "Full Stack Engineer",
-    titleKeywords: ["full stack", "full-stack", "fullstack"],
-    core: ["JavaScript", "REST APIs", "SQL", "Git"],
-    ecosystem: {
-      frontendEcosystem: ["TypeScript", "React", "Vue.js", "Angular", "HTML", "CSS"],
-      backendEcosystem: ["Node.js", "PostgreSQL", "MongoDB", "Redis"],
-      deliveryEcosystem: ["Docker", "CI/CD", "Testing"],
-    },
-    marketRelevant: ["GraphQL", "Kubernetes"],
-    skillCategoryHints: ["Languages", "Frontend", "Backend", "Cloud & DevOps", "Testing & Tools"],
-  },
-  java_backend_engineer: {
-    id: "java_backend_engineer",
-    label: "Java Backend Engineer",
-    titleKeywords: ["java developer", "java engineer", "java backend"],
-    core: ["Java", "SQL", "Git", "REST APIs"],
-    ecosystem: {
-      framework: ["Spring", "Spring Boot"],
-      dataStores: ["PostgreSQL", "MySQL", "Redis"],
-      delivery: ["Docker", "CI/CD", "Testing"],
-    },
-    marketRelevant: ["Kafka", "Kubernetes"],
-    skillCategoryHints: ["Languages", "Backend", "Data", "Cloud & DevOps", "Testing & Tools"],
-  },
-  dotnet_engineer: {
-    id: "dotnet_engineer",
-    label: ".NET Engineer",
-    titleKeywords: [".net", "dotnet", "c# developer", "c# engineer"],
-    core: ["C#", ".NET", "SQL", "Git"],
-    ecosystem: {
-      dataStores: ["PostgreSQL", "MySQL", "Redis"],
-      delivery: ["Docker", "CI/CD", "Testing"],
-    },
-    marketRelevant: ["Azure", "Kubernetes"],
-    skillCategoryHints: ["Languages", "Backend", "Data", "Cloud & DevOps", "Testing & Tools"],
-  },
-  devops_engineer: {
-    id: "devops_engineer",
-    label: "DevOps Engineer",
-    titleKeywords: ["devops", "site reliability", "sre", "platform engineer"],
-    core: ["Linux", "Git", "CI/CD", "Scripting", "Bash"],
-    ecosystem: {
-      cloudPlatforms: ["AWS", "Azure", "GCP"],
-      containers: ["Docker", "Kubernetes"],
-      infrastructureAsCode: ["Terraform", "CloudFormation", "Pulumi"],
-      observability: ["Prometheus", "Grafana"],
-    },
-    marketRelevant: ["Python", "GitHub Actions", "GitLab CI", "Jenkins"],
-    skillCategoryHints: [
-      "Cloud Platforms",
-      "Containers & Orchestration",
-      "Infrastructure as Code",
-      "CI/CD",
-      "Observability",
-      "Scripting & Systems",
-    ],
-  },
-  data_engineer: {
-    id: "data_engineer",
-    label: "Data Engineer",
-    titleKeywords: ["data engineer", "data engineering"],
-    core: ["Python", "SQL", "Git"],
-    ecosystem: {
-      dataProcessing: ["Pandas", "NumPy"],
-      warehousing: ["PostgreSQL", "MySQL"],
-      orchestration: ["CI/CD"],
-      cloud: ["AWS", "Azure", "GCP"],
-    },
-    marketRelevant: ["Kafka", "Docker", "Kubernetes"],
-    skillCategoryHints: ["Languages", "Data Processing", "Warehousing", "Orchestration", "Cloud", "Databases"],
-  },
-  machine_learning_engineer: {
-    id: "machine_learning_engineer",
-    label: "Machine Learning Engineer",
-    titleKeywords: ["machine learning", "ml engineer", "ai engineer"],
-    core: ["Python", "Machine Learning", "Git"],
-    ecosystem: {
-      frameworks: ["PyTorch", "TensorFlow", "Pandas", "NumPy"],
-      delivery: ["Docker", "CI/CD", "Testing"],
-      cloud: ["AWS", "Azure", "GCP"],
-    },
-    marketRelevant: ["Kubernetes"],
-    skillCategoryHints: ["Languages", "ML Frameworks", "Data", "Cloud & DevOps", "Testing & Tools"],
-  },
-  mobile_engineer: {
-    id: "mobile_engineer",
-    label: "Mobile Engineer",
-    titleKeywords: ["mobile engineer", "mobile developer"],
-    core: ["Git", "Testing"],
-    ecosystem: {
-      ios: ["Swift", "iOS", "Objective-C"],
-      android: ["Kotlin", "Android"],
-      delivery: ["CI/CD"],
-    },
-    marketRelevant: [],
-    skillCategoryHints: ["Languages", "Mobile", "Testing & Tools", "Cloud & DevOps"],
-  },
-  ios_engineer: {
-    id: "ios_engineer",
-    label: "iOS Engineer",
-    titleKeywords: ["ios engineer", "ios developer"],
-    core: ["Swift", "iOS", "Git"],
-    ecosystem: { legacy: ["Objective-C"], delivery: ["CI/CD", "Testing"] },
-    marketRelevant: [],
-    skillCategoryHints: ["Languages", "Mobile", "Testing & Tools"],
-  },
-  android_engineer: {
-    id: "android_engineer",
-    label: "Android Engineer",
-    titleKeywords: ["android engineer", "android developer"],
-    core: ["Kotlin", "Android", "Git"],
-    ecosystem: { delivery: ["CI/CD", "Testing"] },
-    marketRelevant: [],
-    skillCategoryHints: ["Languages", "Mobile", "Testing & Tools"],
-  },
-  qa_automation_engineer: {
-    id: "qa_automation_engineer",
-    label: "QA Automation Engineer",
-    titleKeywords: ["qa automation", "test automation", "sdet"],
-    core: ["Testing", "Git", "CI/CD"],
-    ecosystem: {
-      languages: ["Python", "JavaScript"],
-      tooling: ["Pytest", "Jest"],
-    },
-    marketRelevant: ["Docker"],
-    skillCategoryHints: ["Languages", "Testing & Tools", "Cloud & DevOps"],
-  },
-};
+let builtinRoleCatalog = roleCatalogJson as Record<string, RoleSkillCatalogEntry>;
+
+/** Mutable runtime catalog — cloned from JSON defaults, extended by DB additions. */
+export const ROLE_SKILL_CATALOG: Record<string, RoleSkillCatalogEntry> = structuredClone(
+  builtinRoleCatalog
+);
 
 export function getRoleCatalogEntry(archetypeId: string): RoleSkillCatalogEntry | undefined {
   return ROLE_SKILL_CATALOG[archetypeId];
@@ -209,4 +33,40 @@ export function getArchetypeRoleSkills(archetypeId: string): {
   if (!entry) return { core: [], ecosystem: [] };
   const ecosystem = Object.values(entry.ecosystem).flat();
   return { core: entry.core, ecosystem };
+}
+
+/** Built-in archetype entries from JSON (before DB additions). */
+export function getBuiltinRoleCatalog(): Record<string, RoleSkillCatalogEntry> {
+  return structuredClone(builtinRoleCatalog);
+}
+
+/** Snapshot of the built-in archetype ids — updated when catalog is reloaded from disk. */
+let BUILTIN_ARCHETYPE_IDS = new Set<string>(Object.keys(builtinRoleCatalog));
+
+export function isBuiltinArchetypeId(id: string): boolean {
+  return BUILTIN_ARCHETYPE_IDS.has(id);
+}
+
+export function registerArchetype(entry: RoleSkillCatalogEntry): boolean {
+  if (!entry || !entry.id || BUILTIN_ARCHETYPE_IDS.has(entry.id)) return false;
+  ROLE_SKILL_CATALOG[entry.id] = entry;
+  return true;
+}
+
+export function unregisterArchetype(id: string): boolean {
+  if (!id || BUILTIN_ARCHETYPE_IDS.has(id)) return false;
+  return delete ROLE_SKILL_CATALOG[id];
+}
+
+/** Replace built-in role catalog from disk/catalog apply (DB additions re-applied separately). */
+export function reloadBuiltinRoleSkillCatalog(
+  version: string,
+  catalog: Record<string, RoleSkillCatalogEntry>
+): void {
+  ROLE_SKILL_CATALOG_VERSION = version;
+  builtinRoleCatalog = structuredClone(catalog);
+  BUILTIN_ARCHETYPE_IDS = new Set(Object.keys(builtinRoleCatalog));
+
+  for (const key of Object.keys(ROLE_SKILL_CATALOG)) delete ROLE_SKILL_CATALOG[key];
+  Object.assign(ROLE_SKILL_CATALOG, structuredClone(catalog));
 }

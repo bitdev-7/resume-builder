@@ -50,6 +50,16 @@ describe("ensureTargetSkillsInExperiences", () => {
     const input = results();
     expect(ensureTargetSkillsInExperiences(input, [])).toBe(input);
   });
+
+  it("writes the coverage bullet as confident hands-on delivery with no metrics", () => {
+    const out = ensureTargetSkillsInExperiences(results(), ["Kafka", "Terraform"]);
+    const added = out[0].bullets[2].text;
+    // Strong action-verb lead, names the skills, no fabricated numbers.
+    expect(added).toMatch(/^Shipped /);
+    expect(added).toContain("Kafka");
+    expect(added).toContain("Terraform");
+    expect(added).not.toMatch(/\d+%|\$\d|\b\d+x\b/i);
+  });
 });
 
 describe("ensureTargetSkillsInProjects", () => {

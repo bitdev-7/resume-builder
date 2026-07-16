@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractJobFromPageContent } from "@/lib/extract-job-page";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
+import { runWithAiUsageContextAsync } from "@/lib/ai-usage-context";
 import { sanitizePromptOverrides } from "@/lib/prompts/prompt-overrides";
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuthClient(request);
+    const { userId, client } = await requireAuthClient(request);
 
     const { pageContent, useOpenRouter: useOpenRouterBody, promptOverrides: promptOverridesBody } =
       await request.json();
@@ -16,10 +17,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { extracted, extractCostUsd } = await extractJobFromPageContent(pageContent, {
-      useOpenRouter: useOpenRouterBody,
-      promptOverrides: sanitizePromptOverrides(promptOverridesBody),
-    });
+    const { extracted, extractCostUsd } = await runWithAiUsageContextAsync(
+      { userId, source: "job_extract", client },
+      () =>
+        extractJobFromPageContent(pageContent, {
+          useOpenRouter: useOpenRouterBody,
+          promptOverrides: sanitizePromptOverrides(promptOverridesBody),
+        })
+    );
     return NextResponse.json({ ...extracted, extractCostUsd });
   } catch (error) {
     if (error instanceof AuthError) {

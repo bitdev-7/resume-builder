@@ -1,0 +1,2042 @@
+[
+  {
+    "from": "Django",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.98
+  },
+  {
+    "from": "FastAPI",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.98
+  },
+  {
+    "from": "Flask",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Pydantic",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Pandas",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "NumPy",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "PyTorch",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "TensorFlow",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.85
+  },
+  {
+    "from": "Pytest",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Spring",
+    "to": "Java",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Spring Boot",
+    "to": "Java",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": ".NET",
+    "to": "C#",
+    "type": "requires",
+    "confidence": 0.85
+  },
+  {
+    "from": "Node.js",
+    "to": "JavaScript",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Angular",
+    "to": "TypeScript",
+    "type": "requires",
+    "confidence": 0.85
+  },
+  {
+    "from": "React",
+    "to": "JavaScript",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Vue.js",
+    "to": "JavaScript",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Jest",
+    "to": "JavaScript",
+    "type": "requires",
+    "confidence": 0.85
+  },
+  {
+    "from": "LangChain",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "LlamaIndex",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "RAG",
+    "to": "Embeddings",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Pinecone",
+    "to": "Vector Database",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Weaviate",
+    "to": "Vector Database",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "pgvector",
+    "to": "Vector Database",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "React",
+    "to": "TypeScript",
+    "type": "commonly_used_with",
+    "confidence": 0.5
+  },
+  {
+    "from": "AWS",
+    "to": "Terraform",
+    "type": "commonly_used_with",
+    "confidence": 0.45
+  },
+  {
+    "from": "AWS",
+    "to": "Azure",
+    "type": "market_adjacent",
+    "confidence": 0.3
+  },
+  {
+    "from": "AWS",
+    "to": "GCP",
+    "type": "market_adjacent",
+    "confidence": 0.3
+  },
+  {
+    "from": "Azure",
+    "to": "GCP",
+    "type": "market_adjacent",
+    "confidence": 0.3
+  },
+  {
+    "from": "Docker",
+    "to": "Kubernetes",
+    "type": "same_ecosystem",
+    "confidence": 0.5
+  },
+  {
+    "from": "RabbitMQ",
+    "to": "Kafka",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "RabbitMQ",
+    "to": "ActiveMQ",
+    "type": "same_ecosystem",
+    "confidence": 0.4
+  },
+  {
+    "from": "Terraform",
+    "to": "CloudFormation",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "Terraform",
+    "to": "Pulumi",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "Jenkins",
+    "to": "GitHub Actions",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "Jenkins",
+    "to": "GitLab CI",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "Prometheus",
+    "to": "Grafana",
+    "type": "commonly_used_with",
+    "confidence": 0.6
+  },
+  {
+    "from": "LLM",
+    "to": "Prompt Engineering",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "LLM",
+    "to": "AI Agents",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "LangChain",
+    "to": "LLM",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "LlamaIndex",
+    "to": "LLM",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "RAG",
+    "to": "Embeddings",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "RAG",
+    "to": "Vector Database",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "OpenAI API",
+    "to": "LLM",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Anthropic API",
+    "to": "LLM",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Hugging Face",
+    "to": "Machine Learning",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "PyTorch",
+    "to": "Deep Learning",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "TensorFlow",
+    "to": "Deep Learning",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Machine Learning",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Deep Learning",
+    "to": "Machine Learning",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "NLP",
+    "to": "Machine Learning",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Computer Vision",
+    "to": "Deep Learning",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Model Context Protocol",
+    "to": "LLM",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Microservices",
+    "to": "Docker",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Microservices",
+    "to": "Kubernetes",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Distributed Systems",
+    "to": "Message Queues",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "System Design",
+    "to": "Performance Optimization",
+    "type": "strongly_implies",
+    "confidence": 0.8
+  },
+  {
+    "from": "Security Best Practices",
+    "to": "Testing",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "Monitoring",
+    "to": "Prometheus",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Monitoring",
+    "to": "Grafana",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "CI/CD",
+    "to": "Jenkins",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "CI/CD",
+    "to": "GitHub Actions",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "CI/CD",
+    "to": "GitLab CI",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Python",
+    "to": "Machine Learning",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Machine Learning",
+    "to": "Deep Learning",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Deep Learning",
+    "to": "PyTorch",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Deep Learning",
+    "to": "TensorFlow",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "LLM",
+    "to": "Prompt Engineering",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "LLM",
+    "to": "LangChain",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "LLM",
+    "to": "LlamaIndex",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Vector Database",
+    "to": "Embeddings",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Embeddings",
+    "to": "RAG",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Pinecone",
+    "to": "Vector Database",
+    "type": "alternative_to",
+    "confidence": 0.9
+  },
+  {
+    "from": "Weaviate",
+    "to": "Vector Database",
+    "type": "alternative_to",
+    "confidence": 0.9
+  },
+  {
+    "from": "pgvector",
+    "to": "Vector Database",
+    "type": "alternative_to",
+    "confidence": 0.9
+  },
+  {
+    "from": "Model Context Protocol",
+    "to": "LLM",
+    "type": "market_adjacent",
+    "confidence": 0.7
+  },
+  {
+    "from": "Kotlin",
+    "to": "Java",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Jetpack Compose",
+    "to": "Android SDK",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Android Studio",
+    "to": "Gradle",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Espresso",
+    "to": "JUnit",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Mockito",
+    "to": "JUnit",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Android NDK",
+    "to": "C++",
+    "type": "market_adjacent",
+    "confidence": 0.7
+  },
+  {
+    "from": "REST APIs",
+    "to": "GraphQL",
+    "type": "alternative_to",
+    "confidence": 0.8
+  },
+  {
+    "from": "Git",
+    "to": "CI/CD",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Docker",
+    "to": "Kubernetes",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "REST APIs",
+    "to": "OpenAPI",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Kafka",
+    "to": "Distributed Systems",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "GitHub Actions",
+    "to": "CI/CD",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "GitLab CI",
+    "to": "CI/CD",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "AWS",
+    "to": "Cloud",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Azure",
+    "to": "Cloud",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "GCP",
+    "to": "Cloud",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Pytest",
+    "to": "Testing",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "RabbitMQ",
+    "to": "Messaging Queues",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "ETL",
+    "to": "Data Pipelines",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Apache Spark",
+    "to": "Data Pipelines",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Apache Kafka",
+    "to": "Streaming",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "Apache Airflow",
+    "to": "Orchestration",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Terraform",
+    "to": "Cloud Platforms",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Snowflake",
+    "to": "Data Warehousing",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Redshift",
+    "to": "Data Warehousing",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "BigQuery",
+    "to": "Data Warehousing",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Python",
+    "to": "ETL",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "SQL",
+    "to": "Data Warehousing",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Terraform",
+    "to": "AWS",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Terraform",
+    "to": "Azure",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Terraform",
+    "to": "GCP",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Jenkins",
+    "to": "CI/CD",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "GitHub Actions",
+    "to": "CI/CD",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "GitLab CI",
+    "to": "CI/CD",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Bash",
+    "to": "Linux",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Ansible",
+    "to": "ConfigurationManagement",
+    "type": "alternative_to",
+    "confidence": 0.8
+  },
+  {
+    "from": "Chef",
+    "to": "ConfigurationManagement",
+    "type": "alternative_to",
+    "confidence": 0.8
+  },
+  {
+    "from": "Puppet",
+    "to": "ConfigurationManagement",
+    "type": "alternative_to",
+    "confidence": 0.8
+  },
+  {
+    "from": "ASP.NET Core",
+    "to": "C#",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Entity Framework",
+    "to": "C#",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Blazor",
+    "to": "C#",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "CI/CD",
+    "to": "Azure DevOps",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "xUnit",
+    "to": "C#",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "NUnit",
+    "to": "C#",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "MSTest",
+    "to": "C#",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Moq",
+    "to": "xUnit",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Azure",
+    "to": ".NET",
+    "type": "market_adjacent",
+    "confidence": 0.8
+  },
+  {
+    "from": "SQL Server",
+    "to": "SQL",
+    "type": "alternative_to",
+    "confidence": 0.9
+  },
+  {
+    "from": "PostgreSQL",
+    "to": "SQL",
+    "type": "alternative_to",
+    "confidence": 0.9
+  },
+  {
+    "from": "MySQL",
+    "to": "SQL",
+    "type": "alternative_to",
+    "confidence": 0.9
+  },
+  {
+    "from": "TypeScript",
+    "to": "JavaScript",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "React",
+    "to": "JavaScript",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Vue.js",
+    "to": "JavaScript",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Redux",
+    "to": "React",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "MobX",
+    "to": "React",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "Recoil",
+    "to": "React",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "Vuex",
+    "to": "Vue.js",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Pinia",
+    "to": "Vue.js",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Jest",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Cypress",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Tailwind CSS",
+    "to": "CSS",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Styled Components",
+    "to": "React",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Webpack",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Vite",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Rollup",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "npm",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 1
+  },
+  {
+    "from": "Yarn",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "pnpm",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "GitHub Actions",
+    "to": "GitHub",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "GitLab CI",
+    "to": "GitLab",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "CircleCI",
+    "to": "Git",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "REST APIs",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "GraphQL",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Lighthouse",
+    "to": "Chrome DevTools",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "axe",
+    "to": "Accessibility",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Express",
+    "to": "Node.js",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "NestJS",
+    "to": "Node.js",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "GraphQL",
+    "to": "REST APIs",
+    "type": "market_adjacent",
+    "confidence": 0.8
+  },
+  {
+    "from": "Jenkins",
+    "to": "CI/CD",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "AWS",
+    "to": "CloudPlatforms",
+    "type": "market_adjacent",
+    "confidence": 0.9
+  },
+  {
+    "from": "Azure",
+    "to": "CloudPlatforms",
+    "type": "market_adjacent",
+    "confidence": 0.9
+  },
+  {
+    "from": "GCP",
+    "to": "CloudPlatforms",
+    "type": "market_adjacent",
+    "confidence": 0.9
+  },
+  {
+    "from": "OpenAPI",
+    "to": "REST APIs",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Bash",
+    "to": "Scripting",
+    "type": "same_ecosystem",
+    "confidence": 1
+  },
+  {
+    "from": "Python",
+    "to": "Django",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Python",
+    "to": "Flask",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Python",
+    "to": "FastAPI",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "JavaScript",
+    "to": "React",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "JavaScript",
+    "to": "TypeScript",
+    "type": "alternative_to",
+    "confidence": 0.7
+  },
+  {
+    "from": "REST APIs",
+    "to": "OpenAPI",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "SQL",
+    "to": "PostgreSQL",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "SQL",
+    "to": "MySQL",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Redis",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "MongoDB",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "Pytest",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "React",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "AWS",
+    "to": "Docker",
+    "type": "market_adjacent",
+    "confidence": 0.7
+  },
+  {
+    "from": "Azure",
+    "to": "Docker",
+    "type": "market_adjacent",
+    "confidence": 0.7
+  },
+  {
+    "from": "GCP",
+    "to": "Docker",
+    "type": "market_adjacent",
+    "confidence": 0.7
+  },
+  {
+    "from": "Swift",
+    "to": "Xcode",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Objective-C",
+    "to": "Xcode",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Xcode",
+    "to": "Git",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Swift",
+    "to": "REST APIs",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Objective-C",
+    "to": "REST APIs",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Fastlane",
+    "to": "CI/CD",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Fastlane",
+    "to": "Xcode",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "CocoaPods",
+    "to": "Xcode",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "XCTest",
+    "to": "Testing",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "TestFlight",
+    "to": "iOS",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Java",
+    "to": "Spring",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Spring",
+    "to": "Spring Boot",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Spring Boot",
+    "to": "Microservices",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Kafka",
+    "to": "Microservices",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "RabbitMQ",
+    "to": "Microservices",
+    "type": "commonly_used_with",
+    "confidence": 0.75
+  },
+  {
+    "from": "SQL",
+    "to": "Java",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "CI/CD",
+    "to": "Git",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "JUnit",
+    "to": "Testing",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Machine Learning",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "NLP",
+    "to": "Machine Learning",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "Computer Vision",
+    "to": "Deep Learning",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "MLOps",
+    "to": "Docker",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "MLOps",
+    "to": "Kubernetes",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Model Deployment",
+    "to": "Docker",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Model Deployment",
+    "to": "CI/CD",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "MLflow",
+    "to": "MLOps",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Kubeflow",
+    "to": "MLOps",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Seldon",
+    "to": "Model Deployment",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Pandas",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "NumPy",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Swift",
+    "to": "iOS",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Objective-C",
+    "to": "iOS",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Kotlin",
+    "to": "Android",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Java",
+    "to": "Android",
+    "type": "requires",
+    "confidence": 0.8
+  },
+  {
+    "from": "React Native",
+    "to": "JavaScript",
+    "type": "requires",
+    "confidence": 0.8
+  },
+  {
+    "from": "Flutter",
+    "to": "Dart",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Xamarin",
+    "to": "C#",
+    "type": "requires",
+    "confidence": 0.8
+  },
+  {
+    "from": "JUnit",
+    "to": "Java",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Espresso",
+    "to": "Android",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "XCTest",
+    "to": "iOS",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Appium",
+    "to": "Testing",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Django",
+    "to": "PostgreSQL",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "FastAPI",
+    "to": "Pydantic",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "PostgreSQL",
+    "to": "Redis",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "Microservices",
+    "to": "Distributed Systems",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Linux",
+    "to": "Bash",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Pytest",
+    "to": "Testing",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "Test Automation",
+    "to": "Selenium",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Test Automation",
+    "to": "Cypress",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Test Automation",
+    "to": "Pytest",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Test Automation",
+    "to": "JUnit",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "CI/CD",
+    "to": "CircleCI",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "API Testing",
+    "to": "REST APIs",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Security Testing",
+    "to": "Penetration Testing",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Security Testing",
+    "to": "Vulnerability Testing",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Microservices",
+    "to": "REST APIs",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Distributed Systems",
+    "to": "Kafka",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Distributed Systems",
+    "to": "RabbitMQ",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "CloudFormation",
+    "to": "AWS",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Testing",
+    "to": "Pytest",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Scripting",
+    "to": "Bash",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Cloud Platforms",
+    "to": "Infrastructure as Code",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Python",
+    "to": "TensorFlow",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Python",
+    "to": "PyTorch",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "LangChain",
+    "to": "LlamaIndex",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "LangChain",
+    "to": "OpenAI API",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "OpenAI API",
+    "to": "Anthropic API",
+    "type": "alternative_to",
+    "confidence": 0.8
+  },
+  {
+    "from": "Pinecone",
+    "to": "Weaviate",
+    "type": "alternative_to",
+    "confidence": 0.85
+  },
+  {
+    "from": "Pinecone",
+    "to": "pgvector",
+    "type": "alternative_to",
+    "confidence": 0.8
+  },
+  {
+    "from": "Embeddings",
+    "to": "Vector Database",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "AI Agents",
+    "to": "Prompt Engineering",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "NLP",
+    "to": "Hugging Face",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Computer Vision",
+    "to": "PyTorch",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Kotlin",
+    "to": "Android",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "Jetpack Compose",
+    "to": "Jetpack",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Hilt",
+    "to": "Dependency Injection",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Dagger",
+    "to": "Dependency Injection",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "MVVM",
+    "to": "Jetpack",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Coroutines",
+    "to": "Kotlin",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Espresso",
+    "to": "Testing",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Mockito",
+    "to": "Testing",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Room",
+    "to": "Jetpack",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "LiveData",
+    "to": "Jetpack",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "ViewModel",
+    "to": "Jetpack",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Navigation Component",
+    "to": "Jetpack",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Android Studio",
+    "to": "Android SDK",
+    "type": "commonly_used_with",
+    "confidence": 0.95
+  },
+  {
+    "from": "Gradle",
+    "to": "Android Studio",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "ADB",
+    "to": "Android SDK",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "CI/CD",
+    "to": "Docker",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "CI/CD",
+    "to": "Kubernetes",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "AWS",
+    "to": "Kubernetes",
+    "type": "market_adjacent",
+    "confidence": 0.85
+  },
+  {
+    "from": "GraphQL",
+    "to": "REST APIs",
+    "type": "alternative_to",
+    "confidence": 0.8
+  },
+  {
+    "from": "Redis",
+    "to": "NoSQL",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Kafka",
+    "to": "Distributed Systems",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "RabbitMQ",
+    "to": "Distributed Systems",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "ActiveMQ",
+    "to": "Distributed Systems",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Testing",
+    "to": "Jest",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Bash",
+    "to": "Scripting",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Python",
+    "to": "Apache Spark",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "SQL",
+    "to": "Data Warehousing",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "Apache Airflow",
+    "to": "ETL",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Kafka",
+    "to": "Data Pipelines",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "AWS",
+    "to": "Snowflake",
+    "type": "market_adjacent",
+    "confidence": 0.8
+  },
+  {
+    "from": "dbt",
+    "to": "Data Warehousing",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Scala",
+    "to": "Apache Spark",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Apache Spark",
+    "to": "Hadoop",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Bash",
+    "to": "Linux",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Python",
+    "to": "Scripting",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "C#",
+    "to": ".NET",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Entity Framework",
+    "to": "SQL",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Azure DevOps",
+    "to": "CI/CD",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "gRPC",
+    "to": "Microservices",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "React Testing Library",
+    "to": "React",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Cypress",
+    "to": "Testing",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Babel",
+    "to": "JavaScript",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "ES6+",
+    "to": "JavaScript",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "Accessibility",
+    "to": "HTML",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Responsive Design",
+    "to": "CSS",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Axios",
+    "to": "REST APIs",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Fetch API",
+    "to": "REST APIs",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Azure",
+    "to": "Terraform",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "GCP",
+    "to": "Terraform",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "AWS",
+    "to": "CloudFormation",
+    "type": "requires",
+    "confidence": 0.85
+  },
+  {
+    "from": "SwiftUI",
+    "to": "Swift",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "UIKit",
+    "to": "Objective-C",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Fastlane",
+    "to": "CI/CD",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Swift Package Manager",
+    "to": "Swift",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Quick",
+    "to": "Testing",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Nimble",
+    "to": "Testing",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "App Store Connect",
+    "to": "Mobile",
+    "type": "market_adjacent",
+    "confidence": 0.9
+  },
+  {
+    "from": "Spring Boot",
+    "to": "Spring",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Testing",
+    "to": "Java",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "NLP",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Computer Vision",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Model Deployment",
+    "to": "Docker",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Model Deployment",
+    "to": "Kubernetes",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Kubeflow",
+    "to": "Kubernetes",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "MLflow",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "TensorFlow Serving",
+    "to": "TensorFlow",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "TorchServe",
+    "to": "PyTorch",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "ONNX",
+    "to": "TensorFlow",
+    "type": "market_adjacent",
+    "confidence": 0.7
+  },
+  {
+    "from": "ONNX",
+    "to": "PyTorch",
+    "type": "market_adjacent",
+    "confidence": 0.7
+  },
+  {
+    "from": "AWS",
+    "to": "Docker",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "GCP",
+    "to": "Kubernetes",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Azure",
+    "to": "Docker",
+    "type": "commonly_used_with",
+    "confidence": 0.75
+  },
+  {
+    "from": "XCTest",
+    "to": "Testing",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Swift",
+    "to": "iOS",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "Objective-C",
+    "to": "iOS",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Flask",
+    "to": "PostgreSQL",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "CI/CD",
+    "to": "GitHub Actions",
+    "type": "alternative_to",
+    "confidence": 0.7
+  },
+  {
+    "from": "CI/CD",
+    "to": "GitLab CI",
+    "type": "alternative_to",
+    "confidence": 0.7
+  },
+  {
+    "from": "CI/CD",
+    "to": "Jenkins",
+    "type": "alternative_to",
+    "confidence": 0.7
+  },
+  {
+    "from": "Selenium",
+    "to": "Test Automation",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Cypress",
+    "to": "Test Automation",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Pytest",
+    "to": "Test Automation",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "JUnit",
+    "to": "Test Automation",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "TestNG",
+    "to": "Test Automation",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Docker",
+    "to": "CI/CD",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  },
+  {
+    "from": "Postman",
+    "to": "REST APIs",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Java",
+    "to": "JUnit",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Java",
+    "to": "TestNG",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Python",
+    "to": "Pytest",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "JavaScript",
+    "to": "Cypress",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Go",
+    "to": "Docker",
+    "type": "commonly_used_with",
+    "confidence": 0.7
+  },
+  {
+    "from": "Python",
+    "to": "Pytest",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "JavaScript",
+    "to": "Jest",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  }
+]

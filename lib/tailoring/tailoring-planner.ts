@@ -13,12 +13,11 @@ import type {
 } from "@/lib/types/tailoring";
 import { getArchetypeRoleSkills } from "@/lib/tailoring/role-skill-catalog";
 import { skillKey } from "@/lib/tailoring/skill-ontology";
-import { getBulletCountForTenure, getTenureYears } from "@/lib/resume-bullets";
 
 export const DEFAULT_BULLET_BUDGET: BulletBudgetConfig = {
-  minBulletsPerExperience: 2,
-  maxBulletsPerExperience: 9,
-  maxRepairAttempts: 2,
+  minBulletsPerExperience: 8,
+  maxBulletsPerExperience: 10,
+  maxRepairAttempts: 1,
 };
 
 const STOPWORDS = new Set([
@@ -175,27 +174,29 @@ function buildExperiencePlans(
   );
 
   const scored = sorted.map((exp, rank) => {
-    const tenureYears = getTenureYears(exp.startDate, exp.endDate || "Present");
-    const tenureBase = getBulletCountForTenure(tenureYears);
     const relevanceToJD = experienceRelevanceToJD(exp, candidatesByKey, jdAnalysis);
     const recency = Math.max(0.1, 1 - rank * 0.15);
     const evidenceStrength = experienceEvidenceStrength(exp);
     const roleImportance = experienceRoleImportance(exp, roleArchetype.primaryRoleArchetype);
     const bulletPriority = relevanceToJD * 0.45 + recency * 0.25 + evidenceStrength * 0.2 + roleImportance * 0.1;
 
-    return { exp, tenureBase, bulletPriority };
+    return { exp, bulletPriority };
   });
 
   const maxPriority = Math.max(0.0001, ...scored.map((s) => s.bulletPriority));
 
-  return scored.map(({ exp, tenureBase, bulletPriority }) => {
-    // Relevance can only scale a role DOWN from its tenure-based ceiling, never above it —
-    // a long-tenure but weakly relevant role should not mechanically get 9 bullets.
-    const relFactor = 0.5 + 0.5 * (bulletPriority / maxPriority);
-    const target = Math.round(tenureBase * relFactor);
+  return scored.map(({ exp, bulletPriority }) => {
+    // JD relevance scales bullet count between min and max (typically 8–10).
+    const relFactor = bulletPriority / maxPriority;
     const targetBulletCount = Math.max(
       budget.minBulletsPerExperience,
-      Math.min(budget.maxBulletsPerExperience, tenureBase, target)
+      Math.min(
+        budget.maxBulletsPerExperience,
+        Math.round(
+          budget.minBulletsPerExperience +
+            (budget.maxBulletsPerExperience - budget.minBulletsPerExperience) * relFactor
+        )
+      )
     );
 
     const relevantRequirementScored = jdAnalysis.requirements

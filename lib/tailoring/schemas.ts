@@ -54,6 +54,15 @@ export const experienceGenerationAiOutputSchema = z.object({
 
 export type ExperienceGenerationAiOutput = z.infer<typeof experienceGenerationAiOutputSchema>;
 
+/** Batched variant: one LLM call returns bullets for every experience at once. */
+export const batchedExperienceGenerationAiOutputSchema = z.object({
+  experiences: z.array(experienceGenerationAiOutputSchema).default([]),
+});
+
+export type BatchedExperienceGenerationAiOutput = z.infer<
+  typeof batchedExperienceGenerationAiOutputSchema
+>;
+
 export const composerAiOutputSchema = z.object({
   summary: z.string().min(1),
   skillCategories: z.record(z.array(z.string())).default({}),

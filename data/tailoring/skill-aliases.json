@@ -1,0 +1,556 @@
+{
+  "Python": [
+    "py"
+  ],
+  "JavaScript": [
+    "js",
+    "java script",
+    "ecmascript"
+  ],
+  "TypeScript": [
+    "ts"
+  ],
+  "Node.js": [
+    "node",
+    "nodejs"
+  ],
+  "React": [
+    "react.js",
+    "reactjs"
+  ],
+  "Vue.js": [
+    "vue",
+    "vuejs"
+  ],
+  "Angular": [
+    "angularjs",
+    "angular2+"
+  ],
+  "Django": [],
+  "FastAPI": [
+    "fast api"
+  ],
+  "Flask": [],
+  "Pydantic": [],
+  "PostgreSQL": [
+    "postgres",
+    "psql"
+  ],
+  "MySQL": [],
+  "SQL": [
+    "structured query language"
+  ],
+  "Redis": [],
+  "MongoDB": [
+    "mongo"
+  ],
+  "REST APIs": [
+    "rest",
+    "restful",
+    "restful apis",
+    "rest api",
+    "restful api",
+    "API Testing"
+  ],
+  "OpenAPI": [
+    "swagger"
+  ],
+  "GraphQL": [],
+  "Docker": [],
+  "Kubernetes": [
+    "k8s"
+  ],
+  "CI/CD": [
+    "ci-cd",
+    "continuous integration",
+    "continuous deployment",
+    "continuous delivery"
+  ],
+  "GitHub Actions": [
+    "github action",
+    "GitHub Actions CI",
+    "GitHub CI",
+    "GitHub Actions"
+  ],
+  "GitLab CI": [
+    "gitlab ci/cd",
+    "GitLab Continuous Integration",
+    "GitLab CI"
+  ],
+  "Jenkins": [],
+  "Git": [
+    "git version control"
+  ],
+  "Pytest": [
+    "py.test"
+  ],
+  "Testing": [
+    "test automation",
+    "automated testing",
+    "Unit Testing",
+    "Integration Testing",
+    "Software Testing",
+    "JUnit",
+    "Mockito"
+  ],
+  "Jest": [],
+  "AWS": [
+    "amazon web services"
+  ],
+  "Azure": [
+    "microsoft azure"
+  ],
+  "GCP": [
+    "google cloud",
+    "google cloud platform"
+  ],
+  "Terraform": [],
+  "CloudFormation": [
+    "aws cloudformation",
+    "CFN"
+  ],
+  "Pulumi": [],
+  "Prometheus": [],
+  "Grafana": [],
+  "Linux": [
+    "unix"
+  ],
+  "Bash": [
+    "shell scripting",
+    "shell"
+  ],
+  "Scripting": [
+    "Shell Scripting",
+    "Automation Scripts"
+  ],
+  "Kafka": [
+    "apache kafka"
+  ],
+  "RabbitMQ": [
+    "amqp"
+  ],
+  "ActiveMQ": [],
+  "Java": [],
+  "Spring": [
+    "spring framework"
+  ],
+  "Spring Boot": [
+    "SpringBoot"
+  ],
+  "C#": [
+    "csharp",
+    "c sharp"
+  ],
+  ".NET": [
+    "dotnet",
+    "asp.net",
+    "asp.net core",
+    ".NET Core",
+    ".NET Framework"
+  ],
+  "HTML": [
+    "html5"
+  ],
+  "CSS": [
+    "css3"
+  ],
+  "Pandas": [],
+  "NumPy": [],
+  "PyTorch": [],
+  "TensorFlow": [],
+  "Machine Learning": [
+    "ml"
+  ],
+  "LLM": [
+    "llms",
+    "large language model",
+    "large language models",
+    "large-language model",
+    "large-language models"
+  ],
+  "AI Agents": [
+    "ai agent",
+    "ai agents",
+    "autonomous agents",
+    "autonomous agent",
+    "llm agents",
+    "agent framework",
+    "Autonomous AI Agents"
+  ],
+  "RAG": [
+    "retrieval augmented generation",
+    "retrieval-augmented generation",
+    "retrieval augmented generation (rag)"
+  ],
+  "Prompt Engineering": [
+    "prompt design",
+    "prompt engineering",
+    "prompting",
+    "Prompt Tuning"
+  ],
+  "LangChain": [
+    "lang chain",
+    "langchain python"
+  ],
+  "LlamaIndex": [
+    "llama index",
+    "llama-index",
+    "GPT Index"
+  ],
+  "Pinecone": [],
+  "Weaviate": [],
+  "pgvector": [
+    "pg vector",
+    "pgvector postgres"
+  ],
+  "Embeddings": [
+    "embedding",
+    "embeddings",
+    "embedding models",
+    "embedding model",
+    "Vector Embeddings"
+  ],
+  "OpenAI API": [
+    "openai",
+    "openai api",
+    "openai apis",
+    "OpenAI GPT API"
+  ],
+  "Anthropic API": [
+    "anthropic",
+    "anthropic api",
+    "claude api"
+  ],
+  "Hugging Face": [
+    "huggingface",
+    "hf",
+    "hugging face hub"
+  ],
+  "Vector Database": [
+    "vector db",
+    "vector store",
+    "vector databases",
+    "vector search"
+  ],
+  "Model Context Protocol": [
+    "mcp"
+  ],
+  "Swift": [],
+  "Kotlin": [],
+  "Objective-C": [
+    "objective c",
+    "objc",
+    "Obj-C"
+  ],
+  "Android": [],
+  "iOS": [],
+  "Deep Learning": [
+    "DL"
+  ],
+  "NLP": [
+    "Natural Language Processing"
+  ],
+  "Computer Vision": [
+    "CV"
+  ],
+  "Microservices": [
+    "micro-services",
+    "micro service architecture",
+    "Microservices Architecture",
+    "microservice architecture"
+  ],
+  "Distributed Systems": [
+    "distributed computing",
+    "distributed architecture"
+  ],
+  "System Design": [
+    "architecture design",
+    "system architecture"
+  ],
+  "Performance Optimization": [
+    "performance tuning",
+    "optimization"
+  ],
+  "Security Best Practices": [
+    "security",
+    "secure coding"
+  ],
+  "Message Queues": [
+    "Kafka",
+    "RabbitMQ",
+    "ActiveMQ"
+  ],
+  "Monitoring": [
+    "observability",
+    "metrics",
+    "logging"
+  ],
+  "Android Studio": [
+    "AS"
+  ],
+  "Jetpack Compose": [
+    "Compose"
+  ],
+  "Android SDK": [
+    "SDK",
+    "android software development kit"
+  ],
+  "Android NDK": [
+    "NDK"
+  ],
+  "JUnit": [],
+  "Espresso": [],
+  "Mockito": [],
+  "Gradle": [],
+  "ADB": [
+    "Android Debug Bridge"
+  ],
+  "ETL": [
+    "Extract Transform Load"
+  ],
+  "Data Pipelines": [
+    "Data Pipeline"
+  ],
+  "Apache Spark": [
+    "Spark"
+  ],
+  "Apache Kafka": [
+    "Kafka"
+  ],
+  "Apache Airflow": [
+    "Airflow"
+  ],
+  "Cloud Data Platforms": [
+    "Cloud Data Platform"
+  ],
+  "Data Warehousing": [
+    "Data Warehouse"
+  ],
+  "ELK Stack": [
+    "Elasticsearch Logstash Kibana"
+  ],
+  "Snowflake": [],
+  "Redshift": [
+    "Amazon Redshift"
+  ],
+  "BigQuery": [
+    "Google BigQuery"
+  ],
+  "Ansible": [],
+  "Chef": [],
+  "Puppet": [],
+  "ASP.NET Core": [
+    "ASP.NET",
+    "asp.net core",
+    "aspnet core"
+  ],
+  "Entity Framework": [
+    "EF Core",
+    "entity framework core"
+  ],
+  "SQL Server": [
+    "MSSQL"
+  ],
+  "Blazor": [],
+  "LINQ": [
+    "Language Integrated Query"
+  ],
+  "gRPC": [],
+  "xUnit": [],
+  "NUnit": [],
+  "MSTest": [],
+  "Moq": [],
+  "Azure DevOps": [
+    "azure pipelines"
+  ],
+  "Cypress": [],
+  "Redux": [],
+  "MobX": [],
+  "Recoil": [],
+  "Vuex": [],
+  "Pinia": [],
+  "Sass": [
+    "SASS"
+  ],
+  "Less": [],
+  "Tailwind CSS": [
+    "Tailwind"
+  ],
+  "Styled Components": [
+    "styled-components"
+  ],
+  "Webpack": [],
+  "Vite": [],
+  "Rollup": [],
+  "npm": [],
+  "Yarn": [],
+  "pnpm": [],
+  "GitHub": [],
+  "GitLab": [],
+  "Bitbucket": [],
+  "CircleCI": [],
+  "WebSockets": [],
+  "Lighthouse": [],
+  "Webpack Bundle Analyzer": [
+    "webpack-bundle-analyzer"
+  ],
+  "axe": [],
+  "Chrome DevTools": [
+    "Chrome Developer Tools"
+  ],
+  "Firefox Developer Tools": [],
+  "Express": [],
+  "NestJS": [],
+  "Xcode": [],
+  "CocoaPods": [],
+  "Fastlane": [],
+  "TestFlight": [],
+  "XCTest": [],
+  "iPadOS": [],
+  "watchOS": [],
+  "tvOS": [],
+  "MLOps": [
+    "Machine Learning Operations"
+  ],
+  "Scikit-learn": [
+    "sklearn"
+  ],
+  "Model Deployment": [
+    "model serving"
+  ],
+  "Kubeflow": [],
+  "MLflow": [],
+  "Seldon": [],
+  "React Native": [
+    "ReactNative"
+  ],
+  "Flutter": [],
+  "Xamarin": [],
+  "Appium": [],
+  "Selenium": [],
+  "TestNG": [],
+  "Test Automation": [
+    "Automated Testing",
+    "Automation Testing"
+  ],
+  "API Testing": [
+    "REST API Testing"
+  ],
+  "Performance Testing": [
+    "Load Testing",
+    "Stress Testing"
+  ],
+  "Security Testing": [
+    "Penetration Testing",
+    "Vulnerability Testing"
+  ],
+  "Jetpack": [],
+  "Dagger": [],
+  "Hilt": [],
+  "Room": [],
+  "LiveData": [],
+  "ViewModel": [],
+  "Navigation Component": [
+    "nav component"
+  ],
+  "Coroutines": [
+    "kotlin coroutines"
+  ],
+  "Dependency Injection": [
+    "DI"
+  ],
+  "MVVM": [
+    "model view viewmodel"
+  ],
+  "MVP": [
+    "model view presenter"
+  ],
+  "Clean Architecture": [],
+  "NoSQL": [
+    "non-relational databases"
+  ],
+  "dbt": [
+    "data build tool"
+  ],
+  "Hadoop": [],
+  "Scala": [],
+  "Prefect": [],
+  "Airbyte": [],
+  "Fivetran": [],
+  "Infrastructure as Code": [
+    "IaC"
+  ],
+  "Continuous Integration": [
+    "CI"
+  ],
+  "Continuous Delivery": [
+    "CD"
+  ],
+  "Container Orchestration": [],
+  "Cloud Automation": [],
+  "Monitoring and Alerting": [],
+  "Configuration Management": [],
+  "Security and Compliance Automation": [],
+  "Unit Testing": [
+    "unit tests",
+    "unit test"
+  ],
+  "Babel": [],
+  "ES6+": [
+    "ES2015",
+    "ES2016",
+    "ES2017",
+    "ESNext"
+  ],
+  "Accessibility": [
+    "a11y"
+  ],
+  "Responsive Design": [
+    "responsive web design",
+    "RWD"
+  ],
+  "Context API": [
+    "React Context"
+  ],
+  "Axios": [],
+  "Fetch API": [
+    "fetch"
+  ],
+  "UIKit": [],
+  "SwiftUI": [],
+  "Mobile": [
+    "Mobile Development"
+  ],
+  "Swift Package Manager": [
+    "SPM"
+  ],
+  "Quick": [],
+  "Nimble": [],
+  "App Store Connect": [],
+  "Keras": [],
+  "XGBoost": [],
+  "LightGBM": [],
+  "Matplotlib": [],
+  "Seaborn": [],
+  "TensorFlow Serving": [
+    "tf serving"
+  ],
+  "TorchServe": [],
+  "ONNX": [],
+  "Mobile App Development": [
+    "mobile development",
+    "mobile apps"
+  ],
+  "Dart": [],
+  "Postman": [],
+  "Go": [
+    "Golang"
+  ],
+  "Cloud Native": [],
+  "Scalability": [],
+  "API Design": [],
+  "Event-Driven Architecture": [
+    "EDA"
+  ],
+  "Observability": []
+}

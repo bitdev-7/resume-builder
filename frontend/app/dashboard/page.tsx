@@ -6,8 +6,6 @@ import CountBarChart from "@/components/dashboard/CountBarChart";
 import DailyBidChart from "@/components/dashboard/DailyBidChart";
 import DailyInterviewChart from "@/components/dashboard/DailyInterviewChart";
 import InterviewCallTypeChart from "@/components/dashboard/InterviewCallTypeChart";
-import JobsiteRateTable from "@/components/dashboard/JobsiteRateTable";
-import ModelRateTable from "@/components/dashboard/ModelRateTable";
 import SuccessRatePanel from "@/components/dashboard/SuccessRatePanel";
 import TodayBidsPanel from "@/components/dashboard/TodayBidsPanel";
 import {
@@ -16,11 +14,8 @@ import {
   computeDailyBidCounts,
   computeDailyInterviewStats,
   computeInterviewCallTypeStats,
-  computeJobsiteSuccessStats,
-  computeModelSuccessStats,
   countByField,
   countByJobSite,
-  countByProvider,
   filterRecordsByDateRange,
   formatDisplayDate,
   getLocalDateKey,
@@ -31,7 +26,16 @@ import {
 } from "@/lib/dashboard-stats";
 import { listInterviews } from "@/lib/supabase/services/interviews";
 import { listResumes } from "@/lib/supabase/services/resumes";
-import type { InterviewRecord, ResumeRecord } from "@/lib/supabase/database.types";
+import { listAiUsageLogs } from "@/lib/supabase/services/ai-usage-logs";
+import DailyAiUsageChart from "@/components/dashboard/DailyAiUsageChart";
+import {
+  computeDailyAiUsagePoints,
+  countAiUsageByField,
+  filterAiUsageLogsByDateRange,
+  sumAiUsageCost,
+} from "@/lib/ai-usage-stats";
+import { formatCostUsd } from "@/lib/ai-usage";
+import type { AiUsageLog, InterviewRecord, ResumeRecord } from "@/lib/supabase/database.types";
 
 type RangePreset = "7d" | "30d" | "month" | "all";
 
@@ -67,6 +71,7 @@ export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const [records, setRecords] = useState<ResumeRecord[]>([]);
   const [interviews, setInterviews] = useState<InterviewRecord[]>([]);
+  const [usageLogs, setUsageLogs] = useState<AiUsageLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [rangeStart, setRangeStart] = useState(getMonthStartKey);
   const [rangeEnd, setRangeEnd] = useState(getTodayKey);
@@ -82,12 +87,19 @@ export default function DashboardPage() {
     if (!user) return;
     setLoading(true);
     try {
-      const [resumeRows, interviewRows] = await Promise.all([
+      const [resumeRows, interviewRows, usageRows] = await Promise.all([
         listResumes(user.id),
         listInterviews(user.id),
+        listAiUsageLogs(user.id).catch((err) => {
+          // Usage logging is optional — don't break the dashboard if the
+          // migration hasn't been applied yet.
+          console.error("Failed to load AI usage logs:", err);
+          return [] as AiUsageLog[];
+        }),
       ]);
       setRecords(resumeRows);
       setInterviews(interviewRows);
+      setUsageLogs(usageRows);
     } catch (error) {
       console.error("Failed to load dashboard stats:", error);
     } finally {
@@ -115,28 +127,32 @@ export default function DashboardPage() {
   );
 
   const rangeTotal = rangeRecords.length;
-  const rangeByProvider = useMemo(
-    () => countByProvider(rangeRecords, { includeZero: true }),
-    [rangeRecords]
-  );
-  const rangeByModel = useMemo(() => countByField(rangeRecords, "model"), [rangeRecords]);
-  const rangeByJobsite = useMemo(() => countByJobSite(rangeRecords), [rangeRecords]);
   const rangeSuccess = useMemo(
     () => computeBidSuccessStats(rangeRecords, interviewsByResume),
-    [rangeRecords, interviewsByResume]
-  );
-  const rangeModelRates = useMemo(
-    () => computeModelSuccessStats(rangeRecords, interviewsByResume),
-    [rangeRecords, interviewsByResume]
-  );
-  const rangeJobsiteRates = useMemo(
-    () => computeJobsiteSuccessStats(rangeRecords, interviewsByResume),
     [rangeRecords, interviewsByResume]
   );
   const dailyBidPoints = useMemo(
     () => computeDailyBidCounts(rangeRecords, rangeStart, rangeEnd),
     [rangeRecords, rangeStart, rangeEnd]
   );
+  const rangeUsageLogs = useMemo(
+    () => filterAiUsageLogsByDateRange(usageLogs, rangeStart, rangeEnd),
+    [usageLogs, rangeStart, rangeEnd]
+  );
+  const dailyUsagePoints = useMemo(
+    () => computeDailyAiUsagePoints(rangeUsageLogs, rangeStart, rangeEnd),
+    [rangeUsageLogs, rangeStart, rangeEnd]
+  );
+  const usageBySource = useMemo(
+    () => countAiUsageByField(rangeUsageLogs, "source"),
+    [rangeUsageLogs]
+  );
+  const usageByModel = useMemo(
+    () => countAiUsageByField(rangeUsageLogs, "model"),
+    [rangeUsageLogs]
+  );
+  const rangeUsageCalls = rangeUsageLogs.length;
+  const rangeUsageCost = useMemo(() => sumAiUsageCost(rangeUsageLogs), [rangeUsageLogs]);
   const dailyInterviewPoints = useMemo(
     () => computeDailyInterviewStats(rangeRecords, interviewsByResume, rangeStart, rangeEnd),
     [rangeRecords, interviewsByResume, rangeStart, rangeEnd]
@@ -275,10 +291,8 @@ export default function DashboardPage() {
                     </div>
                     <DailyInterviewChart compact points={dailyInterviewPoints} />
                     <InterviewCallTypeChart compact points={interviewCallTypePoints} />
-                    <div className="grid gap-3 lg:grid-cols-3">
+                    <div className="mx-auto w-full max-w-md">
                       <SuccessRatePanel compact title="Overall" stats={rangeSuccess} />
-                      <ModelRateTable compact title="By model" entries={rangeModelRates} />
-                      <JobsiteRateTable compact title="By jobsite" entries={rangeJobsiteRates} />
                     </div>
                   </div>
 
@@ -291,28 +305,32 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <DailyBidChart compact points={dailyBidPoints} />
-                    <div className="grid gap-3 md:grid-cols-3">
+                  </div>
+
+                  <div className="analytics-group">
+                    <div className="analytics-group-header">
+                      <h3 className="analytics-group-title">AI usage</h3>
+                      <p className="analytics-group-subtitle">
+                        {rangeUsageCalls} LLM call{rangeUsageCalls === 1 ? "" : "s"} ·{" "}
+                        {formatCostUsd(rangeUsageCost)}
+                        {rangeStart && rangeEnd ? ` · ${rangeLabel}` : ""}
+                      </p>
+                    </div>
+                    <DailyAiUsageChart compact points={dailyUsagePoints} />
+                    <div className="grid gap-3 md:grid-cols-2">
                       <CountBarChart
                         compact
-                        title="By jobsite"
-                        entries={rangeByJobsite}
-                        emptyMessage="No bids in range."
-                        maxItems={8}
-                      />
-                      <CountBarChart
-                        compact
-                        title="By provider"
-                        entries={rangeByProvider}
-                        colorByProvider
-                        emptyMessage="No bids in range."
-                        maxItems={5}
+                        title="By feature"
+                        entries={usageBySource}
+                        emptyMessage="No AI calls in range."
+                        maxItems={6}
                       />
                       <CountBarChart
                         compact
                         title="By model"
-                        entries={rangeByModel}
-                        emptyMessage="No model data in range."
-                        maxItems={5}
+                        entries={usageByModel}
+                        emptyMessage="No AI calls in range."
+                        maxItems={6}
                       />
                     </div>
                   </div>

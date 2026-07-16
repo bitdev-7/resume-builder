@@ -193,6 +193,7 @@ export async function parseResumeText(
       temperature: 0.1,
       max_tokens: RESUME_PARSE_MAX_TOKENS,
       tryParseJson: true,
+      stage: "resume-import",
     });
   } catch (err) {
     throw new Error(formatAIProviderError(err, model, undefined, { useOpenRouter, provider }));

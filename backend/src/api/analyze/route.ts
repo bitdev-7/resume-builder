@@ -9,6 +9,8 @@ import { generateResumePdfBase64 } from "@/lib/generate-resume-pdf";
 import { extractJobFromPageContent } from "@/lib/extract-job-page";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
 import { loadResumePromptPreferences } from "@/lib/supabase/services/resume-prompt-settings";
+import { loadWorkflowSettings } from "@/lib/supabase/services/workflow-settings";
+import { workflowSettingsToPipelineOptions } from "@/lib/workflow-settings";
 import {
   ensureDefaultResumeProfile,
   listResumeProfiles,
@@ -17,7 +19,9 @@ import { loadProfileBundleById } from "@/lib/supabase/load-profile-bundle";
 import { profileBundleToLegacyAnalyzeProfile } from "@/lib/mappers/profile-to-resume";
 import { buildResumeExtraInstructions, enforceSeniorFraming } from "@/lib/resume-prompt-settings";
 import { runTailoringPipeline } from "@/lib/tailoring/pipeline";
+import { ensureSkillRegistryLoaded } from "@/lib/tailoring/skill-registry";
 import { sanitizePromptOverrides } from "@/lib/prompts/prompt-overrides";
+import { runWithAiUsageContext } from "@/lib/ai-usage-context";
 import type { LegacyAnalyzeProfile } from "@/lib/mappers/profile-to-resume";
 import type { ResumeProfile } from "@/lib/supabase/database.types";
 import type { UpdatedResume } from "@/lib/types/resume";
@@ -133,6 +137,8 @@ async function runGenerationJob(params: GenerationJobParams): Promise<void> {
     }
 
     const promptPrefs = await loadResumePromptPreferences(userId, client);
+    const workflowSettings = await loadWorkflowSettings(userId, client);
+    const workflowOptions = workflowSettingsToPipelineOptions(workflowSettings);
     // Per-generation tone/emphasis tweak from the preview's Regenerate panel,
     // layered on top of the saved preferences (does not persist).
     const tweakTone =
@@ -149,15 +155,22 @@ async function runGenerationJob(params: GenerationJobParams): Promise<void> {
     });
 
     const pipelineStarted = Date.now();
+    // Layer any user-supplied skill/archetype additions (global, from Supabase) onto
+    // the built-in defaults before tailoring, so custom skills/archetypes are
+    // recognized by archetype detection, skill expansion, and mention detection.
+    await ensureSkillRegistryLoaded(client);
     const pipelineResult = await runTailoringPipeline({
       jd,
       profileData,
       aiRequest,
       customPromptOverride: extraInstructions || undefined,
       promptOverrides: promptOverridesBody,
+      bulletBudget: workflowOptions.bulletBudget,
+      hardIssuesOnly: workflowOptions.hardIssuesOnly,
+      experienceMode: workflowOptions.experienceMode,
     });
     console.log(
-      `Tailoring pipeline finished in ${Date.now() - pipelineStarted}ms (provider=${pipelineResult.providerUsed}, model=${pipelineResult.modelUsed}, cost=$${pipelineResult.generationCostUsd.toFixed(4)}, archetype=${pipelineResult.roleArchetype.primaryRoleArchetype})`
+      `Tailoring pipeline finished in ${Date.now() - pipelineStarted}ms (provider=${pipelineResult.providerUsed}, model=${pipelineResult.modelUsed}, cost=$${pipelineResult.generationCostUsd.toFixed(4)}, archetype=${pipelineResult.roleArchetype.primaryRoleArchetype}, mode=${workflowSettings.mode})`
     );
 
     pipelineResume = pipelineResult.resume;
@@ -300,21 +313,35 @@ export async function POST(request: NextRequest) {
     // Kick off the slow AI pipeline in the background and return a jobId immediately.
     // The client polls GET /api/analyze/status/:jobId until it completes.
     const job = createAnalyzeJob(userId);
-    void runGenerationJob({
-      jobId: job.id,
-      userId,
-      client,
-      profileData,
-      promptOverridesBody,
-      requestJd: typeof requestJd === "string" ? requestJd : "",
-      pageContent: typeof pageContent === "string" ? pageContent : "",
-      requestJobTitle: typeof requestJobTitle === "string" ? requestJobTitle : "",
-      requestCompanyName: typeof requestCompanyName === "string" ? requestCompanyName : "",
-      requestedTemplate: typeof requestedTemplate === "string" ? requestedTemplate : "",
-      aiRequest,
-      promptTweak,
-      headlineOverride,
-    });
+    // Wrap the detached job in a usage context so every LLM call it spawns
+    // (jd-analyzer, experience-writer, composer, repair) is attributed to this
+    // user/profile and recorded to ai_usage_logs. AsyncLocalStorage propagates
+    // across the fire-and-forget promise chain.
+    runWithAiUsageContext(
+      {
+        userId,
+        profileId: typeof profileId === "string" ? profileId : null,
+        source: "resume_generation",
+        client,
+      },
+      () => {
+        void runGenerationJob({
+          jobId: job.id,
+          userId,
+          client,
+          profileData,
+          promptOverridesBody,
+          requestJd: typeof requestJd === "string" ? requestJd : "",
+          pageContent: typeof pageContent === "string" ? pageContent : "",
+          requestJobTitle: typeof requestJobTitle === "string" ? requestJobTitle : "",
+          requestCompanyName: typeof requestCompanyName === "string" ? requestCompanyName : "",
+          requestedTemplate: typeof requestedTemplate === "string" ? requestedTemplate : "",
+          aiRequest,
+          promptTweak,
+          headlineOverride,
+        });
+      }
+    );
 
     return NextResponse.json({ jobId: job.id }, { status: 202 });
   } catch (error) {

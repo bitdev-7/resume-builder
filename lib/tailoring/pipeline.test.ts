@@ -83,19 +83,28 @@ describe("tailoring pipeline — end to end (mocked AI)", () => {
 
       if (systemContent.includes("Experience Writer stage")) {
         const parsed = JSON.parse(userContent.split("\n\nPREVIOUS")[0].split("\n\nADDITIONAL")[0]);
+        // Batched call: user payload is { experiences: [...] }; return one entry per input experience.
+        const inputExperiences: Array<{
+          experienceId: string;
+          allowedEvidence: Array<{ id: string }>;
+        }> = parsed.experiences ?? [
+          { experienceId: parsed.experienceId, allowedEvidence: parsed.allowedEvidence },
+        ];
         return {
           providerUsed: "openai",
           modelUsed: "gpt-4.1-mini",
           text: "",
           json: {
-            experienceId: parsed.experienceId,
-            bullets: [
-              {
-                text: "Architected Python and FastAPI services powering the checkout flow",
-                evidenceIds: [parsed.allowedEvidence[0].id],
-                requirementIds: [],
-              },
-            ],
+            experiences: inputExperiences.map((exp) => ({
+              experienceId: exp.experienceId,
+              bullets: [
+                {
+                  text: "Architected Python and FastAPI services powering the checkout flow",
+                  evidenceIds: [exp.allowedEvidence[0].id],
+                  requirementIds: [],
+                },
+              ],
+            })),
           },
           raw: {},
           costUsd: 0.001,

@@ -3,10 +3,11 @@ import { requireAIConfigured, resolveAIRequest } from "@/lib/ai-api";
 import { callAI } from "@/lib/ai-provider";
 import type { AIMessage } from "@/lib/ai-provider";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
+import { runWithAiUsageContextAsync } from "@/lib/ai-usage-context";
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuthClient(request);
+    const { userId, client } = await requireAuthClient(request);
 
     const { questions, resume, apiModel, apiProvider, useOpenRouter: useOpenRouterBody } =
       await request.json();
@@ -64,15 +65,20 @@ Return a JSON array with one object per question in the same order: [{"question"
         { role: "user", content: userPrompt },
       ];
 
-      const aiResp = await callAI({
-        useOpenRouter: aiRequest.useOpenRouter,
-        model: selectedModel,
-        ...(aiRequest.provider ? { provider: aiRequest.provider } : {}),
-        messages,
-        temperature: 0.3,
-        max_tokens: 2048,
-        tryParseJson: true,
-      });
+      const aiResp = await runWithAiUsageContextAsync(
+        { userId, source: "answer_questions", client },
+        () =>
+          callAI({
+            useOpenRouter: aiRequest.useOpenRouter,
+            model: selectedModel,
+            ...(aiRequest.provider ? { provider: aiRequest.provider } : {}),
+            messages,
+            temperature: 0.3,
+            max_tokens: 2048,
+            tryParseJson: true,
+            stage: "answer-questions",
+          })
+      );
 
       if (aiResp.json) {
         jsonText = typeof aiResp.json === "string" ? aiResp.json : JSON.stringify(aiResp.json);
