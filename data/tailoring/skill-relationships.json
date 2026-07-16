@@ -1,0 +1,314 @@
+[
+  {
+    "from": "Django",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.98
+  },
+  {
+    "from": "FastAPI",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.98
+  },
+  {
+    "from": "Flask",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Pydantic",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Pandas",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "NumPy",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "PyTorch",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "TensorFlow",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.85
+  },
+  {
+    "from": "Pytest",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Spring",
+    "to": "Java",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "Spring Boot",
+    "to": "Java",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": ".NET",
+    "to": "C#",
+    "type": "requires",
+    "confidence": 0.85
+  },
+  {
+    "from": "Node.js",
+    "to": "JavaScript",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "Angular",
+    "to": "TypeScript",
+    "type": "requires",
+    "confidence": 0.85
+  },
+  {
+    "from": "React",
+    "to": "JavaScript",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Vue.js",
+    "to": "JavaScript",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Jest",
+    "to": "JavaScript",
+    "type": "requires",
+    "confidence": 0.85
+  },
+  {
+    "from": "LangChain",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "LlamaIndex",
+    "to": "Python",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "RAG",
+    "to": "Embeddings",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "Pinecone",
+    "to": "Vector Database",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "Weaviate",
+    "to": "Vector Database",
+    "type": "strongly_implies",
+    "confidence": 0.9
+  },
+  {
+    "from": "pgvector",
+    "to": "Vector Database",
+    "type": "strongly_implies",
+    "confidence": 0.85
+  },
+  {
+    "from": "React",
+    "to": "TypeScript",
+    "type": "commonly_used_with",
+    "confidence": 0.5
+  },
+  {
+    "from": "AWS",
+    "to": "Terraform",
+    "type": "commonly_used_with",
+    "confidence": 0.45
+  },
+  {
+    "from": "AWS",
+    "to": "Azure",
+    "type": "market_adjacent",
+    "confidence": 0.3
+  },
+  {
+    "from": "AWS",
+    "to": "GCP",
+    "type": "market_adjacent",
+    "confidence": 0.3
+  },
+  {
+    "from": "Azure",
+    "to": "GCP",
+    "type": "market_adjacent",
+    "confidence": 0.3
+  },
+  {
+    "from": "Docker",
+    "to": "Kubernetes",
+    "type": "same_ecosystem",
+    "confidence": 0.5
+  },
+  {
+    "from": "RabbitMQ",
+    "to": "Kafka",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "RabbitMQ",
+    "to": "ActiveMQ",
+    "type": "same_ecosystem",
+    "confidence": 0.4
+  },
+  {
+    "from": "Terraform",
+    "to": "CloudFormation",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "Terraform",
+    "to": "Pulumi",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "Jenkins",
+    "to": "GitHub Actions",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "Jenkins",
+    "to": "GitLab CI",
+    "type": "alternative_to",
+    "confidence": 0.3
+  },
+  {
+    "from": "Prometheus",
+    "to": "Grafana",
+    "type": "commonly_used_with",
+    "confidence": 0.6
+  },
+  {
+    "from": "LLM",
+    "to": "Prompt Engineering",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "LLM",
+    "to": "AI Agents",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "LangChain",
+    "to": "LLM",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "LlamaIndex",
+    "to": "LLM",
+    "type": "requires",
+    "confidence": 0.95
+  },
+  {
+    "from": "RAG",
+    "to": "Embeddings",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "RAG",
+    "to": "Vector Database",
+    "type": "requires",
+    "confidence": 0.9
+  },
+  {
+    "from": "OpenAI API",
+    "to": "LLM",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Anthropic API",
+    "to": "LLM",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Hugging Face",
+    "to": "Machine Learning",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "PyTorch",
+    "to": "Deep Learning",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "TensorFlow",
+    "to": "Deep Learning",
+    "type": "requires",
+    "confidence": 1
+  },
+  {
+    "from": "Machine Learning",
+    "to": "Python",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Deep Learning",
+    "to": "Machine Learning",
+    "type": "strongly_implies",
+    "confidence": 0.95
+  },
+  {
+    "from": "NLP",
+    "to": "Machine Learning",
+    "type": "commonly_used_with",
+    "confidence": 0.9
+  },
+  {
+    "from": "Computer Vision",
+    "to": "Deep Learning",
+    "type": "commonly_used_with",
+    "confidence": 0.85
+  },
+  {
+    "from": "Model Context Protocol",
+    "to": "LLM",
+    "type": "commonly_used_with",
+    "confidence": 0.8
+  }
+]

@@ -12,6 +12,7 @@ import {
 const ADMIN_NAV = [
   { href: "/admin/bids", label: "Job Bid status" },
   { href: "/admin/ai", label: "AI Usage" },
+  { href: "/admin/catalog", label: "Skill catalog" },
 ] as const;
 
 function AdminShell({ children }: { children: React.ReactNode }) {

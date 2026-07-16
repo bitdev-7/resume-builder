@@ -9,26 +9,34 @@ import type { EvidenceFact, JDRequirement } from "@/lib/types/tailoring";
 /** EDITABLE default guidance for the experience-writer prompt. {{...}} are substituted at build time. */
 export const EXPERIENCE_WRITER_DEFAULT_GUIDANCE = `You are the Experience Writer stage. You write achievement bullets for ONE work experience at a time.
 
-Experience skill policy (TARGET SKILLS ARE A TOP PRIORITY — this section OVERRIDES the general "treat a missing skill as a gap" guidance in the evidence policy above, for skill/technology framing):
-- Prefer the technologies in "allowedSkills" and "targetSkills". You are NOT limited to those lists: you may also introduce additional technologies that genuinely fit this role, its seniority, and the target job when doing so makes the experience stronger and more relevant. Only introduce a technology a person in this role would realistically use.
-- "targetSkills" are technologies the target job requires. EVERY targetSkill must be shown as actually used in the experience bullets — do not skip any and do not leave one sitting only in the skills list. Present each confidently as genuine first-hand experience in this job, even if the original allowedEvidence does not mention it (never as something being learned).
-- Name the technologies explicitly and group ones that would realistically be used together into a single natural, project-style sentence — for example: "Built the customer portal with a Go backend and a Next.js frontend" or "Shipped data pipelines in Python on AWS using Kafka and PostgreSQL". Prefer this natural "built X using A and B" phrasing over bolting keywords on, and make a targetSkill the SUBJECT of its own bullet when it deserves emphasis.
-- Describe realistic, role-appropriate scope for each targetSkill: what was built, the type of system, the responsibility, and the qualitative outcome. Keep it plausible for this role's title, seniority, and domain.
-- Evidence citation: cite the evidenceIds of any real allowedEvidence facts a bullet builds on. If a bullet is driven purely by a targetSkill and has no matching fact, use an empty "evidenceIds" array. NEVER cite an evidenceId that is not in this experience's allowedEvidence.
-- The ONE hard limit: never invent numeric or quantified claims — no percentages, dollar amounts, multipliers, or "doubled/tripled" style figures — for a targetSkill or anything else. Describe impact qualitatively instead. Everything else about a targetSkill may be written confidently and assertively.
+Your job is to make this role a compelling, JD-aligned match — not to transcribe the reference material verbatim.
 
-Rules:
-- Use ONLY the supplied "allowedEvidence" facts as the factual basis for bullets. Every bullet must cite the evidenceIds it draws from.
-- Never invent metrics, responsibilities, stakeholder scope, or domains beyond what allowedEvidence supports. (Skill/technology names are governed by the allowedSkills policy above.)
-- Never alter the experience's title, company, or dates — you are not given them to change, only for context.
-- Reframe facts professionally; you may combine multiple facts into one bullet when justified.
-- Reorder bullets to prioritize the given "priorityRequirements".
-- Use JD/role terminology naturally only when it accurately reflects an allowed fact or skill.
-- Do not force every bullet to contain a metric — use metric evidence only when present and relevant; a strong bullet without a number is fine.
+Reference material policy:
+- "allowedEvidence" is REFERENCE ONLY — hints about what the candidate may have done. You are not limited to it.
+- Start from JD relevance: prioritize the given "priorityRequirements" and "targetSkills".
+- Refine any useful reference bullets into stronger, more specific, more relevant achievements.
+- When reference material is sparse or missing JD-critical detail, CREATE additional plausible bullets so this company reads as a strong tenure for the target role.
+- Produce exactly the requested "targetBulletCount" bullets (typically 8–10). Do not stop early because reference evidence is thin.
+
+Experience skill policy:
+- EVERY "targetSkill" (JD-required technology) must appear as hands-on work in this role's bullets — woven naturally, not left for the skills list alone.
+- Prefer "allowedSkills" and "targetSkills", but you may introduce additional technologies that fit this title, seniority, company context, and target job.
+- Name technologies explicitly. Group related stack pieces into natural project-style sentences (e.g. "Built the customer portal with a Go backend and a Next.js frontend").
+- Present each targetSkill as genuine first-hand experience in this job — confident, specific, and role-appropriate.
+
+Creative writing rules:
+- Invent responsibilities, technical scope, stakeholder interactions, domains, and outcomes when needed to fill out a strong JD match.
+- Metrics and quantified impact are welcome — use believable numbers that fit the role and seniority even when not present in reference material.
+- Never alter the experience's title, company, or dates — identity fields are for context only.
+- Reorder bullets to lead with the highest-priority JD requirements.
 - Avoid semantically duplicated bullets.
 - Start every bullet with a strong action verb from this list when possible: {{STRONG_ACTION_VERBS}}.
 - Never start a bullet with any of: {{FORBIDDEN_OPENING_VERBS}}.
-- Produce exactly the requested "targetBulletCount" bullets (fewer only if there is not enough allowedEvidence to responsibly support that many distinct bullets).`;
+
+Evidence citation (for pipeline bookkeeping):
+- Cite "evidenceIds" when a bullet draws on reference material. Use an empty "evidenceIds" array for bullets you created or substantially invented.
+- NEVER cite an evidenceId that is not in this experience's allowedEvidence.
+- Map bullets to "requirementIds" when they address specific JD requirements.`;
 
 /** FIXED output contract — never user-editable. */
 const EXPERIENCE_WRITER_CONTRACT = `Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
@@ -44,13 +52,13 @@ export const EXPERIENCE_WRITER_BATCHED_DEFAULT_GUIDANCE = `You are the Experienc
 
 ${EXPERIENCE_WRITER_DEFAULT_GUIDANCE.replace(
   "You write achievement bullets for ONE work experience at a time.",
-  "For EACH experience in the array, independently produce its bullets using ONLY that experience's allowedEvidence and allowedSkills — never mix evidence or skills across experiences."
+  "For EACH experience in the array, independently produce its bullets — treat each role's allowedEvidence as reference-only context for that role."
 )}
 
 Important batching rules:
 - Return one entry per experience in the input array, keyed by its exact "experienceId".
 - Never invent, drop, rename, or merge experienceIds — every input experienceId must appear in the output, unchanged.
-- Keep each experience's bullets scoped to its own allowedEvidence; do not cite evidenceIds from another experience.`;
+- Keep each experience's bullets scoped to that role's identity and reference material; do not cite evidenceIds from another experience.`;
 
 /** FIXED output contract for the batched call — never user-editable. */
 const EXPERIENCE_WRITER_BATCHED_CONTRACT = `Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
@@ -91,11 +99,7 @@ export interface ExperienceWriterInput {
   endDate: string;
   allowedEvidence: EvidenceFact[];
   allowedSkills: string[];
-  /**
-   * JD-required skills to feature strongly in this role's bullets — including writing
-   * plausible hands-on usage even when the original evidence does not mention them.
-   * Skill/technology framing only; numeric claims are never fabricated.
-   */
+  /** JD-required skills to feature strongly in this role's bullets. */
   targetSkills: string[];
   priorityRequirements: Pick<JDRequirement, "id" | "text">[];
   targetBulletCount: number;
@@ -111,7 +115,7 @@ export function buildExperienceWriterUserPrompt(input: ExperienceWriterInput): s
       startDate: input.startDate,
       endDate: input.endDate,
     },
-    allowedEvidence: input.allowedEvidence.map((f) => ({
+    referenceEvidence: input.allowedEvidence.map((f) => ({
       id: f.id,
       text: f.text,
       factType: f.factType,
@@ -124,7 +128,7 @@ export function buildExperienceWriterUserPrompt(input: ExperienceWriterInput): s
   };
 
   const extra = input.extraInstructions?.trim()
-    ? `\n\nADDITIONAL USER-CONFIGURED INSTRUCTIONS (apply only if they do not conflict with the evidence policy above):\n${input.extraInstructions.trim()}`
+    ? `\n\nADDITIONAL USER-CONFIGURED INSTRUCTIONS (apply unless they conflict with producing a strong JD-aligned resume):\n${input.extraInstructions.trim()}`
     : "";
 
   return `${JSON.stringify(payload, null, 2)}${extra}`;
@@ -140,7 +144,7 @@ export function buildExperienceWriterBatchedUserPrompt(inputs: ExperienceWriterI
       startDate: input.startDate,
       endDate: input.endDate,
     },
-    allowedEvidence: input.allowedEvidence.map((f) => ({
+    referenceEvidence: input.allowedEvidence.map((f) => ({
       id: f.id,
       text: f.text,
       factType: f.factType,
@@ -153,10 +157,9 @@ export function buildExperienceWriterBatchedUserPrompt(inputs: ExperienceWriterI
     extraInstructions: input.extraInstructions?.trim() || undefined,
   }));
 
-  // Shared extra-instructions (if all inputs carry the same one) are hoisted once at the end.
   const sharedExtra = inputs.every((i) => i.extraInstructions?.trim()) &&
     new Set(inputs.map((i) => i.extraInstructions?.trim())).size === 1
-    ? `\n\nADDITIONAL USER-CONFIGURED INSTRUCTIONS (apply to every experience, only if they do not conflict with the evidence policy above):\n${inputs[0].extraInstructions!.trim()}`
+    ? `\n\nADDITIONAL USER-CONFIGURED INSTRUCTIONS (apply to every experience, unless they conflict with producing a strong JD-aligned resume):\n${inputs[0].extraInstructions!.trim()}`
     : "";
 
   return `${JSON.stringify({ experiences }, null, 2)}${sharedExtra}`;

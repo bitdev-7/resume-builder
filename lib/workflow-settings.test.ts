@@ -45,8 +45,8 @@ describe("workflow settings", () => {
   it("preserves bullet budget min/max across all modes", () => {
     for (const mode of ["fast", "balanced", "accurate", "thorough"] as GenerationMode[]) {
       const opts = workflowSettingsToPipelineOptions({ mode });
-      expect(opts.bulletBudget.minBulletsPerExperience).toBe(2);
-      expect(opts.bulletBudget.maxBulletsPerExperience).toBe(9);
+      expect(opts.bulletBudget.minBulletsPerExperience).toBe(8);
+      expect(opts.bulletBudget.maxBulletsPerExperience).toBe(10);
     }
   });
 

@@ -18,12 +18,12 @@ import { POST as savePdfPost } from "./api/save-pdf/route.js";
 import { POST as saveResumePdfPost } from "./api/save-resume-pdf/route.js";
 import { POST as saveTextPost } from "./api/save-text/route.js";
 import { GET as skillCatalogGet } from "./api/skill-catalog/route.js";
-import { POST as skillCatalogSkillsPost } from "./api/skill-catalog/skills/route.js";
-import { POST as skillCatalogSkillsDeletePost } from "./api/skill-catalog/skills/delete/route.js";
-import { POST as skillCatalogArchetypesPost } from "./api/skill-catalog/archetypes/route.js";
-import { POST as skillCatalogArchetypesDeletePost } from "./api/skill-catalog/archetypes/delete/route.js";
 import { GET as adminUsersGet } from "./api/admin/users/route.js";
 import { GET as adminUserActivityGet } from "./api/admin/users/activity/route.js";
+import { GET as adminCatalogFilesGet } from "./api/admin/catalog/files/route.js";
+import { POST as adminCatalogVerifyPost } from "./api/admin/catalog/verify/route.js";
+import { POST as adminCatalogResearchPost } from "./api/admin/catalog/research/route.js";
+import { POST as adminCatalogApplyPost } from "./api/admin/catalog/apply/route.js";
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -57,12 +57,12 @@ registerRoute(app, "post", "/api/save-pdf", savePdfPost);
 registerRoute(app, "post", "/api/save-resume-pdf", saveResumePdfPost);
 registerRoute(app, "post", "/api/save-text", saveTextPost);
 registerRoute(app, "get", "/api/skill-catalog", skillCatalogGet);
-registerRoute(app, "post", "/api/skill-catalog/skills", skillCatalogSkillsPost);
-registerRoute(app, "post", "/api/skill-catalog/skills/delete", skillCatalogSkillsDeletePost);
-registerRoute(app, "post", "/api/skill-catalog/archetypes", skillCatalogArchetypesPost);
-registerRoute(app, "post", "/api/skill-catalog/archetypes/delete", skillCatalogArchetypesDeletePost);
 registerRoute(app, "get", "/api/admin/users", adminUsersGet);
 registerRoute(app, "get", "/api/admin/users/:userId/activity", adminUserActivityGet);
+registerRoute(app, "get", "/api/admin/catalog/files", adminCatalogFilesGet);
+registerRoute(app, "post", "/api/admin/catalog/verify", adminCatalogVerifyPost);
+registerRoute(app, "post", "/api/admin/catalog/research", adminCatalogResearchPost);
+registerRoute(app, "post", "/api/admin/catalog/apply", adminCatalogApplyPost);
 
 const server = app.listen(port, () => {
   console.log(`Resume API backend listening on http://localhost:${port}`);

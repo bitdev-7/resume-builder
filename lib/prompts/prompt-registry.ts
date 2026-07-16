@@ -23,9 +23,9 @@ export interface PromptDefinition {
 export const PROMPT_DEFINITIONS: PromptDefinition[] = [
   {
     key: "globalPolicy",
-    label: "Global evidence policy",
+    label: "Global tailoring policy",
     description:
-      "Shared rules injected into JD analysis, experience writing, and the composer. Controls factual grounding, tone, and how skills are treated.",
+      "Shared rules injected into JD analysis, experience writing, and the composer. Controls JD-driven creative tailoring and writing style.",
     defaultGuidance: GLOBAL_POLICY_DEFAULT_GUIDANCE,
   },
   {
