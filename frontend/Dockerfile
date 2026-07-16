@@ -19,6 +19,8 @@ RUN npm ci --include=dev
 
 COPY frontend ./frontend
 COPY lib ./lib
+# Shared skill catalog JSON imported by lib/tailoring/* at build time.
+COPY data ./data
 
 # Public (browser-visible) build-time config.
 ARG NEXT_PUBLIC_SUPABASE_URL

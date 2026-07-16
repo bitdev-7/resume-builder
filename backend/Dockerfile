@@ -30,6 +30,8 @@ RUN npm ci --include=dev
 COPY backend ./backend
 COPY lib ./lib
 COPY templates ./templates
+# Skill catalog JSON (imported by lib/tailoring/* and read/written by admin catalog APIs).
+COPY data ./data
 
 WORKDIR /app/backend
 EXPOSE 4000

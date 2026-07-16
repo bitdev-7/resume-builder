@@ -30,3 +30,7 @@ frontend/.env.*.local
 resume
 scripts
 supabase
+
+# Catalog apply backups are local-only; never bake them into the image
+data/tailoring/.backups
+data/tailoring/.backups/**
