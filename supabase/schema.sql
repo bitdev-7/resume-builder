@@ -18,11 +18,8 @@ create table if not exists public.profiles (
   id               uuid primary key references auth.users (id) on delete cascade,
   full_name        text,
   email            text,
-  headline         text,
   phone            text,
-  linkedin_url     text,
-  summary          text,
-  location         text,
+  role             text not null default 'user',
   default_settings jsonb not null default '{}'::jsonb,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
@@ -30,7 +27,41 @@ create table if not exists public.profiles (
 
 -- Columns added after initial release (safe on existing installs).
 alter table public.profiles add column if not exists email text;
-alter table public.profiles add column if not exists headline text;
+alter table public.profiles add column if not exists role text not null default 'user';
+
+alter table public.profiles
+  drop constraint if exists profiles_role_check;
+
+alter table public.profiles
+  add constraint profiles_role_check check (role in ('admin', 'user'));
+
+-- Block JWT clients from changing role (service_role can still promote manually)
+create or replace function public.prevent_profile_role_escalation()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if tg_op = 'UPDATE' and new.role is distinct from old.role then
+    if coalesce(auth.role(), '') <> 'service_role' then
+      raise exception 'Cannot change profiles.role';
+    end if;
+  end if;
+  if tg_op = 'INSERT' and new.role is distinct from 'user' then
+    if coalesce(auth.role(), '') <> 'service_role' then
+      raise exception 'Cannot set profiles.role on insert';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_prevent_role_escalation on public.profiles;
+create trigger profiles_prevent_role_escalation
+  before insert or update on public.profiles
+  for each row
+  execute function public.prevent_profile_role_escalation();
 
 alter table public.profiles enable row level security;
 
