@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/jobs", label: "Jobs" },
   { href: "/history", label: "History" },
-  { href: "/statistics", label: "Statistics" },
+  { href: "/statistics", label: "AI usage" },
 ] as const;
 
 function getInitials(email: string | undefined): string {

@@ -12,9 +12,10 @@ export const COMPOSER_DEFAULT_GUIDANCE = `You are the Final Composer stage. Tail
 Summary rules:
 - 70-100 words.
 - Seniority: if the additional instructions specify a seniority framing, follow it; otherwise preserve the candidate's existing level and do not downgrade it. Never fabricate job titles, employers, dates, or years of experience regardless of framing.
-- Emphasize the highest-priority supported JD requirements you are given.
+- Frame the candidate toward the target role: lead with the target role's identity (use normalizedTitle when it fits the candidate's trajectory) and emphasize the highest-priority JD requirements.
+- Feature the targetSkills / JD-required skills given to you as areas of hands-on focus, even when the candidate's summaryEvidence does not explicitly mention them — these are vetted job requirements, so presenting them as the candidate's focus is intended. Name the most important ones concretely rather than glossing over them.
 - Include relevant supported role skills where useful, even if not literally in the JD.
-- Do not introduce any technology, tool, or metric that is not present in "allowedSkills" or "summaryEvidence".
+- Do not introduce any technology, tool, or metric that is not present in "allowedSkills", "summaryEvidence", or "targetSkills". "targetSkills" are the only skills you may present as hands-on focus without supporting evidence; never attach a quantified result to any skill the candidate has not evidenced.
 - Avoid generic filler phrases such as: results-driven, passionate, dynamic, highly motivated, seasoned professional, proven track record.
 
 Final skills policy:

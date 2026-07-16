@@ -88,6 +88,21 @@ const SKILL_ALIASES: Record<string, string[]> = {
   PyTorch: [],
   TensorFlow: [],
   "Machine Learning": ["ml"],
+  "LLM": ["llms", "large language model", "large language models", "large-language model", "large-language models"],
+  "AI Agents": ["ai agent", "ai agents", "autonomous agents", "autonomous agent", "llm agents", "agent framework"],
+  "RAG": ["retrieval augmented generation", "retrieval-augmented generation", "retrieval augmented generation (rag)"],
+  "Prompt Engineering": ["prompt design", "prompt engineering", "prompting"],
+  LangChain: ["lang chain", "langchain python"],
+  LlamaIndex: ["llama index", "llama-index"],
+  Pinecone: [],
+  Weaviate: [],
+  pgvector: ["pg vector", "pgvector postgres"],
+  Embeddings: ["embedding", "embeddings", "embedding models", "embedding model"],
+  "OpenAI API": ["openai", "openai api", "openai apis"],
+  "Anthropic API": ["anthropic", "anthropic api", "claude api"],
+  "Hugging Face": ["huggingface", "hf", "hugging face hub"],
+  "Vector Database": ["vector db", "vector store", "vector databases", "vector search"],
+  "Model Context Protocol": ["mcp"],
   Swift: [],
   Kotlin: [],
   "Objective-C": ["objective c", "objc"],
@@ -143,6 +158,15 @@ const RELATIONSHIPS: SkillRelationship[] = [
   { from: "React", to: "JavaScript", type: "strongly_implies", confidence: 0.85 },
   { from: "Vue.js", to: "JavaScript", type: "strongly_implies", confidence: 0.85 },
   { from: "Jest", to: "JavaScript", type: "requires", confidence: 0.85 },
+
+  // LLM / AI orchestration frameworks conservatively entail Python.
+  { from: "LangChain", to: "Python", type: "requires", confidence: 0.9 },
+  { from: "LlamaIndex", to: "Python", type: "requires", confidence: 0.9 },
+  // RAG presupposes an embedding/vector layer; treat as strongly_implies (curated).
+  { from: "RAG", to: "Embeddings", type: "strongly_implies", confidence: 0.85 },
+  { from: "Pinecone", to: "Vector Database", type: "strongly_implies", confidence: 0.9 },
+  { from: "Weaviate", to: "Vector Database", type: "strongly_implies", confidence: 0.9 },
+  { from: "pgvector", to: "Vector Database", type: "strongly_implies", confidence: 0.85 },
 
   // Relevance-only signals — NEVER auto-entailed.
   { from: "React", to: "TypeScript", type: "commonly_used_with", confidence: 0.5 },
@@ -236,6 +260,15 @@ export function getAllCanonicalSkillNames(): string[] {
   return Object.keys(SKILL_ALIASES);
 }
 
+/** Read-only snapshot of the built-in skill aliases (canonical -> aliases). */
+export function getSkillAliasesSnapshot(): Record<string, string[]> {
+  const snapshot: Record<string, string[]> = {};
+  for (const [canonical, aliases] of Object.entries(SKILL_ALIASES)) {
+    snapshot[canonical] = [...aliases];
+  }
+  return snapshot;
+}
+
 let mentionMatchers: { canonical: string; regex: RegExp }[] | null = null;
 
 function buildMentionMatchers(): { canonical: string; regex: RegExp }[] {
@@ -265,4 +298,73 @@ export function detectSkillMentions(text: string): string[] {
     if (regex.test(text)) found.add(canonical);
   }
   return Array.from(found);
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Mutators — used by the skill registry to layer user-supplied additions
+// (custom skills/aliases/relationships) on top of the built-in defaults.
+// Defaults are never removed; additions only ever extend the maps.
+// ──────────────────────────────────────────────────────────────────────────
+
+/** Force `detectSkillMentions` to rebuild its matcher cache (e.g. after new aliases are registered). */
+export function resetMentionMatchersCache(): void {
+  mentionMatchers = null;
+}
+
+/**
+ * Register (or extend) a canonical skill + its aliases. If the canonical name
+ * already exists, the aliases are merged onto the existing entry (duplicates
+ * removed). The mention-matcher cache is invalidated so the new aliases are
+ * detected on the next `detectSkillMentions` call.
+ */
+export function registerSkillAlias(canonical: string, aliases: string[] = []): void {
+  const canonicalName = String(canonical || "").trim();
+  if (!canonicalName) return;
+  const key = canonicalName.toLowerCase();
+
+  const existing = SKILL_ALIASES[canonicalName];
+  if (existing) {
+    for (const alias of aliases) {
+      const a = String(alias || "").trim().toLowerCase();
+      if (a && !existing.includes(a)) existing.push(a);
+    }
+  } else {
+    SKILL_ALIASES[canonicalName] = aliases
+      .map((a) => String(a || "").trim())
+      .filter((a) => a.length > 0);
+  }
+
+  ALIAS_TO_CANONICAL.set(key, canonicalName);
+  for (const alias of SKILL_ALIASES[canonicalName]) {
+    ALIAS_TO_CANONICAL.set(alias.toLowerCase(), canonicalName);
+  }
+  resetMentionMatchersCache();
+}
+
+/** Append a skill relationship (e.g. a `requires` edge for a custom framework). */
+export function registerRelationship(rel: SkillRelationship): void {
+  const sig = `${rel.from}\0${rel.to}\0${rel.type}`;
+  if (RELATIONSHIPS.some((r) => `${r.from}\0${r.to}\0${r.type}` === sig)) return;
+  RELATIONSHIPS.push(rel);
+}
+
+/**
+ * Remove a custom canonical skill + its aliases. Only removes aliases that were
+ * registered for this canonical (so removing a custom skill never strips
+ * aliases that another canonical also claims). The mention-matcher cache is
+ * invalidated. Returns true if the canonical existed.
+ */
+export function unregisterSkillAlias(canonical: string): boolean {
+  const canonicalName = String(canonical || "").trim();
+  if (!canonicalName || !(canonicalName in SKILL_ALIASES)) return false;
+  const aliases = SKILL_ALIASES[canonicalName];
+  delete SKILL_ALIASES[canonicalName];
+  ALIAS_TO_CANONICAL.delete(canonicalName.toLowerCase());
+  for (const alias of aliases) {
+    const a = alias.toLowerCase();
+    // Only drop the alias mapping if it still points at this canonical.
+    if (ALIAS_TO_CANONICAL.get(a) === canonicalName) ALIAS_TO_CANONICAL.delete(a);
+  }
+  resetMentionMatchersCache();
+  return true;
 }

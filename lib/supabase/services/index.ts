@@ -35,3 +35,15 @@ export {
   deleteInterview,
   type InterviewFormInput,
 } from "@/lib/supabase/services/interviews";
+export {
+  listSkillAdditions,
+  listArchetypeAdditions,
+  upsertSkillAddition,
+  deleteSkillAddition,
+  upsertArchetypeAddition,
+  deleteArchetypeAddition,
+  refreshRegistry,
+  CatalogConflictError,
+  type SkillAdditionRow,
+  type ArchetypeAdditionRow,
+} from "@/lib/supabase/services/skill-catalog";

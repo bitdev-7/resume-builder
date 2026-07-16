@@ -8,7 +8,7 @@ import type { RoleSkillCatalogEntry } from "@/lib/types/tailoring";
  * Extend by adding a new entry; nothing else needs to change (role archetype
  * detection, skill expansion, and enrichment all read from this catalog).
  */
-export const ROLE_SKILL_CATALOG_VERSION = "2026-07-10.1";
+export const ROLE_SKILL_CATALOG_VERSION = "2026-07-16.1";
 
 export const ROLE_SKILL_CATALOG: Record<string, RoleSkillCatalogEntry> = {
   full_stack_python_engineer: {
@@ -137,7 +137,7 @@ export const ROLE_SKILL_CATALOG: Record<string, RoleSkillCatalogEntry> = {
   machine_learning_engineer: {
     id: "machine_learning_engineer",
     label: "Machine Learning Engineer",
-    titleKeywords: ["machine learning", "ml engineer", "ai engineer"],
+    titleKeywords: ["machine learning", "ml engineer"],
     core: ["Python", "Machine Learning", "Git"],
     ecosystem: {
       frameworks: ["PyTorch", "TensorFlow", "Pandas", "NumPy"],
@@ -146,6 +146,37 @@ export const ROLE_SKILL_CATALOG: Record<string, RoleSkillCatalogEntry> = {
     },
     marketRelevant: ["Kubernetes"],
     skillCategoryHints: ["Languages", "ML Frameworks", "Data", "Cloud & DevOps", "Testing & Tools"],
+  },
+  ai_engineer: {
+    id: "ai_engineer",
+    label: "AI Engineer",
+    titleKeywords: [
+      "ai engineer",
+      "ai lead",
+      "llm engineer",
+      "genai engineer",
+      "gen ai engineer",
+      "ai agent engineer",
+      "applied ai engineer",
+      "ai solutions engineer",
+    ],
+    core: ["Python", "LLM", "AI Agents", "Prompt Engineering", "REST APIs", "Git"],
+    ecosystem: {
+      orchestration: ["LangChain", "LlamaIndex"],
+      retrieval: ["RAG", "Vector Database", "Pinecone", "Weaviate", "pgvector", "Embeddings"],
+      modelProviders: ["OpenAI API", "Anthropic API", "Hugging Face"],
+      delivery: ["Docker", "CI/CD", "Testing"],
+      cloud: ["AWS", "Azure", "GCP"],
+    },
+    marketRelevant: ["Model Context Protocol", "Kubernetes", "FastAPI"],
+    skillCategoryHints: [
+      "Languages",
+      "LLMs & Prompt Engineering",
+      "AI Agents & Orchestration",
+      "Retrieval & Vector DBs",
+      "Cloud & DevOps",
+      "Testing & Tools",
+    ],
   },
   mobile_engineer: {
     id: "mobile_engineer",
@@ -209,4 +240,34 @@ export function getArchetypeRoleSkills(archetypeId: string): {
   if (!entry) return { core: [], ecosystem: [] };
   const ecosystem = Object.values(entry.ecosystem).flat();
   return { core: entry.core, ecosystem };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Mutator — used by the skill registry to layer user-supplied custom
+// archetypes on top of the built-in defaults. Defaults are never removed.
+// ──────────────────────────────────────────────────────────────────────────
+
+/** Snapshot of the built-in archetype ids at module load — used to reject shadowing. */
+const BUILTIN_ARCHETYPE_IDS = new Set<string>(Object.keys(ROLE_SKILL_CATALOG));
+
+/** True if `id` is one of the built-in (read-only) archetype ids. */
+export function isBuiltinArchetypeId(id: string): boolean {
+  return BUILTIN_ARCHETYPE_IDS.has(id);
+}
+
+/**
+ * Register a custom archetype. Overwrites an existing custom archetype with
+ * the same id, but never a built-in one (callers must reject reserved ids
+ * before reaching here). Returns true if registered.
+ */
+export function registerArchetype(entry: RoleSkillCatalogEntry): boolean {
+  if (!entry || !entry.id || BUILTIN_ARCHETYPE_IDS.has(entry.id)) return false;
+  ROLE_SKILL_CATALOG[entry.id] = entry;
+  return true;
+}
+
+/** Remove a custom archetype. Returns true if it existed and was removed. */
+export function unregisterArchetype(id: string): boolean {
+  if (!id || BUILTIN_ARCHETYPE_IDS.has(id)) return false;
+  return delete ROLE_SKILL_CATALOG[id];
 }

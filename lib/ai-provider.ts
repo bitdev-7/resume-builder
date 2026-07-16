@@ -10,6 +10,10 @@ import {
   resolveJsonFriendlyModel,
 } from "@/lib/openrouter";
 import { resolveAICost, type AICostSource, type AIUsage } from "@/lib/ai-usage";
+import { getAiUsageContext } from "@/lib/ai-usage-context";
+import { getAdminSupabaseClient } from "@/lib/supabase/admin";
+import { createAiUsageLog } from "@/lib/supabase/services/ai-usage-logs";
+import type { AiUsageLogInsert } from "@/lib/supabase/database.types";
 
 /** Resume generation uses large prompts; allow plenty of time (ms). Override via .env.local */
 const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 180_000);
@@ -541,12 +545,70 @@ export async function callAI(opts: CallAIOptions): Promise<AIResponse> {
     const result = await callAICore(opts);
     const elapsedMs = Date.now() - callStarted;
     console.log(formatAiCallSummary(stageLabel, elapsedMs, result));
+    recordAiUsageCall({ stage: stageLabel, result, elapsedMs });
     return result;
   } catch (err) {
     const elapsedMs = Date.now() - callStarted;
     console.error(`[ai] ${stageLabel} call FAILED after ${elapsedMs}ms`);
+    recordAiUsageCall({
+      stage: stageLabel,
+      elapsedMs,
+      error: err,
+      modelFallback: opts.model,
+    });
     throw err;
   }
+}
+
+/**
+ * Persists one AI usage row per call (tokens / cost / model / stage / duration)
+ * when a request-scoped usage context is active. Fire-and-forget — never throws
+ * and never blocks generation. Prefers the service-role admin client (bypasses
+ * RLS, survives background-job token expiry), falling back to the context's
+ * JWT client. No-op when no context is set (tests, CLI usage).
+ */
+function recordAiUsageCall(params: {
+  stage: string;
+  result?: AIResponse;
+  elapsedMs: number;
+  error?: unknown;
+  modelFallback?: string;
+}): void {
+  const ctx = getAiUsageContext();
+  if (!ctx) return;
+  const client = getAdminSupabaseClient() ?? ctx.client;
+  if (!client) return;
+
+  const success = !params.error;
+  const usage = params.result?.usage;
+  const model =
+    params.result?.modelUsed ?? params.modelFallback ?? "unknown";
+
+  const entry: AiUsageLogInsert = {
+    user_id: ctx.userId,
+    profile_id: ctx.profileId ?? null,
+    source: ctx.source,
+    stage: params.stage,
+    provider: params.result?.providerUsed ?? null,
+    model,
+    prompt_tokens: usage?.promptTokens ?? 0,
+    completion_tokens: usage?.completionTokens ?? 0,
+    total_tokens: usage?.totalTokens ?? 0,
+    cost_usd: params.result?.costUsd ?? 0,
+    cost_source: params.result?.costSource ?? "estimated",
+    duration_ms: params.elapsedMs,
+    success,
+    error: success
+      ? null
+      : (params.error instanceof Error
+          ? params.error.message
+          : String(params.error)
+        ).slice(0, 500),
+  };
+
+  void createAiUsageLog(entry, client).catch((e) => {
+    console.error("[ai-usage] recorder error:", e);
+  });
 }
 
 async function callAICore(opts: CallAIOptions): Promise<AIResponse> {

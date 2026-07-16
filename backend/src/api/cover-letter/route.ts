@@ -3,10 +3,11 @@ import { requireAIConfigured, resolveAIRequest } from "@/lib/ai-api";
 import { callAI } from "@/lib/ai-provider";
 import type { AIMessage } from "@/lib/ai-provider";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
+import { runWithAiUsageContextAsync } from "@/lib/ai-usage-context";
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuthClient(request);
+    const { userId, client } = await requireAuthClient(request);
 
     const { resume, jd, apiModel, apiProvider, useOpenRouter: useOpenRouterBody } =
       await request.json();
@@ -58,16 +59,20 @@ Candidate name for sign-off: ${candidateName}`;
         { role: "user", content: userPrompt },
       ];
 
-      const aiResp = await callAI({
-        useOpenRouter: aiRequest.useOpenRouter,
-        model: selectedModel,
-        ...(aiRequest.provider ? { provider: aiRequest.provider } : {}),
-        messages,
-        temperature: 0.4,
-        max_tokens: 1024,
-        tryParseJson: false,
-        stage: "cover-letter",
-      });
+      const aiResp = await runWithAiUsageContextAsync(
+        { userId, source: "cover_letter", client },
+        () =>
+          callAI({
+            useOpenRouter: aiRequest.useOpenRouter,
+            model: selectedModel,
+            ...(aiRequest.provider ? { provider: aiRequest.provider } : {}),
+            messages,
+            temperature: 0.4,
+            max_tokens: 1024,
+            tryParseJson: false,
+            stage: "cover-letter",
+          })
+      );
 
       coverLetter = aiResp.text || "";
     } catch (err) {

@@ -67,3 +67,47 @@ describe("Case 1: role skill expansion considers broader relevant skills, not ju
     expect(javascript.evidenceStatus).toBe("direct");
   });
 });
+
+describe("AI Engineer archetype detection", () => {
+  it("detects ai_engineer for an LLM/agent JD and surfaces LLM-era skills as core", async () => {
+    const aiJd: JDAnalysis = {
+      normalizedTitle: "AI Engineer",
+      seniority: "senior",
+      roleFamily: "ai_engineering",
+      domains: ["artificial intelligence"],
+      requirements: [
+        { id: "req_1", text: "LLMs", type: "must_have", category: "technology", canonicalTerm: "LLM", priority: 10 },
+        { id: "req_2", text: "AI agents", type: "must_have", category: "technology", canonicalTerm: "AI Agents", priority: 10 },
+        { id: "req_3", text: "RAG", type: "must_have", category: "technology", canonicalTerm: "RAG", priority: 9 },
+        { id: "req_4", text: "Prompt engineering", type: "must_have", category: "technology", canonicalTerm: "Prompt Engineering", priority: 9 },
+        { id: "req_5", text: "LangChain", type: "preferred", category: "technology", canonicalTerm: "LangChain", priority: 7 },
+        { id: "req_6", text: "Python", type: "must_have", category: "technology", canonicalTerm: "Python", priority: 10 },
+      ],
+      responsibilityThemes: [],
+      atsTerms: ["LLM", "AI Agents", "RAG", "Prompt Engineering", "LangChain", "Python"],
+      rawText: "AI Engineer LLMs AI agents RAG prompt engineering LangChain Python",
+    };
+
+    const roleArchetype = detectRoleArchetype(aiJd);
+    expect(roleArchetype.primaryRoleArchetype).toBe("ai_engineer");
+
+    const candidates = await expandRoleSkills(aiJd, roleArchetype, []);
+    const names = candidates.map((c) => c.canonicalName);
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "LLM",
+        "AI Agents",
+        "Prompt Engineering",
+        "RAG",
+        "LangChain",
+        "Vector Database",
+        "OpenAI API",
+      ])
+    );
+
+    // JD-required AI skills must be core tier even when the candidate lacks evidence.
+    const llm = candidates.find((c) => c.canonicalName === "LLM")!;
+    expect(llm.roleImportance).toBe("core");
+    expect(llm.sources).toEqual(expect.arrayContaining(["explicit_jd"]));
+  });
+});

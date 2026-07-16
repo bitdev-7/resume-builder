@@ -108,7 +108,7 @@ export function ensureTargetSkillsInExperiences(
     if (results[i].bullets.length > results[targetIdx].bullets.length) targetIdx = i;
   }
 
-  const text = `Built and delivered production features using ${formatSkillList(uncovered)}.`;
+  const text = `Shipped production features built with ${formatSkillList(uncovered)}, applying each directly across core systems and team workflows.`;
   return results.map((r, i) =>
     i === targetIdx
       ? { ...r, bullets: [...r.bullets, { text, evidenceIds: [], requirementIds: [] }] }

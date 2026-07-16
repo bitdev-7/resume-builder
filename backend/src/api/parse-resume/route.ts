@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
+import { runWithAiUsageContextAsync } from "@/lib/ai-usage-context";
 import { parseResumeText } from "@/lib/resume-import";
 import { sanitizePromptOverrides } from "@/lib/prompts/prompt-overrides";
 
@@ -9,7 +10,7 @@ export const maxDuration = 120;
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuthClient(request);
+    const { userId, client } = await requireAuthClient(request);
 
     const { pdfBase64, useOpenRouter: useOpenRouterBody, promptOverrides: promptOverridesBody } =
       await request.json();
@@ -45,10 +46,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { parsed, costUsd } = await parseResumeText(resumeText, {
-      useOpenRouter: typeof useOpenRouterBody === "boolean" ? useOpenRouterBody : true,
-      promptOverrides: sanitizePromptOverrides(promptOverridesBody),
-    });
+    const { parsed, costUsd } = await runWithAiUsageContextAsync(
+      { userId, source: "resume_import", client },
+      () =>
+        parseResumeText(resumeText, {
+          useOpenRouter: typeof useOpenRouterBody === "boolean" ? useOpenRouterBody : true,
+          promptOverrides: sanitizePromptOverrides(promptOverridesBody),
+        })
+    );
 
     return NextResponse.json({ profile: parsed, parseCostUsd: costUsd });
   } catch (error) {
