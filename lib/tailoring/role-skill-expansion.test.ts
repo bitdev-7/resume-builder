@@ -16,6 +16,10 @@ const jdAnalysis: JDAnalysis = {
   ],
   responsibilityThemes: [],
   atsTerms: [],
+  clearanceRequired: false,
+  clearanceType: null,
+  clearanceStatus: null,
+  clearanceRequirementText: null,
   rawText: "Python FastAPI PostgreSQL",
 };
 
@@ -85,6 +89,10 @@ describe("AI Engineer archetype detection", () => {
       ],
       responsibilityThemes: [],
       atsTerms: ["LLM", "AI Agents", "RAG", "Prompt Engineering", "LangChain", "Python"],
+      clearanceRequired: false,
+      clearanceType: null,
+      clearanceStatus: null,
+      clearanceRequirementText: null,
       rawText: "AI Engineer LLMs AI agents RAG prompt engineering LangChain Python",
     };
 

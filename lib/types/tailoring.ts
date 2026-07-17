@@ -33,6 +33,14 @@ export interface JDRequirement {
   priority: number;
 }
 
+/** Security-clearance requirement status extracted from the JD (not a RequirementCategory). */
+export type ClearanceStatus =
+  | "active_required"
+  | "obtain_required"
+  | "eligibility_required"
+  | "preferred"
+  | null;
+
 export interface JDAnalysis {
   normalizedTitle: string;
   seniority: string;
@@ -41,6 +49,13 @@ export interface JDAnalysis {
   requirements: JDRequirement[];
   responsibilityThemes: string[];
   atsTerms: string[];
+  /** True when clearance is required / must obtain / eligibility required (not merely preferred). */
+  clearanceRequired: boolean;
+  /** Exact clearance type/level from the JD when stated. */
+  clearanceType: string | null;
+  clearanceStatus: ClearanceStatus;
+  /** Exact JD phrase stating the clearance requirement. */
+  clearanceRequirementText: string | null;
   /** Raw JD text, kept only for repeated-term priority boosting and archetype scoring. */
   rawText: string;
 }

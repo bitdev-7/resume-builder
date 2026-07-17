@@ -224,6 +224,7 @@ async function runGenerationJob(params: GenerationJobParams): Promise<void> {
       normalizedJobTitle: pipelineResult.jobTitle,
       roleArchetype: pipelineResult.roleArchetype,
       enrichmentRecommendations: pipelineResult.enrichmentRecommendations,
+      clearance: pipelineResult.clearance,
       ...(pipelineResult.remainingValidationIssues.length > 0
         ? { validationIssues: pipelineResult.remainingValidationIssues }
         : {}),
@@ -247,6 +248,12 @@ async function runGenerationJob(params: GenerationJobParams): Promise<void> {
         normalizedJobTitle: "",
         roleArchetype: { primaryRoleArchetype: "unknown", secondaryRoleArchetypes: [], confidence: 0 },
         enrichmentRecommendations: [],
+        clearance: {
+          clearanceRequired: false,
+          clearanceType: null,
+          clearanceStatus: null,
+          clearanceRequirementText: null,
+        },
         pdfError: error instanceof Error ? error.message : "An error occurred",
       });
       return;

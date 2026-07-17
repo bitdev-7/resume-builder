@@ -1,7 +1,7 @@
 # JD Security Clearance Detection
 
 Date: 2026-07-17  
-Status: Approved in conversation; awaiting written-spec review
+Status: Implemented
 
 ## Goal
 

@@ -1,6 +1,7 @@
 import type { ResolvedAIRequest } from "@/lib/ai-api";
 import type { LegacyAnalyzeProfile } from "@/lib/mappers/profile-to-resume";
 import type { UpdatedResume } from "@/lib/types/resume";
+import type { ClearanceAnalysis } from "@/lib/clearance-warning";
 import type {
   BulletBudgetConfig,
   CandidateExperience,
@@ -66,6 +67,7 @@ export interface RunTailoringPipelineResult {
   enrichmentRecommendations: EnrichmentRecommendation[];
   remainingValidationIssues: ValidationIssue[];
   generationCostUsd: number;
+  clearance: ClearanceAnalysis;
 }
 
 function escapeRegExp(value: string): string {
@@ -440,5 +442,11 @@ export async function runTailoringPipeline(
     enrichmentRecommendations,
     remainingValidationIssues: repairOutcome.remainingIssues,
     generationCostUsd: totalCost,
+    clearance: {
+      clearanceRequired: jdAnalysis.clearanceRequired,
+      clearanceType: jdAnalysis.clearanceType,
+      clearanceStatus: jdAnalysis.clearanceStatus,
+      clearanceRequirementText: jdAnalysis.clearanceRequirementText,
+    },
   };
 }

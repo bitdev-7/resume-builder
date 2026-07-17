@@ -29,6 +29,13 @@ export const jdRequirementSchema = z.object({
   canonicalTerm: z.string().nullable().optional().default(null),
 });
 
+/** Invalid values fail validation (unlike type/category which use .catch). */
+export const clearanceStatusSchema = z
+  .enum(["active_required", "obtain_required", "eligibility_required", "preferred"])
+  .nullable()
+  .optional()
+  .default(null);
+
 export const jdAnalysisAiOutputSchema = z.object({
   normalizedTitle: z.string().min(1),
   seniority: z.string().default("unspecified"),
@@ -37,6 +44,10 @@ export const jdAnalysisAiOutputSchema = z.object({
   requirements: z.array(jdRequirementSchema).default([]),
   responsibilityThemes: z.array(z.string()).default([]),
   atsTerms: z.array(z.string()).default([]),
+  clearanceRequired: z.boolean().default(false),
+  clearanceType: z.string().nullable().optional().default(null),
+  clearanceStatus: clearanceStatusSchema,
+  clearanceRequirementText: z.string().nullable().optional().default(null),
 });
 
 export type JDAnalysisAiOutput = z.infer<typeof jdAnalysisAiOutputSchema>;

@@ -12,6 +12,10 @@ import { atsScoreTextClass, formatAtsScoreLabel } from "@/lib/check-ats-client";
 import { formatAiCostBreakdown } from "@/lib/ai-usage";
 import type { AtsMatchResult } from "@/lib/types/ats-match";
 import type { EnrichmentRecommendation } from "@/lib/types/tailoring";
+import {
+  getClearanceWarning,
+  type ClearanceAnalysis,
+} from "@/lib/clearance-warning";
 import JobDescriptionDialog from "@/components/JobDescriptionDialog";
 import AtsMatchDialog from "@/components/AtsMatchDialog";
 
@@ -46,6 +50,7 @@ export interface AnalysisSessionView {
   generationCostUsd?: number;
   atsCostUsd?: number;
   enrichment?: EnrichmentRecommendation[] | null;
+  clearance?: ClearanceAnalysis | null;
 }
 
 interface AnalysisResultCardProps {
@@ -133,14 +138,17 @@ function MetaBit({ label, value }: { label: string; value: string }) {
 function JobTypeBadges({
   jobTypes,
   requiresTravel,
+  clearance,
 }: {
   jobTypes: JobWorkType[];
   requiresTravel: boolean;
+  clearance?: ClearanceAnalysis | null;
 }) {
   const visibleTypes =
     jobTypes.filter((type) => type !== "unknown").length > 0
       ? jobTypes.filter((type) => type !== "unknown")
       : ["unknown" as JobWorkType];
+  const clearanceWarning = getClearanceWarning(clearance);
 
   return (
     <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
@@ -155,6 +163,16 @@ function JobTypeBadges({
       {requiresTravel ? (
         <span className="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-medium leading-tight text-violet-800 ring-1 ring-inset ring-violet-200/80 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-800/50">
           Travel
+        </span>
+      ) : null}
+      {clearanceWarning.level === "required" ? (
+        <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium leading-tight text-red-800 ring-1 ring-inset ring-red-200/80 dark:bg-red-950/50 dark:text-red-300 dark:ring-red-800/50">
+          {clearanceWarning.badgeLabel}
+        </span>
+      ) : null}
+      {clearanceWarning.level === "preferred" ? (
+        <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium leading-tight text-amber-900 ring-1 ring-inset ring-amber-200/80 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-800/50">
+          {clearanceWarning.badgeLabel}
         </span>
       ) : null}
     </div>
@@ -203,6 +221,8 @@ export default function AnalysisResultCard({
     generationCostUsd: session.generationCostUsd,
     atsCostUsd: session.atsCostUsd,
   });
+
+  const clearanceWarning = getClearanceWarning(session.clearance);
 
   return (
     <>
@@ -331,6 +351,7 @@ export default function AnalysisResultCard({
               <JobTypeBadges
                 jobTypes={session.jobTypes}
                 requiresTravel={session.requiresTravel}
+                clearance={session.clearance}
               />
               <button
                 type="button"
@@ -344,6 +365,30 @@ export default function AnalysisResultCard({
             </div>
           </div>
         </div>
+
+        {clearanceWarning.level !== "none" ? (
+          <div
+            className={
+              clearanceWarning.level === "required"
+                ? "border-b border-red-100 bg-red-50/90 px-3 py-1.5 pl-3.5 text-xs leading-snug text-red-800 dark:border-red-900/30 dark:bg-red-950/40 dark:text-red-300"
+                : "border-b border-amber-100 bg-amber-50/90 px-3 py-1.5 pl-3.5 text-xs leading-snug text-amber-900 dark:border-amber-900/30 dark:bg-amber-950/40 dark:text-amber-300"
+            }
+          >
+            <span className="font-semibold">{clearanceWarning.badgeLabel}</span>
+            {clearanceWarning.typeLabel ? (
+              <>
+                {" "}
+                <span>({clearanceWarning.typeLabel})</span>
+              </>
+            ) : null}
+            {clearanceWarning.requirementText ? (
+              <>
+                {" — "}
+                <span className="italic">&ldquo;{clearanceWarning.requirementText}&rdquo;</span>
+              </>
+            ) : null}
+          </div>
+        ) : null}
 
         {(session.generateError || session.downloadError) && (
           <div className="border-b border-red-100 bg-red-50/90 px-3 py-1.5 pl-3.5 text-xs leading-snug text-red-800 dark:border-red-900/30 dark:bg-red-950/40 dark:text-red-300">

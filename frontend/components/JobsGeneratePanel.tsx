@@ -60,6 +60,11 @@ import {
 } from "@/lib/direct-ai-shared";
 import type { AtsMatchResult } from "@/lib/types/ats-match";
 import type { EnrichmentRecommendation } from "@/lib/types/tailoring";
+import {
+  formatClearanceToastMessage,
+  NO_CLEARANCE,
+  type ClearanceAnalysis,
+} from "@/lib/clearance-warning";
 import { fetchAtsMatch } from "@/lib/check-ats-client";
 import { DEFAULT_AI_SETTINGS } from "@/lib/ai-settings";
 import { loadAiSettings } from "@/lib/supabase/services/ai-settings";
@@ -89,6 +94,7 @@ interface AnalysisResponse {
   jobDescription?: string;
   generationCostUsd?: number;
   enrichmentRecommendations?: EnrichmentRecommendation[];
+  clearance?: ClearanceAnalysis;
 }
 
 interface AnalysisSession {
@@ -127,6 +133,7 @@ interface AnalysisSession {
   generationCostUsd?: number;
   atsCostUsd?: number;
   enrichment?: EnrichmentRecommendation[] | null;
+  clearance?: ClearanceAnalysis | null;
   previewPdfBase64?: string;
   previewLoading?: boolean;
 }
@@ -201,6 +208,7 @@ async function pollAnalyzeJob(
       jobDescription?: string;
       generationCostUsd?: number;
       enrichmentRecommendations?: EnrichmentRecommendation[];
+      clearance?: ClearanceAnalysis;
     };
 
     if (payload.status === "failed") {
@@ -216,6 +224,7 @@ async function pollAnalyzeJob(
         jobDescription: payload.jobDescription,
         generationCostUsd: payload.generationCostUsd,
         enrichmentRecommendations: payload.enrichmentRecommendations,
+        clearance: payload.clearance,
       };
     }
 
@@ -258,6 +267,7 @@ function toSessionView(session: AnalysisSession): AnalysisSessionView {
     generationCostUsd: session.generationCostUsd,
     atsCostUsd: session.atsCostUsd,
     enrichment: session.enrichment,
+    clearance: session.clearance,
   };
 }
 
@@ -705,6 +715,7 @@ export default function JobsGeneratePanel({
         atsResult: null,
         atsError: null,
         enrichment: null,
+        clearance: null,
         previewPdfBase64: undefined,
         resumeTemplate: template,
       });
@@ -763,6 +774,7 @@ export default function JobsGeneratePanel({
         );
         const resume = data.resume;
         const analyzeMs = Date.now() - analyzeStarted;
+        const clearance = data.clearance ?? NO_CLEARANCE;
 
         patchSession(sessionId, {
           result: resume,
@@ -773,6 +785,7 @@ export default function JobsGeneratePanel({
           analyzeMs,
           generationCostUsd: data.generationCostUsd,
           enrichment: data.enrichmentRecommendations ?? null,
+          clearance,
           jobTitle: data.jobTitle?.trim() || session.jobTitle,
           companyName: data.companyName?.trim() || session.companyName,
           jobDescription: data.jobDescription?.trim() || session.jobDescription,
@@ -818,6 +831,11 @@ export default function JobsGeneratePanel({
           "Cubi — Generate complete",
           `${resumeLabel} is ready to preview and download.`
         );
+
+        const clearanceToast = formatClearanceToastMessage(clearance);
+        if (clearanceToast) {
+          showToast("warning", clearanceToast);
+        }
 
         if (autoAtsAfterResume) {
           void runAutoAtsCheck(sessionId, resume, {

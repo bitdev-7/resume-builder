@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { UpdatedResume } from "@/lib/types/resume";
+import type { ClearanceAnalysis } from "@/lib/clearance-warning";
 import type {
   EnrichmentRecommendation,
   RoleArchetypeDetection,
@@ -20,6 +21,7 @@ export interface AnalyzeJobResult {
   normalizedJobTitle: string;
   roleArchetype: RoleArchetypeDetection;
   enrichmentRecommendations: EnrichmentRecommendation[];
+  clearance: ClearanceAnalysis;
   validationIssues?: ValidationIssue[];
   pdfBase64?: string;
   pdfError?: string;

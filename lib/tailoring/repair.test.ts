@@ -35,6 +35,10 @@ const jdAnalysis: JDAnalysis = {
   requirements: [{ id: "req_1", text: "Python", type: "must_have", category: "technology", canonicalTerm: "Python", priority: 10 }],
   responsibilityThemes: [],
   atsTerms: [],
+  clearanceRequired: false,
+  clearanceType: null,
+  clearanceStatus: null,
+  clearanceRequirementText: null,
   rawText: "Python",
 };
 

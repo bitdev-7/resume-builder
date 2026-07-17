@@ -3,6 +3,7 @@ import type { JobWorkType } from "@/lib/prompts/job-page-extract";
 import type { AnalysisResult } from "@/lib/types/resume";
 import type { AtsMatchResult } from "@/lib/types/ats-match";
 import type { EnrichmentRecommendation } from "@/lib/types/tailoring";
+import type { ClearanceAnalysis } from "@/lib/clearance-warning";
 
 export interface StoredAnalysisSession {
   id: string;
@@ -37,6 +38,7 @@ export interface StoredAnalysisSession {
   generationCostUsd?: number;
   atsCostUsd?: number;
   enrichment?: EnrichmentRecommendation[] | null;
+  clearance?: ClearanceAnalysis | null;
 }
 
 export interface GeneratorWorkspaceSnapshot {

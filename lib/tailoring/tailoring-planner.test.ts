@@ -15,6 +15,10 @@ function jdAnalysis(): JDAnalysis {
     ],
     responsibilityThemes: [],
     atsTerms: [],
+    clearanceRequired: false,
+    clearanceType: null,
+    clearanceStatus: null,
+    clearanceRequirementText: null,
     rawText: "Experience with Python. Experience with Kubernetes.",
   };
 }

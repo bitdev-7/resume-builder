@@ -126,6 +126,10 @@ export async function analyzeJobDescription(
     requirements,
     responsibilityThemes: parsed.data.responsibilityThemes,
     atsTerms: parsed.data.atsTerms,
+    clearanceRequired: parsed.data.clearanceRequired,
+    clearanceType: parsed.data.clearanceType ?? null,
+    clearanceStatus: parsed.data.clearanceStatus ?? null,
+    clearanceRequirementText: parsed.data.clearanceRequirementText ?? null,
     rawText: jd,
   };
 
