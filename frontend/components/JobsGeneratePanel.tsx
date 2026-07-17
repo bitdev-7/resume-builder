@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
-import OpenRouterModelSelect from "@/components/OpenRouterModelSelect";
-import DirectProviderModelSelect from "@/components/DirectProviderModelSelect";
 import AnalysisResultCard, {
   type AnalysisSessionView,
 } from "@/components/AnalysisResultCard";
@@ -51,13 +49,6 @@ import {
   savePdfToDownloadsFolder,
 } from "@/lib/pdf-download";
 import type { ExtractedJobInfo } from "@/lib/extract-job-page";
-import {
-  DEFAULT_DIRECT_MODELS,
-  isDirectAIProvider,
-  type DirectAIProvider,
-  type DirectProviderModels,
-  type DirectAiModelsResponse,
-} from "@/lib/direct-ai-shared";
 import type { AtsMatchResult } from "@/lib/types/ats-match";
 import type { EnrichmentRecommendation } from "@/lib/types/tailoring";
 import {
@@ -77,6 +68,11 @@ import {
   saveGeneratorWorkspace,
   SETTINGS_UPDATED_EVENT,
 } from "@/lib/generator-workspace-storage";
+
+/** Jobs Analyse always uses OpenRouter OpenAI GPT-4.1 Mini — no model picker. */
+const FIXED_USE_OPENROUTER = true;
+const FIXED_AI_MODEL = DEFAULT_OPENROUTER_MODEL;
+const FIXED_AI_PROVIDER = getModelProvider(FIXED_AI_MODEL);
 
 export interface JobsGeneratePanelProps {
   jobId: string;
@@ -139,13 +135,6 @@ interface AnalysisSession {
 }
 
 let sessionCounter = 0;
-
-async function fetchDirectModels(): Promise<DirectProviderModels> {
-  const response = await fetch(apiUrl("/api/direct-ai-models"));
-  if (!response.ok) throw new Error("Failed to load direct AI models");
-  const data = (await response.json()) as DirectAiModelsResponse;
-  return data.models;
-}
 
 function createSessionId(): string {
   sessionCounter += 1;
@@ -280,14 +269,12 @@ export default function JobsGeneratePanel({
   const { user } = useAuth();
   const { toasts, showToast, dismissToast } = useToast();
 
-  const [useOpenRouter, setUseOpenRouter] = useState(DEFAULT_AI_SETTINGS.use_openrouter);
   const [autoAtsAfterResume, setAutoAtsAfterResume] = useState(
     DEFAULT_AI_SETTINGS.auto_ats_after_resume
   );
-  const [directModels, setDirectModels] =
-    useState<DirectProviderModels>(DEFAULT_DIRECT_MODELS);
-  const [aiProvider, setAiProvider] = useState(getModelProvider(DEFAULT_OPENROUTER_MODEL));
-  const [aiModel, setAiModel] = useState(DEFAULT_OPENROUTER_MODEL);
+  const [showPdfPreviewAfterResume, setShowPdfPreviewAfterResume] = useState(
+    DEFAULT_AI_SETTINGS.show_pdf_preview_after_resume
+  );
   const [jobsite, setJobsite] = useState<JobsiteId>(DEFAULT_JOBSITE);
   const [desiredTitle, setDesiredTitle] = useState("");
   const [pageContent, setPageContent] = useState("");
@@ -332,26 +319,9 @@ export default function JobsGeneratePanel({
       loadAiSettings(user.id),
       loadApplyAlertSettings(user.id),
     ]);
-    setUseOpenRouter(loadedAi.use_openrouter);
     setAutoAtsAfterResume(loadedAi.auto_ats_after_resume);
+    setShowPdfPreviewAfterResume(loadedAi.show_pdf_preview_after_resume);
     setApplyAlertSettings(loadedAlerts);
-
-    if (!loadedAi.use_openrouter) {
-      try {
-        const models = await fetchDirectModels();
-        setDirectModels(models);
-        setAiProvider((prev) => {
-          const provider: DirectAIProvider =
-            prev === "openai" || prev === "anthropic" || prev === "deepseek"
-              ? (prev as DirectAIProvider)
-              : "openai";
-          setAiModel(models[provider]);
-          return provider;
-        });
-      } catch (error) {
-        console.warn("Failed to reload direct AI models:", error);
-      }
-    }
   }, [user?.id]);
 
   const patchSession = useCallback((id: string, patch: Partial<AnalysisSession>) => {
@@ -475,21 +445,8 @@ export default function JobsGeneratePanel({
 
         const loadedAi = await loadAiSettings(user.id);
         if (!cancelled) {
-          setUseOpenRouter(loadedAi.use_openrouter);
           setAutoAtsAfterResume(loadedAi.auto_ats_after_resume);
-          if (!loadedAi.use_openrouter) {
-            try {
-              const models = await fetchDirectModels();
-              if (cancelled) return;
-              setDirectModels(models);
-              setAiProvider("openai");
-              setAiModel(models.openai);
-            } catch (error) {
-              console.warn("Failed to load direct AI models:", error);
-              setAiProvider("openai");
-              setAiModel(DEFAULT_DIRECT_MODELS.openai);
-            }
-          }
+          setShowPdfPreviewAfterResume(loadedAi.show_pdf_preview_after_resume);
         }
 
         if (!profileLoadedRef.current && loaded.resumeText.trim()) {
@@ -507,12 +464,6 @@ export default function JobsGeneratePanel({
     };
   }, [user?.id, user?.email]);
 
-  useEffect(() => {
-    if (useOpenRouter) return;
-    const provider: DirectAIProvider = isDirectAIProvider(aiProvider) ? aiProvider : "openai";
-    setAiModel(directModels[provider]);
-  }, [directModels, useOpenRouter, aiProvider]);
-
   const dismissSession = useCallback((sessionId: string) => {
     setSessions((prev) => prev.filter((session) => session.id !== sessionId));
     setAnswerDialogSessionId((current) => (current === sessionId ? null : current));
@@ -525,7 +476,6 @@ export default function JobsGeneratePanel({
       extractMs?: number,
       extractCostUsd?: number
     ) => {
-      const provider = useOpenRouter ? getModelProvider(aiModel) : aiProvider;
       const newSession: AnalysisSession = {
         id: createSessionId(),
         createdAt: Date.now(),
@@ -539,9 +489,9 @@ export default function JobsGeneratePanel({
         salary: extracted.salary,
         postedDate: extracted.postedDate,
         desiredTitle: desiredTitle.trim(),
-        aiProvider: provider,
-        aiModel,
-        useOpenRouter,
+        aiProvider: FIXED_AI_PROVIDER,
+        aiModel: FIXED_AI_MODEL,
+        useOpenRouter: FIXED_USE_OPENROUTER,
         jobsite,
         generating: false,
         generateError: null,
@@ -560,7 +510,7 @@ export default function JobsGeneratePanel({
       );
       void notifyCompletion("Cubi — Analyze complete", `${label} is ready. Click Generate resume.`);
     },
-    [aiModel, aiProvider, jobsite, desiredTitle, showToast, useOpenRouter]
+    [jobsite, desiredTitle, showToast]
   );
 
   const runPreflightBeforeGenerate = useCallback(
@@ -631,7 +581,7 @@ export default function JobsGeneratePanel({
         },
         body: JSON.stringify({
           pageContent,
-          useOpenRouter,
+          useOpenRouter: FIXED_USE_OPENROUTER,
           ...(promptOverrides ? { promptOverrides } : {}),
         }),
       });
@@ -743,9 +693,9 @@ export default function JobsGeneratePanel({
             profileId: activeProfileId,
             template,
             ...(session.desiredTitle?.trim() ? { headlineOverride: session.desiredTitle.trim() } : {}),
-            apiModel: session.aiModel,
-            apiProvider: session.aiProvider,
-            useOpenRouter: session.useOpenRouter,
+            apiModel: FIXED_AI_MODEL,
+            apiProvider: FIXED_AI_PROVIDER,
+            useOpenRouter: FIXED_USE_OPENROUTER,
             ...(tweak && (tweak.tone || tweak.emphasis) ? { promptTweak: tweak } : {}),
           }),
         });
@@ -818,19 +768,46 @@ export default function JobsGeneratePanel({
           pdfMs: Date.now() - pdfStarted,
           previewPdfBase64,
         });
-        setPreviewSessionId(sessionId);
+
         const resumeLabel =
           [data.jobTitle?.trim() || session.jobTitle, data.companyName?.trim() || session.companyName]
             .filter(Boolean)
             .join(" @ ") || "Resume";
-        showToast(
-          "success",
-          `Generate complete — ${resumeLabel}. Preview and download when ready.`
-        );
-        void notifyCompletion(
-          "Cubi — Generate complete",
-          `${resumeLabel} is ready to preview and download.`
-        );
+
+        if (showPdfPreviewAfterResume) {
+          setPreviewSessionId(sessionId);
+          showToast(
+            "success",
+            `Generate complete — ${resumeLabel}. Preview and download when ready.`
+          );
+          void notifyCompletion(
+            "Cubi — Generate complete",
+            `${resumeLabel} is ready to preview and download.`
+          );
+        } else {
+          try {
+            const { savedPath } = await savePdfToDownloadsFolder(previewPdfBase64, {
+              companyName: data.companyName?.trim() || session.companyName,
+              jobRole: data.jobTitle?.trim() || session.jobTitle,
+              personName: resume.name || "resume",
+              accessToken: authSession.access_token,
+            });
+            showToast("success", formatPdfSaveMessage(savedPath, true));
+            void notifyCompletion(
+              "Cubi — Generate complete",
+              `${resumeLabel} downloaded.`
+            );
+          } catch (downloadErr) {
+            // PDF was rendered; keep it on the session so Preview still works.
+            setPreviewSessionId(sessionId);
+            showToast(
+              "error",
+              downloadErr instanceof Error
+                ? downloadErr.message
+                : "Generated, but automatic download failed — use Preview to save."
+            );
+          }
+        }
 
         const clearanceToast = formatClearanceToastMessage(clearance);
         if (clearanceToast) {
@@ -840,9 +817,9 @@ export default function JobsGeneratePanel({
         if (autoAtsAfterResume) {
           void runAutoAtsCheck(sessionId, resume, {
             jobDescription: data.jobDescription?.trim() || session.jobDescription,
-            aiModel: session.aiModel,
-            aiProvider: session.aiProvider,
-            useOpenRouter: session.useOpenRouter,
+            aiModel: FIXED_AI_MODEL,
+            aiProvider: FIXED_AI_PROVIDER,
+            useOpenRouter: FIXED_USE_OPENROUTER,
             accessToken: authSession.access_token,
           });
         }
@@ -866,6 +843,7 @@ export default function JobsGeneratePanel({
       showToast,
       user?.id,
       autoAtsAfterResume,
+      showPdfPreviewAfterResume,
       runAutoAtsCheck,
       jobId,
       normalizedJobUrl,
@@ -965,9 +943,9 @@ export default function JobsGeneratePanel({
         open={answerDialogSessionId !== null}
         onClose={() => setAnswerDialogSessionId(null)}
         result={answerDialogSession?.result ?? null}
-        apiModel={answerDialogSession?.aiModel ?? aiModel}
-        apiProvider={answerDialogSession?.aiProvider ?? aiProvider}
-        useOpenRouter={answerDialogSession?.useOpenRouter ?? useOpenRouter}
+        apiModel={answerDialogSession?.aiModel ?? FIXED_AI_MODEL}
+        apiProvider={answerDialogSession?.aiProvider ?? FIXED_AI_PROVIDER}
+        useOpenRouter={answerDialogSession?.useOpenRouter ?? FIXED_USE_OPENROUTER}
         onError={(message) => showToast("error", message)}
       />
 
@@ -1011,31 +989,6 @@ export default function JobsGeneratePanel({
           <p className="label-kicker mb-4 flex-shrink-0">Analyse job</p>
 
           <div className="mb-4 flex-shrink-0 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              {useOpenRouter ? (
-                <OpenRouterModelSelect
-                  aiProvider={aiProvider}
-                  aiModel={aiModel}
-                  disabled={analysing}
-                  onProviderChange={setAiProvider}
-                  onModelChange={(model) => {
-                    setAiModel(model);
-                    setAiProvider(getModelProvider(model));
-                  }}
-                />
-              ) : (
-                <DirectProviderModelSelect
-                  aiProvider={aiProvider as DirectAIProvider}
-                  aiModel={aiModel}
-                  directModels={directModels}
-                  disabled={analysing}
-                  onProviderChange={(provider) => {
-                    setAiProvider(provider);
-                  }}
-                  onModelChange={setAiModel}
-                />
-              )}
-            </div>
             <div>
               <label htmlFor="jobsite" className="label-kicker mb-2 block">
                 Jobsite

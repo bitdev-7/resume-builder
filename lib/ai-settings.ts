@@ -5,11 +5,17 @@ export interface AiSettings {
   use_openrouter: boolean;
   /** When true, run ATS match automatically after resume + PDF generation. */
   auto_ats_after_resume: boolean;
+  /**
+   * When true, open the PDF preview modal after generation finishes.
+   * When false, save/download the PDF immediately without showing the modal.
+   */
+  show_pdf_preview_after_resume: boolean;
 }
 
 export const DEFAULT_AI_SETTINGS: AiSettings = {
   use_openrouter: true,
   auto_ats_after_resume: false,
+  show_pdf_preview_after_resume: true,
 };
 
 export function parseAiSettings(
@@ -25,6 +31,10 @@ export function parseAiSettings(
       typeof raw.auto_ats_after_resume === "boolean"
         ? raw.auto_ats_after_resume
         : DEFAULT_AI_SETTINGS.auto_ats_after_resume,
+    show_pdf_preview_after_resume:
+      typeof raw.show_pdf_preview_after_resume === "boolean"
+        ? raw.show_pdf_preview_after_resume
+        : DEFAULT_AI_SETTINGS.show_pdf_preview_after_resume,
   };
 }
 
@@ -36,5 +46,6 @@ export function aiSettingsToDefaultSettings(
     ...(current ?? {}),
     use_openrouter: ai.use_openrouter,
     auto_ats_after_resume: ai.auto_ats_after_resume,
+    show_pdf_preview_after_resume: ai.show_pdf_preview_after_resume,
   };
 }

@@ -8,12 +8,15 @@ import {
 import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 import { jdAnalysisAiOutputSchema } from "@/lib/tailoring/schemas";
 import type { JDAnalysis, JDRequirement, RequirementType } from "@/lib/types/tailoring";
-import { cleanJsonText } from "@/lib/analyze-json";
+import { cleanJsonText, diagnoseJsonParseFailure } from "@/lib/analyze-json";
 import {
   buildJdAnalysisCacheKey,
   getCachedJdAnalysis,
   setCachedJdAnalysis,
 } from "@/lib/tailoring/jd-analysis-cache";
+
+/** Enough headroom for long JDs with many requirements + ATS terms. 2048 was truncating mid-JSON. */
+const JD_ANALYZER_MAX_TOKENS = 4096;
 
 const BASE_PRIORITY_BY_TYPE: Record<RequirementType, number> = {
   must_have: 10,
@@ -74,7 +77,7 @@ export async function analyzeJobDescription(
       ...(aiRequest.provider ? { provider: aiRequest.provider } : {}),
       messages,
       temperature: 0.1,
-      max_tokens: 2048,
+      max_tokens: JD_ANALYZER_MAX_TOKENS,
       tryParseJson: true,
       stage: "jd-analyzer",
     });
@@ -98,8 +101,16 @@ export async function analyzeJobDescription(
   let parsedRaw: unknown;
   try {
     parsedRaw = JSON.parse(cleanJsonText(text));
-  } catch {
-    throw new Error("JD Analyzer returned invalid JSON. Try again or switch to a different AI model.");
+  } catch (parseErr) {
+    const diagnostics = diagnoseJsonParseFailure(text, parseErr);
+    if (diagnostics.likelyTruncated) {
+      throw new Error(
+        `JD Analyzer response was truncated (hit the ${JD_ANALYZER_MAX_TOKENS}-token output limit). Try again, or shorten the job description.`
+      );
+    }
+    throw new Error(
+      "JD Analyzer returned invalid JSON. Try again or switch to a different AI model."
+    );
   }
 
   const parsed = jdAnalysisAiOutputSchema.safeParse(parsedRaw);
