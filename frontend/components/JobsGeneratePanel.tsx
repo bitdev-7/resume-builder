@@ -64,6 +64,7 @@ import { fetchAtsMatch } from "@/lib/check-ats-client";
 import { DEFAULT_AI_SETTINGS } from "@/lib/ai-settings";
 import { loadAiSettings } from "@/lib/supabase/services/ai-settings";
 import { apiUrl } from "@/lib/api-config";
+import { notifyCompletion } from "@/lib/desktop-notify";
 import {
   loadGeneratorWorkspace,
   normalizeSessionForStorage,
@@ -540,7 +541,14 @@ export default function JobsGeneratePanel({
       };
       setSessions((prev) => [newSession, ...prev]);
       setPageContent("");
-      showToast("success", "Job analysed — added to the list.");
+      const title = extracted.jobTitle?.trim() || "Job";
+      const company = extracted.companyName?.trim();
+      const label = company ? `${title} @ ${company}` : title;
+      showToast(
+        "success",
+        `Analyze complete — ${label}. Click Generate resume when ready.`
+      );
+      void notifyCompletion("Cubi — Analyze complete", `${label} is ready. Click Generate resume.`);
     },
     [aiModel, aiProvider, jobsite, desiredTitle, showToast, useOpenRouter]
   );
@@ -798,7 +806,18 @@ export default function JobsGeneratePanel({
           previewPdfBase64,
         });
         setPreviewSessionId(sessionId);
-        showToast("success", "Resume ready — preview it, then download.");
+        const resumeLabel =
+          [data.jobTitle?.trim() || session.jobTitle, data.companyName?.trim() || session.companyName]
+            .filter(Boolean)
+            .join(" @ ") || "Resume";
+        showToast(
+          "success",
+          `Generate complete — ${resumeLabel}. Preview and download when ready.`
+        );
+        void notifyCompletion(
+          "Cubi — Generate complete",
+          `${resumeLabel} is ready to preview and download.`
+        );
 
         if (autoAtsAfterResume) {
           void runAutoAtsCheck(sessionId, resume, {
@@ -817,7 +836,8 @@ export default function JobsGeneratePanel({
           downloading: false,
           ...(pdfPhase ? { downloadError: message } : { generateError: message }),
         });
-        showToast("error", `Failed: ${message}`);
+        showToast("error", `Generate failed: ${message}`);
+        void notifyCompletion("Cubi — Generate failed", message);
       }
     },
     [

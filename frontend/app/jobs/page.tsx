@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import JobsGeneratePanel from "@/components/JobsGeneratePanel";
 import { ToastContainer, useToast } from "@/components/Toast";
+import { bidStatusRowClass, bidStatusSelectClass } from "@/lib/bid-status-colors";
 import { copyText } from "@/lib/clipboard";
 import { filterJobs, getExternalJobUrl, paginateJobs } from "@/lib/jobs-page-state";
 import {
@@ -336,7 +337,10 @@ export default function JobsPage() {
                       const busy = busyJobId === job.job_id;
                       const externalUrl = getExternalJobUrl(job.url);
                       return (
-                        <tr key={job.job_id}>
+                        <tr
+                          key={job.job_id}
+                          className={`transition-colors ${bidStatusRowClass(job.status)}`}
+                        >
                           <td className="max-w-xl px-4 py-3">
                             <a
                               href={externalUrl}
@@ -363,7 +367,7 @@ export default function JobsPage() {
                                 )
                               }
                               disabled={busy}
-                              className="select-compact w-full min-w-[8.5rem]"
+                              className={`select-compact w-full min-w-[8.5rem] ${bidStatusSelectClass(job.status)}`}
                               aria-label={`Status for ${job.url}`}
                             >
                               {BID_STATUSES.map((status) => (
