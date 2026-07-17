@@ -939,7 +939,7 @@ export default function JobsGeneratePanel({
   if (!user) return null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-4 lg:p-5">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-4 lg:p-5">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <ApplyAlertDialog
@@ -993,7 +993,7 @@ export default function JobsGeneratePanel({
 
       <div className="mb-4 flex flex-shrink-0 flex-wrap items-center justify-between gap-3">
         <button type="button" onClick={onBack} className="btn-soft text-xs">
-          ← Back to Jobs
+          ← Close
         </button>
         <a
           href={getExternalJobUrl(normalizedJobUrl)}

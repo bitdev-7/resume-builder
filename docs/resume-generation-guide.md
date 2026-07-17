@@ -136,7 +136,7 @@ You can filter by status, open the external link, and update status as you progr
 
 ## Step 7 — Open the generate panel
 
-1. On the Jobs page, click **Generate** on a job row.
+1. On the Jobs page, click **Analyze** on a job row.
 2. The generate panel opens for that job URL.
 
 ---

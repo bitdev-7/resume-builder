@@ -21,7 +21,7 @@ import { buildResumeExtraInstructions, enforceSeniorFraming } from "@/lib/resume
 import { runTailoringPipeline } from "@/lib/tailoring/pipeline";
 import { ensureSkillRegistryLoaded } from "@/lib/tailoring/skill-registry";
 import { sanitizePromptOverrides } from "@/lib/prompts/prompt-overrides";
-import { runWithAiUsageContext } from "@/lib/ai-usage-context";
+import { runWithAiUsageContextAsync } from "@/lib/ai-usage-context";
 import type { LegacyAnalyzeProfile } from "@/lib/mappers/profile-to-resume";
 import type { ResumeProfile } from "@/lib/supabase/database.types";
 import type { UpdatedResume } from "@/lib/types/resume";
@@ -56,7 +56,11 @@ async function loadProfileForGeneration(
   email: string | null,
   profileId: unknown,
   client: SupabaseClient
-): Promise<{ profileData: LegacyAnalyzeProfile; promptOverrides: ReturnType<typeof sanitizePromptOverrides> }> {
+): Promise<{
+  profileData: LegacyAnalyzeProfile;
+  promptOverrides: ReturnType<typeof sanitizePromptOverrides>;
+  resolvedProfileId: string;
+}> {
   let profiles = await listResumeProfiles(userId, client);
   if (profiles.length === 0) {
     profiles = [await ensureDefaultResumeProfile(userId, client)];
@@ -71,12 +75,14 @@ async function loadProfileForGeneration(
   return {
     profileData: profileBundleToLegacyAnalyzeProfile(bundle, email),
     promptOverrides: sanitizePromptOverrides(activeProfile.prompt_overrides),
+    resolvedProfileId: activeProfile.id,
   };
 }
 
 interface GenerationJobParams {
   jobId: string;
   userId: string;
+  profileId: string;
   client: SupabaseClient;
   profileData: LegacyAnalyzeProfile;
   promptOverridesBody: ReturnType<typeof sanitizePromptOverrides>;
@@ -97,6 +103,21 @@ interface GenerationJobParams {
  * a jobId immediately and this runs detached from the request lifecycle.
  */
 async function runGenerationJob(params: GenerationJobParams): Promise<void> {
+  // Bind usage context inside the async job (not a sync fire-and-forget wrap around
+  // void job()). That way AsyncLocalStorage stays active for the whole pipeline even
+  // after Express has already returned the 202 response.
+  await runWithAiUsageContextAsync(
+    {
+      userId: params.userId,
+      profileId: params.profileId,
+      source: "resume_generation",
+      client: params.client,
+    },
+    () => runGenerationJobWithContext(params)
+  );
+}
+
+async function runGenerationJobWithContext(params: GenerationJobParams): Promise<void> {
   const {
     jobId,
     userId,
@@ -304,8 +325,11 @@ export async function POST(request: NextRequest) {
 
     // Profile content is loaded server-side from Supabase (the source of truth)
     // using the profileId — the client no longer sends the full resume content.
-    const { profileData, promptOverrides: promptOverridesBody } =
-      await loadProfileForGeneration(userId, email, profileId, client);
+    const {
+      profileData,
+      promptOverrides: promptOverridesBody,
+      resolvedProfileId,
+    } = await loadProfileForGeneration(userId, email, profileId, client);
 
     if (!hasUsableProfileData(profileData)) {
       return NextResponse.json(
@@ -319,36 +343,24 @@ export async function POST(request: NextRequest) {
 
     // Kick off the slow AI pipeline in the background and return a jobId immediately.
     // The client polls GET /api/analyze/status/:jobId until it completes.
+    // Usage context is bound inside runGenerationJob so logging survives the 202 return.
     const job = createAnalyzeJob(userId);
-    // Wrap the detached job in a usage context so every LLM call it spawns
-    // (jd-analyzer, experience-writer, composer, repair) is attributed to this
-    // user/profile and recorded to ai_usage_logs. AsyncLocalStorage propagates
-    // across the fire-and-forget promise chain.
-    runWithAiUsageContext(
-      {
-        userId,
-        profileId: typeof profileId === "string" ? profileId : null,
-        source: "resume_generation",
-        client,
-      },
-      () => {
-        void runGenerationJob({
-          jobId: job.id,
-          userId,
-          client,
-          profileData,
-          promptOverridesBody,
-          requestJd: typeof requestJd === "string" ? requestJd : "",
-          pageContent: typeof pageContent === "string" ? pageContent : "",
-          requestJobTitle: typeof requestJobTitle === "string" ? requestJobTitle : "",
-          requestCompanyName: typeof requestCompanyName === "string" ? requestCompanyName : "",
-          requestedTemplate: typeof requestedTemplate === "string" ? requestedTemplate : "",
-          aiRequest,
-          promptTweak,
-          headlineOverride,
-        });
-      }
-    );
+    void runGenerationJob({
+      jobId: job.id,
+      userId,
+      profileId: resolvedProfileId,
+      client,
+      profileData,
+      promptOverridesBody,
+      requestJd: typeof requestJd === "string" ? requestJd : "",
+      pageContent: typeof pageContent === "string" ? pageContent : "",
+      requestJobTitle: typeof requestJobTitle === "string" ? requestJobTitle : "",
+      requestCompanyName: typeof requestCompanyName === "string" ? requestCompanyName : "",
+      requestedTemplate: typeof requestedTemplate === "string" ? requestedTemplate : "",
+      aiRequest,
+      promptTweak,
+      headlineOverride,
+    });
 
     return NextResponse.json({ jobId: job.id }, { status: 202 });
   } catch (error) {

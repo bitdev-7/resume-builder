@@ -46,7 +46,7 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
-  const [generateJobId, setGenerateJobId] = useState<string | null>(null);
+  const [analyseJobId, setAnalyseJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -91,6 +91,27 @@ export default function JobsPage() {
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
+
+  const analyseJob = analyseJobId
+    ? jobs.find((job) => job.job_id === analyseJobId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (!analyseJob) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAnalyseJobId(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [analyseJob]);
 
   const handleAdd = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -140,7 +161,7 @@ export default function JobsPage() {
     }
   };
 
-  const handleOpen = async (job: UserJobListItem) => {
+  const handleOpenExternal = async (job: UserJobListItem) => {
     if (!user?.id) return;
 
     const externalUrl = getExternalJobUrl(job.url);
@@ -184,6 +205,7 @@ export default function JobsPage() {
     try {
       await removeMyJob(user.id, job.job_id);
       setJobs((current) => current.filter((item) => item.job_id !== job.job_id));
+      if (analyseJobId === job.job_id) setAnalyseJobId(null);
       showToast("success", "Job removed from your list");
     } catch (error) {
       console.error("Failed to remove job:", error);
@@ -198,21 +220,6 @@ export default function JobsPage() {
       <div className="flex flex-1 items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
       </div>
-    );
-  }
-
-  const generateJob = generateJobId
-    ? jobs.find((job) => job.job_id === generateJobId) ?? null
-    : null;
-
-  if (generateJob) {
-    return (
-      <JobsGeneratePanel
-        jobId={generateJob.job_id}
-        jobUrl={generateJob.url}
-        bidStatus={generateJob.status}
-        onBack={() => setGenerateJobId(null)}
-      />
     );
   }
 
@@ -323,13 +330,13 @@ export default function JobsPage() {
               </div>
             ) : (
               <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-600/60">
-                <table className="w-full min-w-[760px] text-left text-sm">
+                <table className="w-full min-w-[720px] text-left text-sm">
                   <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/90 dark:text-slate-300">
                     <tr>
                       <th className="px-4 py-3 font-semibold">URL</th>
                       <th className="w-44 px-4 py-3 font-semibold">Status</th>
                       <th className="w-36 px-4 py-3 font-semibold">Added</th>
-                      <th className="w-56 px-4 py-3 text-right font-semibold">Actions</th>
+                      <th className="w-48 px-4 py-3 text-right font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-600/60 dark:bg-slate-900/50">
@@ -351,7 +358,7 @@ export default function JobsPage() {
                               onClick={(event) => {
                                 event.preventDefault();
                                 if (busy) return;
-                                void handleOpen(job);
+                                void handleOpenExternal(job);
                               }}
                             >
                               {job.url}
@@ -384,19 +391,11 @@ export default function JobsPage() {
                             <div className="flex justify-end gap-1.5">
                               <button
                                 type="button"
-                                onClick={() => setGenerateJobId(job.job_id)}
+                                onClick={() => setAnalyseJobId(job.job_id)}
                                 disabled={busy}
                                 className="btn-compact"
                               >
-                                Generate
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => void handleOpen(job)}
-                                disabled={busy}
-                                className="btn-compact"
-                              >
-                                Open
+                                Analyze
                               </button>
                               <button
                                 type="button"
@@ -451,6 +450,30 @@ export default function JobsPage() {
           </div>
         </div>
       </div>
+
+      {analyseJob ? (
+        <>
+          <button
+            type="button"
+            className="jobs-analyse-backdrop"
+            aria-label="Close analyse panel"
+            onClick={() => setAnalyseJobId(null)}
+          />
+          <aside
+            className="jobs-analyse-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Analyse job"
+          >
+            <JobsGeneratePanel
+              jobId={analyseJob.job_id}
+              jobUrl={analyseJob.url}
+              bidStatus={analyseJob.status}
+              onBack={() => setAnalyseJobId(null)}
+            />
+          </aside>
+        </>
+      ) : null}
     </main>
   );
 }

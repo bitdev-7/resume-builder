@@ -295,6 +295,34 @@
     @apply dark:border-slate-700 dark:bg-slate-800;
   }
 
+  /* Jobs analyse overlay: list stays visible; panel slides in from the right. */
+  .jobs-analyse-backdrop {
+    @apply fixed inset-0 z-40 bg-slate-900/35 backdrop-blur-[1px] transition-opacity duration-300;
+    @apply dark:bg-slate-950/55;
+  }
+
+  .jobs-analyse-drawer {
+    @apply fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-hidden border-l border-slate-200/80 bg-white shadow-[-12px_0_40px_-20px_rgba(15,23,42,0.35)];
+    @apply dark:border-slate-700 dark:bg-slate-900 dark:shadow-[-12px_0_40px_-16px_rgba(0,0,0,0.65)];
+    @apply md:w-2/3;
+    animation: jobs-analyse-slide-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes jobs-analyse-slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .jobs-analyse-drawer {
+      animation: none;
+    }
+  }
+
   .tab-pill {
     @apply flex items-center rounded-xl border border-slate-200/90 bg-white text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50;
     @apply dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:shadow-none dark:hover:border-slate-500 dark:hover:bg-slate-700;

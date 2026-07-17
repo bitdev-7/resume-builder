@@ -6,10 +6,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * recorder knows which user/profile/feature a call belongs to — without
  * threading those values through every pipeline stage by hand.
  *
- * AsyncLocalStorage propagates across `await` and fire-and-forget promises
- * (including the detached generation job launched from /api/analyze), so a
- * single `runWithAiUsageContext` wrap around a route handler's AI work covers
- * every LLM call it spawns, including the batched/repair stages.
+ * Prefer `runWithAiUsageContextAsync` and enter the store *inside* the async
+ * work (especially for fire-and-forget jobs like /api/analyze). Binding only in
+ * a sync wrapper around `void job()` is brittle once the HTTP handler returns.
  */
 export interface AiUsageContext {
   userId: string;
