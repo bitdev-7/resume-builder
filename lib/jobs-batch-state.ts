@@ -39,6 +39,32 @@ export function countReadyBatchCards(cards: JobsBatchCard[]): number {
   return cards.filter(isBatchCardReady).length;
 }
 
+export function applyBatchPageContentChange(
+  card: JobsBatchCard,
+  pageContent: string
+): JobsBatchCard {
+  const preserveStatus = card.status === "generating" || card.status === "done";
+  return {
+    ...card,
+    pageContent,
+    jobTitle: "",
+    companyName: "",
+    jobDescription: "",
+    error: null,
+    status: preserveStatus ? card.status : pageContent.trim() ? "ready" : "empty",
+  };
+}
+
+export function getCardsNeedingAlertExtraction(
+  cards: JobsBatchCard[]
+): JobsBatchCard[] {
+  return cards.filter(
+    (card) =>
+      isBatchCardReady(card) &&
+      !card.companyName.trim()
+  );
+}
+
 export function toggleJobSelection(selected: Set<string>, jobId: string): Set<string> {
   const next = new Set(selected);
   if (next.has(jobId)) next.delete(jobId);

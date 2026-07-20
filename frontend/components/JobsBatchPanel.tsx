@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import JobsBatchAlertDialog from "@/components/JobsBatchAlertDialog";
 import { ToastContainer, useToast } from "@/components/Toast";
@@ -13,8 +13,10 @@ import {
   type BatchAlertSummary,
 } from "@/lib/jobs-batch-alerts";
 import {
+  applyBatchPageContentChange,
   countReadyBatchCards,
   createBatchCardsFromJobs,
+  getCardsNeedingAlertExtraction,
   isBatchCardReady,
   openExternalUrls,
   type BatchCardStatus,
@@ -85,6 +87,8 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
   const [extractingJobIds, setExtractingJobIds] = useState<Set<string>>(
     () => new Set()
   );
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const batchGeneratingRef = useRef(false);
 
   const readyCount = useMemo(() => countReadyBatchCards(cards), [cards]);
 
@@ -156,12 +160,7 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
   };
 
   const handlePageContentChange = (card: JobsBatchCard, pageContent: string) => {
-    const preserveStatus = card.status === "generating" || card.status === "done";
-    patchCard(card.jobId, {
-      pageContent,
-      error: null,
-      status: preserveStatus ? card.status : pageContent.trim() ? "ready" : "empty",
-    });
+    patchCard(card.jobId, applyBatchPageContentChange(card, pageContent));
   };
 
   const handleOpenAll = () => {
@@ -185,26 +184,16 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
     tab.opener = null;
   };
 
-  const handleExtract = async (card: JobsBatchCard) => {
-    if (!card.pageContent.trim() || extractingJobIds.has(card.jobId)) return;
-
-    setExtractingJobIds((current) => new Set(current).add(card.jobId));
-    patchCard(card.jobId, { error: null });
-
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) throw new Error("You must be signed in");
-
+  const extractCard = useCallback(
+    async (card: JobsBatchCard, accessToken: string): Promise<JobsBatchCard> => {
       const response = await fetch(apiUrl("/api/extract-job"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          pageContent: card.pageContent,
+          pageContent: card.pageContent || card.jobDescription,
           useOpenRouter: FIXED_USE_OPENROUTER,
           ...(promptOverrides ? { promptOverrides } : {}),
         }),
@@ -220,16 +209,39 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
       }
 
       const extracted = (await response.json()) as ExtractedJobInfo;
-      patchCard(card.jobId, {
+      return {
+        ...card,
         jobTitle: extracted.jobTitle,
         companyName: extracted.companyName,
         jobDescription: extracted.jobDescription,
+      };
+    },
+    [promptOverrides]
+  );
+
+  const handleExtract = async (card: JobsBatchCard) => {
+    if (!card.pageContent.trim() || extractingJobIds.has(card.jobId)) return;
+
+    setExtractingJobIds((current) => new Set(current).add(card.jobId));
+    patchCard(card.jobId, { error: null });
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("You must be signed in");
+
+      const extractedCard = await extractCard(card, session.access_token);
+      patchCard(card.jobId, {
+        jobTitle: extractedCard.jobTitle,
+        companyName: extractedCard.companyName,
+        jobDescription: extractedCard.jobDescription,
         status: "ready",
         error: null,
       });
       showToast(
         "success",
-        `${extracted.jobTitle?.trim() || "Job"} extracted and ready`
+        `${extractedCard.jobTitle.trim() || "Job"} extracted and ready`
       );
     } catch (error) {
       const message =
@@ -264,38 +276,14 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
 
         let generationCard = card;
         if (!generationCard.jobDescription.trim()) {
-          const extractResponse = await fetch(apiUrl("/api/extract-job"), {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-              pageContent: generationCard.pageContent,
-              useOpenRouter: FIXED_USE_OPENROUTER,
-              ...(promptOverrides ? { promptOverrides } : {}),
-            }),
-          });
-          if (!extractResponse.ok) {
-            const errorData = await extractResponse.json().catch(() => ({}));
-            throw new Error(
-              typeof errorData.error === "string"
-                ? errorData.error
-                : "Failed to extract job"
-            );
-          }
-
-          const extracted = (await extractResponse.json()) as ExtractedJobInfo;
-          generationCard = {
-            ...generationCard,
-            jobTitle: extracted.jobTitle,
-            companyName: extracted.companyName,
-            jobDescription: extracted.jobDescription,
-          };
+          generationCard = await extractCard(
+            generationCard,
+            session.access_token
+          );
           patchCard(card.jobId, {
-            jobTitle: extracted.jobTitle,
-            companyName: extracted.companyName,
-            jobDescription: extracted.jobDescription,
+            jobTitle: generationCard.jobTitle,
+            companyName: generationCard.companyName,
+            jobDescription: generationCard.jobDescription,
           });
         }
 
@@ -371,8 +359,8 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
     },
     [
       activeProfileId,
+      extractCard,
       patchCard,
-      promptOverrides,
       resumeTemplate,
       user?.id,
     ]
@@ -397,6 +385,7 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
   );
 
   const handleGenerateAll = async () => {
+    if (batchGeneratingRef.current) return;
     const readyCards = cards.filter(isBatchCardReady);
     if (readyCards.length === 0) return;
     if (!user?.id || !activeProfileId) {
@@ -404,13 +393,54 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
       return;
     }
 
+    batchGeneratingRef.current = true;
+    setBatchGenerating(true);
+    let awaitingConfirmation = false;
     try {
       const [settings, resumes] = await Promise.all([
         loadApplyAlertSettings(user.id),
         listResumes(user.id),
       ]);
+      let alertCards = readyCards;
+
+      if (settings.duplicate_apply_alert_enabled) {
+        const cardsToExtract = getCardsNeedingAlertExtraction(readyCards);
+        if (cardsToExtract.length > 0) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (!session) throw new Error("You must be signed in");
+
+          const extractedResults = await Promise.allSettled(
+            cardsToExtract.map((card) =>
+              extractCard(card, session.access_token)
+            )
+          );
+          const extractedByJobId = new Map<string, JobsBatchCard>();
+          extractedResults.forEach((result, index) => {
+            if (result.status === "fulfilled") {
+              const extractedCard = result.value;
+              extractedByJobId.set(extractedCard.jobId, extractedCard);
+              patchCard(extractedCard.jobId, {
+                jobTitle: extractedCard.jobTitle,
+                companyName: extractedCard.companyName,
+                jobDescription: extractedCard.jobDescription,
+              });
+            } else {
+              console.warn(
+                `Failed alert preflight extraction for ${cardsToExtract[index].jobId}:`,
+                result.reason
+              );
+            }
+          });
+          alertCards = readyCards.map(
+            (card) => extractedByJobId.get(card.jobId) ?? card
+          );
+        }
+      }
+
       const summary = buildBatchAlertSummary({
-        cards: readyCards,
+        cards: alertCards,
         resumes,
         duplicateEnabled: settings.duplicate_apply_alert_enabled,
         duplicateMonths: settings.duplicate_apply_months,
@@ -418,13 +448,14 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
       });
 
       if (summary.hasAny) {
-        setPendingReadyCards(readyCards);
+        awaitingConfirmation = true;
+        setPendingReadyCards(alertCards);
         setAlertDuplicateMonths(settings.duplicate_apply_months);
         setAlertSummary(summary);
         return;
       }
 
-      await generateAll(readyCards);
+      await generateAll(alertCards);
     } catch (error) {
       showToast(
         "error",
@@ -432,6 +463,11 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
           ? error.message
           : "Failed to check application alerts"
       );
+    } finally {
+      if (!awaitingConfirmation) {
+        batchGeneratingRef.current = false;
+        setBatchGenerating(false);
+      }
     }
   };
 
@@ -446,12 +482,17 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
         onCancel={() => {
           setAlertSummary(null);
           setPendingReadyCards([]);
+          batchGeneratingRef.current = false;
+          setBatchGenerating(false);
         }}
         onContinue={() => {
           const snapshot = pendingReadyCards;
           setAlertSummary(null);
           setPendingReadyCards([]);
-          void generateAll(snapshot);
+          void generateAll(snapshot).finally(() => {
+            batchGeneratingRef.current = false;
+            setBatchGenerating(false);
+          });
         }}
       />
 
@@ -499,10 +540,10 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
           <button
             type="button"
             className="btn-primary text-xs disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={readyCount === 0}
+            disabled={readyCount === 0 || batchGenerating}
             onClick={() => void handleGenerateAll()}
           >
-            Generate all ready
+            {batchGenerating ? "Generating…" : "Generate all ready"}
           </button>
           {/* Closing only unmounts this panel; in-flight fetches intentionally continue. */}
           <button type="button" className="btn-soft text-xs" onClick={onClose}>

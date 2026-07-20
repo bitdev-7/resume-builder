@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  applyBatchPageContentChange,
   countReadyBatchCards,
   createBatchCardsFromJobs,
+  getCardsNeedingAlertExtraction,
   isBatchCardReady,
   openExternalUrls,
   toggleJobSelection,
@@ -37,6 +39,50 @@ describe("jobs-batch-state", () => {
     const cards = createBatchCardsFromJobs([job, { ...job, job_id: "j2" }]);
     cards[0].pageContent = "hello";
     expect(countReadyBatchCards(cards)).toBe(1);
+  });
+
+  it("clears extracted metadata when pasted content changes", () => {
+    const [card] = createBatchCardsFromJobs([job]);
+    expect(
+      applyBatchPageContentChange(
+        {
+          ...card,
+          pageContent: "old paste",
+          jobTitle: "Old title",
+          companyName: "Old company",
+          jobDescription: "Old description",
+          status: "ready",
+        },
+        "new paste"
+      )
+    ).toEqual(
+      expect.objectContaining({
+        pageContent: "new paste",
+        jobTitle: "",
+        companyName: "",
+        jobDescription: "",
+        status: "ready",
+        error: null,
+      })
+    );
+  });
+
+  it("selects ready cards missing company metadata for alert extraction", () => {
+    const cards = createBatchCardsFromJobs([
+      job,
+      { ...job, job_id: "j2" },
+      { ...job, job_id: "j3" },
+    ]);
+    cards[0].pageContent = "first";
+    cards[1].pageContent = "second";
+    cards[1].companyName = "Known company";
+    cards[2].jobDescription = "already extracted description";
+    cards[2].companyName = "";
+
+    expect(getCardsNeedingAlertExtraction(cards).map((card) => card.jobId)).toEqual([
+      "j1",
+      "j3",
+    ]);
   });
 
   it("toggles selection set immutably", () => {
