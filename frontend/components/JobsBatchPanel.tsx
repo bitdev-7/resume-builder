@@ -2,9 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import JobsBatchAlertDialog from "@/components/JobsBatchAlertDialog";
 import { ToastContainer, useToast } from "@/components/Toast";
+import { pollAnalyzeJob } from "@/lib/analyze-job-client";
 import { apiUrl } from "@/lib/api-config";
+import { notifyCompletion } from "@/lib/desktop-notify";
 import type { ExtractedJobInfo } from "@/lib/extract-job-page";
+import {
+  buildBatchAlertSummary,
+  type BatchAlertSummary,
+} from "@/lib/jobs-batch-alerts";
 import {
   countReadyBatchCards,
   createBatchCardsFromJobs,
@@ -14,14 +21,30 @@ import {
   type JobsBatchCard,
 } from "@/lib/jobs-batch-state";
 import { getExternalJobUrl } from "@/lib/jobs-page-state";
+import {
+  DEFAULT_OPENROUTER_MODEL,
+  getModelProvider,
+} from "@/lib/openrouter-shared";
+import {
+  DEFAULT_RESUME_TEMPLATE,
+  resolveResumeTemplate,
+  type ResumeTemplateId,
+} from "@/lib/resume-templates";
 import { supabase } from "@/lib/supabase";
 import type {
   ResumeProfile,
   UserJobListItem,
 } from "@/lib/supabase/database.types";
 import { loadProfileForApp } from "@/lib/supabase/load-profile-for-app";
+import { loadApplyAlertSettings } from "@/lib/supabase/services/apply-alert-settings";
+import {
+  createResumeWithArtifacts,
+  listResumes,
+} from "@/lib/supabase/services/resumes";
 
 const FIXED_USE_OPENROUTER = true;
+const FIXED_AI_MODEL = DEFAULT_OPENROUTER_MODEL;
+const FIXED_AI_PROVIDER = getModelProvider(FIXED_AI_MODEL);
 
 interface JobsBatchPanelProps {
   jobs: UserJobListItem[];
@@ -54,6 +77,11 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
   >(undefined);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [switchingProfile, setSwitchingProfile] = useState(false);
+  const [resumeTemplate, setResumeTemplate] =
+    useState<ResumeTemplateId>(DEFAULT_RESUME_TEMPLATE);
+  const [alertSummary, setAlertSummary] = useState<BatchAlertSummary | null>(null);
+  const [alertDuplicateMonths, setAlertDuplicateMonths] = useState(6);
+  const [pendingReadyCards, setPendingReadyCards] = useState<JobsBatchCard[]>([]);
   const [extractingJobIds, setExtractingJobIds] = useState<Set<string>>(
     () => new Set()
   );
@@ -85,6 +113,9 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
           loaded.profiles.find((profile) => profile.id === loaded.activeProfileId)
             ?.prompt_overrides ?? undefined
         );
+        setResumeTemplate(
+          resolveResumeTemplate(loaded.legacyAnalyzeProfile.default_resume?.resume_template)
+        );
       })
       .catch((error) => {
         console.warn("Error loading batch profile:", error);
@@ -113,6 +144,9 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
       setPromptOverrides(
         loaded.profiles.find((profile) => profile.id === loaded.activeProfileId)
           ?.prompt_overrides ?? undefined
+      );
+      setResumeTemplate(
+        resolveResumeTemplate(loaded.legacyAnalyzeProfile.default_resume?.resume_template)
       );
     } catch {
       showToast("error", "Failed to switch profile.");
@@ -211,9 +245,215 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
     }
   };
 
+  const generateOneCard = useCallback(
+    async (card: JobsBatchCard): Promise<boolean> => {
+      patchCard(card.jobId, {
+        status: "generating",
+        error: null,
+        resumeId: undefined,
+      });
+
+      try {
+        if (!user?.id) throw new Error("You must be signed in");
+        if (!activeProfileId) throw new Error("Select a resume profile first");
+
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) throw new Error("You must be signed in");
+
+        let generationCard = card;
+        if (!generationCard.jobDescription.trim()) {
+          const extractResponse = await fetch(apiUrl("/api/extract-job"), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              pageContent: generationCard.pageContent,
+              useOpenRouter: FIXED_USE_OPENROUTER,
+              ...(promptOverrides ? { promptOverrides } : {}),
+            }),
+          });
+          if (!extractResponse.ok) {
+            const errorData = await extractResponse.json().catch(() => ({}));
+            throw new Error(
+              typeof errorData.error === "string"
+                ? errorData.error
+                : "Failed to extract job"
+            );
+          }
+
+          const extracted = (await extractResponse.json()) as ExtractedJobInfo;
+          generationCard = {
+            ...generationCard,
+            jobTitle: extracted.jobTitle,
+            companyName: extracted.companyName,
+            jobDescription: extracted.jobDescription,
+          };
+          patchCard(card.jobId, {
+            jobTitle: extracted.jobTitle,
+            companyName: extracted.companyName,
+            jobDescription: extracted.jobDescription,
+          });
+        }
+
+        const submitResponse = await fetch(apiUrl("/api/analyze"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            jd: generationCard.jobDescription || generationCard.pageContent,
+            jobTitle: generationCard.jobTitle,
+            companyName: generationCard.companyName,
+            pageContent: generationCard.pageContent,
+            profileId: activeProfileId,
+            template: resumeTemplate,
+            apiModel: FIXED_AI_MODEL,
+            apiProvider: FIXED_AI_PROVIDER,
+            useOpenRouter: FIXED_USE_OPENROUTER,
+          }),
+        });
+        if (!submitResponse.ok) {
+          const errorData = await submitResponse.json().catch(() => ({}));
+          throw new Error(
+            typeof errorData.error === "string" && errorData.error.trim()
+              ? errorData.error
+              : "Failed to generate resume"
+          );
+        }
+
+        const { jobId: analyzeJobId } = (await submitResponse.json()) as {
+          jobId: string;
+        };
+        if (!analyzeJobId) {
+          throw new Error("Generation started but no job id was returned");
+        }
+
+        const data = await pollAnalyzeJob(analyzeJobId, session.access_token);
+        const jd =
+          data.jobDescription?.trim() ||
+          generationCard.jobDescription ||
+          generationCard.pageContent;
+        const record = await createResumeWithArtifacts({
+          userId: user.id,
+          profileId: activeProfileId,
+          jd,
+          resume: data.resume,
+          aiType: data.providerUsed ?? FIXED_AI_PROVIDER,
+          model: data.modelUsed ?? FIXED_AI_MODEL,
+          jobId: card.jobId,
+          jobLink: card.url,
+          jobTitle: data.jobTitle?.trim() || generationCard.jobTitle.trim() || null,
+          jobCompany:
+            data.companyName?.trim() || generationCard.companyName.trim() || null,
+          bidStatus: card.bidStatus,
+        });
+
+        patchCard(card.jobId, {
+          status: "done",
+          error: null,
+          resumeId: record.id,
+          jobTitle: data.jobTitle?.trim() || generationCard.jobTitle,
+          companyName: data.companyName?.trim() || generationCard.companyName,
+          jobDescription: jd,
+        });
+        return true;
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to generate resume";
+        patchCard(card.jobId, { status: "failed", error: message });
+        return false;
+      }
+    },
+    [
+      activeProfileId,
+      patchCard,
+      promptOverrides,
+      resumeTemplate,
+      user?.id,
+    ]
+  );
+
+  const generateAll = useCallback(
+    async (readyCards: JobsBatchCard[]) => {
+      const results = await Promise.allSettled(
+        readyCards.map((card) => generateOneCard(card))
+      );
+      const generated = results.filter(
+        (result) => result.status === "fulfilled" && result.value
+      ).length;
+      const message = `Generated ${generated} of ${readyCards.length}`;
+      showToast(
+        generated === readyCards.length ? "success" : "warning",
+        message
+      );
+      void notifyCompletion("Cubi — Batch generation complete", message);
+    },
+    [generateOneCard, showToast]
+  );
+
+  const handleGenerateAll = async () => {
+    const readyCards = cards.filter(isBatchCardReady);
+    if (readyCards.length === 0) return;
+    if (!user?.id || !activeProfileId) {
+      showToast("warning", "Select a resume profile first.");
+      return;
+    }
+
+    try {
+      const [settings, resumes] = await Promise.all([
+        loadApplyAlertSettings(user.id),
+        listResumes(user.id),
+      ]);
+      const summary = buildBatchAlertSummary({
+        cards: readyCards,
+        resumes,
+        duplicateEnabled: settings.duplicate_apply_alert_enabled,
+        duplicateMonths: settings.duplicate_apply_months,
+        hybridEnabled: settings.hybrid_onsite_alert_enabled,
+      });
+
+      if (summary.hasAny) {
+        setPendingReadyCards(readyCards);
+        setAlertDuplicateMonths(settings.duplicate_apply_months);
+        setAlertSummary(summary);
+        return;
+      }
+
+      await generateAll(readyCards);
+    } catch (error) {
+      showToast(
+        "error",
+        error instanceof Error
+          ? error.message
+          : "Failed to check application alerts"
+      );
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden p-4 lg:p-5">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <JobsBatchAlertDialog
+        open={alertSummary !== null}
+        cards={pendingReadyCards}
+        summary={alertSummary}
+        duplicateMonths={alertDuplicateMonths}
+        onCancel={() => {
+          setAlertSummary(null);
+          setPendingReadyCards([]);
+        }}
+        onContinue={() => {
+          const snapshot = pendingReadyCards;
+          setAlertSummary(null);
+          setPendingReadyCards([]);
+          void generateAll(snapshot);
+        }}
+      />
 
       <header className="mb-4 flex flex-shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
@@ -259,11 +499,12 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
           <button
             type="button"
             className="btn-primary text-xs disabled:cursor-not-allowed disabled:opacity-50"
-            disabled
-            title="Batch generation will be enabled in the next step"
+            disabled={readyCount === 0}
+            onClick={() => void handleGenerateAll()}
           >
             Generate all ready
           </button>
+          {/* Closing only unmounts this panel; in-flight fetches intentionally continue. */}
           <button type="button" className="btn-soft text-xs" onClick={onClose}>
             ← Close
           </button>
@@ -344,14 +585,30 @@ export default function JobsBatchPanel({ jobs, onClose }: JobsBatchPanelProps) {
                       </p>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    className="btn-primary text-xs"
-                    disabled={!card.pageContent.trim() || extracting}
-                    onClick={() => void handleExtract(card)}
-                  >
-                    {extracting ? "Extracting…" : "Extract"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {card.status === "failed" ? (
+                      <button
+                        type="button"
+                        className="btn-primary text-xs"
+                        disabled={!isBatchCardReady(card)}
+                        onClick={() => void generateOneCard(card)}
+                      >
+                        Retry
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      className="btn-primary text-xs"
+                      disabled={
+                        !card.pageContent.trim() ||
+                        extracting ||
+                        card.status === "generating"
+                      }
+                      onClick={() => void handleExtract(card)}
+                    >
+                      {extracting ? "Extracting…" : "Extract"}
+                    </button>
+                  </div>
                 </div>
               </li>
             );

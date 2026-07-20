@@ -60,6 +60,10 @@ import { fetchAtsMatch } from "@/lib/check-ats-client";
 import { DEFAULT_AI_SETTINGS } from "@/lib/ai-settings";
 import { loadAiSettings } from "@/lib/supabase/services/ai-settings";
 import { apiUrl } from "@/lib/api-config";
+import {
+  pollAnalyzeJob,
+  type AnalysisResponse,
+} from "@/lib/analyze-job-client";
 import { notifyCompletion } from "@/lib/desktop-notify";
 import {
   loadGeneratorWorkspace,
@@ -79,18 +83,6 @@ export interface JobsGeneratePanelProps {
   jobUrl: string;
   bidStatus: BidStatus;
   onBack: () => void;
-}
-
-interface AnalysisResponse {
-  resume: AnalysisResult;
-  providerUsed?: string;
-  modelUsed?: string;
-  jobTitle?: string;
-  companyName?: string;
-  jobDescription?: string;
-  generationCostUsd?: number;
-  enrichmentRecommendations?: EnrichmentRecommendation[];
-  clearance?: ClearanceAnalysis;
 }
 
 interface AnalysisSession {
@@ -139,89 +131,6 @@ let sessionCounter = 0;
 function createSessionId(): string {
   sessionCounter += 1;
   return `analysis-${Date.now()}-${sessionCounter}`;
-}
-
-const ANALYZE_POLL_INTERVAL_MS = 2000;
-// Just above the 10-min frontend proxy / backend ceilings; if generation exceeds
-// this, the client gives up rather than polling forever.
-const ANALYZE_POLL_DEADLINE_MS = 11 * 60 * 1000;
-
-/**
- * Submits an async generation job (POST /api/analyze → { jobId }), then polls
- * GET /api/analyze/status/:jobId until it completes or fails. The pipeline runs
- * for minutes, so the backend returns a jobId immediately and runs the work in
- * the background — this avoids the long-lived request that previously tripped
- * the Next.js rewrite proxy's timeout.
- */
-async function pollAnalyzeJob(
-  analyzeJobId: string,
-  accessToken: string
-): Promise<AnalysisResponse> {
-  const deadline = Date.now() + ANALYZE_POLL_DEADLINE_MS;
-  const statusUrl = apiUrl(`/api/analyze/status/${encodeURIComponent(analyzeJobId)}`);
-
-  while (true) {
-    const response = await fetch(statusUrl, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-
-    if (response.status === 404) {
-      throw new Error(
-        "Generation was interrupted (job not found). The backend may have restarted — please try again."
-      );
-    }
-
-    if (!response.ok && response.status !== 202) {
-      let errorMessage = "Failed to check generation status";
-      try {
-        const errorData = await response.json();
-        errorMessage =
-          typeof errorData.error === "string" && errorData.error.trim()
-            ? errorData.error
-            : errorMessage;
-      } catch {
-        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
-    }
-
-    const payload = (await response.json()) as {
-      status: "running" | "completed" | "failed";
-      error?: string;
-      resume?: AnalysisResult;
-      providerUsed?: string;
-      modelUsed?: string;
-      jobTitle?: string;
-      companyName?: string;
-      jobDescription?: string;
-      generationCostUsd?: number;
-      enrichmentRecommendations?: EnrichmentRecommendation[];
-      clearance?: ClearanceAnalysis;
-    };
-
-    if (payload.status === "failed") {
-      throw new Error(payload.error || "Resume generation failed");
-    }
-    if (payload.status === "completed" && payload.resume) {
-      return {
-        resume: payload.resume,
-        providerUsed: payload.providerUsed,
-        modelUsed: payload.modelUsed,
-        jobTitle: payload.jobTitle,
-        companyName: payload.companyName,
-        jobDescription: payload.jobDescription,
-        generationCostUsd: payload.generationCostUsd,
-        enrichmentRecommendations: payload.enrichmentRecommendations,
-        clearance: payload.clearance,
-      };
-    }
-
-    if (Date.now() > deadline) {
-      throw new Error("Resume generation timed out — please try again.");
-    }
-    await new Promise((resolve) => setTimeout(resolve, ANALYZE_POLL_INTERVAL_MS));
-  }
 }
 
 function toSessionView(session: AnalysisSession): AnalysisSessionView {
