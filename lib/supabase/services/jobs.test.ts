@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import { addJobForUser, nextStatusAfterOpen } from "./jobs";
+import {
+  addJobForUser,
+  listJobsForUser,
+  mergeCatalogJobsWithUserStatus,
+  nextStatusAfterOpen,
+} from "./jobs";
 
 function scriptedClient(
   responses: Array<{ data: unknown; error: unknown }>
@@ -29,6 +34,94 @@ function scriptedClient(
     },
   } as unknown as SupabaseClient;
 }
+
+function scriptedListClient(
+  jobs: Array<{ id: string; url: string; created_at: string }>,
+  statuses: Array<{ job_id: string; status: string }>
+): SupabaseClient {
+  return {
+    from(table: string) {
+      const response =
+        table === "jobs"
+          ? { data: jobs, error: null }
+          : { data: statuses, error: null };
+      const builder = new Proxy(
+        {
+          then(resolve: (value: { data: unknown; error: unknown }) => unknown) {
+            return Promise.resolve(response).then(resolve);
+          },
+        },
+        {
+          get(target, property) {
+            if (property === "then") return target.then;
+            return () => builder;
+          },
+        }
+      );
+      return builder;
+    },
+  } as unknown as SupabaseClient;
+}
+
+describe("mergeCatalogJobsWithUserStatus", () => {
+  it("returns every catalog job with unapplied when the user has no status row", () => {
+    const merged = mergeCatalogJobsWithUserStatus(
+      [
+        {
+          id: "job-a",
+          url: "https://example.com/a",
+          created_at: "2026-07-16T00:00:00.000Z",
+        },
+        {
+          id: "job-b",
+          url: "https://example.com/b",
+          created_at: "2026-07-15T00:00:00.000Z",
+        },
+      ],
+      [{ job_id: "job-a", status: "applied" }]
+    );
+
+    expect(merged).toEqual([
+      {
+        job_id: "job-a",
+        url: "https://example.com/a",
+        created_at: "2026-07-16T00:00:00.000Z",
+        status: "applied",
+      },
+      {
+        job_id: "job-b",
+        url: "https://example.com/b",
+        created_at: "2026-07-15T00:00:00.000Z",
+        status: "unapplied",
+      },
+    ]);
+  });
+});
+
+describe("listJobsForUser", () => {
+  it("loads the shared catalog and overlays the current user's statuses", async () => {
+    const client = scriptedListClient(
+      [
+        {
+          id: "job-shared",
+          url: "https://example.com/shared",
+          created_at: "2026-07-16T00:00:00.000Z",
+        },
+      ],
+      []
+    );
+
+    const rows = await listJobsForUser("user-1", client);
+    expect(rows).toEqual([
+      {
+        job_id: "job-shared",
+        url: "https://example.com/shared",
+        created_at: "2026-07-16T00:00:00.000Z",
+        status: "unapplied",
+      },
+    ]);
+  });
+});
 
 describe("nextStatusAfterOpen", () => {
   it("promotes unapplied to opened", () => {

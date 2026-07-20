@@ -15,38 +15,50 @@ export function nextStatusAfterOpen(status: BidStatus): BidStatus {
   return status === "unapplied" ? "opened" : status;
 }
 
-interface UserJobStatusWithJob {
-  job_id: string;
-  status: BidStatus;
-  jobs: {
-    url: string;
-    created_at: string;
-  };
+/** Merge the global catalog with per-user status rows (default `unapplied`). */
+export function mergeCatalogJobsWithUserStatus(
+  jobs: JobRecord[],
+  statuses: Array<{ job_id: string; status: BidStatus }>
+): UserJobListItem[] {
+  const statusByJobId = new Map(statuses.map((row) => [row.job_id, row.status]));
+
+  return jobs.map((job) => ({
+    job_id: job.id,
+    url: job.url,
+    created_at: job.created_at,
+    status: statusByJobId.get(job.id) ?? "unapplied",
+  }));
 }
 
-function toListItem(row: UserJobStatusWithJob): UserJobListItem {
-  return {
-    job_id: row.job_id,
-    url: row.jobs.url,
-    created_at: row.jobs.created_at,
-    status: row.status,
-  };
-}
-
-async function getUserJob(
+async function getJobForUser(
   userId: string,
   jobId: string,
   client: SupabaseClient
 ): Promise<UserJobListItem> {
-  const { data, error } = await client
-    .from("user_job_status")
-    .select("job_id,status,jobs!inner(url,created_at)")
-    .eq("user_id", userId)
-    .eq("job_id", jobId)
+  const { data: job, error: jobError } = await client
+    .from("jobs")
+    .select("id,url,created_at")
+    .eq("id", jobId)
     .single();
 
-  if (error) throw error;
-  return toListItem(data as unknown as UserJobStatusWithJob);
+  if (jobError) throw jobError;
+
+  const { data: statusRow, error: statusError } = await client
+    .from("user_job_status")
+    .select("status")
+    .eq("user_id", userId)
+    .eq("job_id", jobId)
+    .maybeSingle();
+
+  if (statusError) throw statusError;
+
+  const catalogJob = job as JobRecord;
+  return {
+    job_id: catalogJob.id,
+    url: catalogJob.url,
+    created_at: catalogJob.created_at,
+    status: (statusRow?.status as BidStatus | undefined) ?? "unapplied",
+  };
 }
 
 export async function listJobsForUser(
@@ -54,14 +66,19 @@ export async function listJobsForUser(
   client?: SupabaseClient
 ): Promise<UserJobListItem[]> {
   const db = await resolveClient(client);
-  const { data, error } = await db
-    .from("user_job_status")
-    .select("job_id,status,jobs!inner(url,created_at)")
-    .eq("user_id", userId)
-    .order("created_at", { referencedTable: "jobs", ascending: false });
 
-  if (error) throw error;
-  return ((data ?? []) as unknown as UserJobStatusWithJob[]).map(toListItem);
+  const [jobsResult, statusResult] = await Promise.all([
+    db.from("jobs").select("id,url,created_at").order("created_at", { ascending: false }),
+    db.from("user_job_status").select("job_id,status").eq("user_id", userId),
+  ]);
+
+  if (jobsResult.error) throw jobsResult.error;
+  if (statusResult.error) throw statusResult.error;
+
+  return mergeCatalogJobsWithUserStatus(
+    (jobsResult.data ?? []) as JobRecord[],
+    ((statusResult.data ?? []) as Array<{ job_id: string; status: BidStatus }>)
+  );
 }
 
 export async function addJobForUser(
@@ -158,15 +175,19 @@ export async function openJobForUser(
   client?: SupabaseClient
 ): Promise<UserJobListItem> {
   const db = await resolveClient(client);
-  const item = await getUserJob(userId, jobId, db);
+  const item = await getJobForUser(userId, jobId, db);
   const nextStatus = nextStatusAfterOpen(item.status);
 
   if (nextStatus !== item.status) {
-    const { error } = await db
-      .from("user_job_status")
-      .update({ status: nextStatus, updated_at: new Date().toISOString() })
-      .eq("user_id", userId)
-      .eq("job_id", jobId);
+    const { error } = await db.from("user_job_status").upsert(
+      {
+        user_id: userId,
+        job_id: jobId,
+        status: nextStatus,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,job_id" }
+    );
 
     if (error) throw error;
   }

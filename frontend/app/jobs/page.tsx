@@ -112,7 +112,11 @@ export default function JobsPage() {
       setPage(1);
       showToast(
         "success",
-        result.attached ? "Job added" : "This job is already in your list"
+        result.createdCatalog
+          ? "Job added to the shared catalog"
+          : result.attached
+            ? "Now tracking this job"
+            : "Already tracking this job"
       );
     } catch (error) {
       console.error("Failed to add job:", error);
@@ -179,12 +183,23 @@ export default function JobsPage() {
   };
 
   const handleRemove = async (job: UserJobListItem) => {
-    if (!user?.id || !window.confirm("Remove this job from your list?")) return;
+    if (
+      !user?.id ||
+      !window.confirm(
+        "Clear your tracking status for this job? It will stay in the shared catalog."
+      )
+    ) {
+      return;
+    }
     setBusyJobId(job.job_id);
     try {
       await removeMyJob(user.id, job.job_id);
-      setJobs((current) => current.filter((item) => item.job_id !== job.job_id));
-      showToast("success", "Job removed from your list");
+      setJobs((current) =>
+        current.map((item) =>
+          item.job_id === job.job_id ? { ...item, status: "unapplied" } : item
+        )
+      );
+      showToast("success", "Your status cleared — job remains in the shared catalog");
     } catch (error) {
       console.error("Failed to remove job:", error);
       showToast("error", "Failed to remove job");
@@ -311,10 +326,10 @@ export default function JobsPage() {
             ) : jobs.length === 0 ? (
               <div className="empty-state py-12 text-center">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                  No jobs yet
+                  No jobs in the shared catalog yet
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
-                  Add a job URL above to start tracking it.
+                  Add a job URL above — every account will see it.
                 </p>
               </div>
             ) : filteredJobs.length === 0 ? (
@@ -411,7 +426,7 @@ export default function JobsPage() {
                                 disabled={busy}
                                 className="btn-compact text-red-600 dark:text-red-400"
                               >
-                                Remove
+                                Clear status
                               </button>
                             </div>
                           </td>
