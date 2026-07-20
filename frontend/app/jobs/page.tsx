@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import JobsBatchPanel from "@/components/JobsBatchPanel";
 import JobsGeneratePanel from "@/components/JobsGeneratePanel";
 import { ToastContainer, useToast } from "@/components/Toast";
 import { bidStatusRowClass, bidStatusSelectClass } from "@/lib/bid-status-colors";
 import { copyText } from "@/lib/clipboard";
+import { toggleJobSelection } from "@/lib/jobs-batch-state";
 import {
   filterJobs,
   getExternalJobUrl,
@@ -54,6 +56,10 @@ export default function JobsPage() {
   const [adding, setAdding] = useState(false);
   const [busyJobId, setBusyJobId] = useState<string | null>(null);
   const [analyseJobId, setAnalyseJobId] = useState<string | null>(null);
+  const [selectedJobIds, setSelectedJobIds] = useState<Set<string>>(
+    () => new Set()
+  );
+  const [batchJobs, setBatchJobs] = useState<UserJobListItem[] | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -91,6 +97,22 @@ export default function JobsPage() {
     () => paginateJobs(filteredJobs, page, pageSize),
     [filteredJobs, page, pageSize]
   );
+  const selectedJobs = useMemo(
+    () => visibleJobs.filter((job) => selectedJobIds.has(job.job_id)),
+    [selectedJobIds, visibleJobs]
+  );
+  const allVisibleJobsSelected =
+    visibleJobs.length > 0 && selectedJobs.length === visibleJobs.length;
+
+  useEffect(() => {
+    const pipelineJobIds = new Set(pipelineJobs.map((job) => job.job_id));
+    setSelectedJobIds((current) => {
+      const next = new Set(
+        [...current].filter((jobId) => pipelineJobIds.has(jobId))
+      );
+      return next.size === current.size ? current : next;
+    });
+  }, [pipelineJobs]);
 
   useEffect(() => {
     setPage(1);
@@ -120,6 +142,34 @@ export default function JobsPage() {
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [analyseJob]);
+
+  useEffect(() => {
+    if (!batchJobs) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setBatchJobs(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [batchJobs]);
+
+  const handleToggleVisibleJobs = () => {
+    setSelectedJobIds((current) => {
+      const next = new Set(current);
+      for (const job of visibleJobs) {
+        if (allVisibleJobsSelected) next.delete(job.job_id);
+        else next.add(job.job_id);
+      }
+      return next;
+    });
+  };
 
   const handleAdd = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -313,25 +363,39 @@ export default function JobsPage() {
             </form>
 
             <div className="card-soft flex flex-wrap items-end justify-between gap-3 p-3">
-              <div className="min-w-[11rem]">
-                <label htmlFor="jobs-status-filter" className="filter-label">
-                  Status
-                </label>
-                <select
-                  id="jobs-status-filter"
-                  value={statusFilter}
-                  onChange={(event) =>
-                    setStatusFilter(event.target.value as BidStatus | "")
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="min-w-[11rem]">
+                  <label htmlFor="jobs-status-filter" className="filter-label">
+                    Status
+                  </label>
+                  <select
+                    id="jobs-status-filter"
+                    value={statusFilter}
+                    onChange={(event) =>
+                      setStatusFilter(event.target.value as BidStatus | "")
+                    }
+                    className="filter-select"
+                  >
+                    <option value="">All statuses</option>
+                    {JOBS_PIPELINE_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {formatStatus(status)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={selectedJobIds.size === 0}
+                  onClick={() =>
+                    setBatchJobs(
+                      jobs.filter((job) => selectedJobIds.has(job.job_id))
+                    )
                   }
-                  className="filter-select"
                 >
-                  <option value="">All statuses</option>
-                  {JOBS_PIPELINE_STATUSES.map((status) => (
-                    <option key={status} value={status}>
-                      {formatStatus(status)}
-                    </option>
-                  ))}
-                </select>
+                  Batch prepare ({selectedJobIds.size})
+                </button>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-300">
@@ -395,6 +459,15 @@ export default function JobsPage() {
                 <table className="w-full min-w-[720px] text-left text-sm">
                   <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/90 dark:text-slate-300">
                     <tr>
+                      <th className="w-12 px-4 py-3 font-semibold">
+                        <input
+                          type="checkbox"
+                          checked={allVisibleJobsSelected}
+                          onChange={handleToggleVisibleJobs}
+                          aria-label="Select all jobs on this page"
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900"
+                        />
+                      </th>
                       <th className="px-4 py-3 font-semibold">URL</th>
                       <th className="w-44 px-4 py-3 font-semibold">Status</th>
                       <th className="w-36 px-4 py-3 font-semibold">Added</th>
@@ -410,6 +483,19 @@ export default function JobsPage() {
                           key={job.job_id}
                           className={`transition-colors ${bidStatusRowClass(job.status)}`}
                         >
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedJobIds.has(job.job_id)}
+                              onChange={() =>
+                                setSelectedJobIds((current) =>
+                                  toggleJobSelection(current, job.job_id)
+                                )
+                              }
+                              aria-label={`Select ${job.url}`}
+                              className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900"
+                            />
+                          </td>
                           <td className="max-w-xl px-4 py-3">
                             <a
                               href={externalUrl}
@@ -541,6 +627,25 @@ export default function JobsPage() {
               bidStatus={analyseJob.status}
               onBack={() => setAnalyseJobId(null)}
             />
+          </aside>
+        </>
+      ) : null}
+
+      {batchJobs ? (
+        <>
+          <button
+            type="button"
+            className="jobs-analyse-backdrop"
+            aria-label="Close batch prepare panel"
+            onClick={() => setBatchJobs(null)}
+          />
+          <aside
+            className="jobs-analyse-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Batch prepare"
+          >
+            <JobsBatchPanel jobs={batchJobs} onClose={() => setBatchJobs(null)} />
           </aside>
         </>
       ) : null}
