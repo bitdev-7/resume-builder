@@ -114,11 +114,9 @@ export function downloadTextFile(content: string, fileName: string): void {
 }
 
 /**
- * Always trigger a browser download for the user, then optionally mirror the file
- * into the backend host Downloads folder when signed in.
- *
- * Previously, a successful server save skipped the browser download — which looks
- * intermittent (local backend "works", remote/VPS "Download" appears to do nothing).
+ * Prefer saving into Downloads/<company>/… via the backend (local host Downloads).
+ * Fall back to a browser download only when unsigned-in or the server save fails
+ * (e.g. remote VPS where the server disk is not the user's machine).
  */
 export async function savePdfToDownloadsFolder(
   pdfBase64: string,
@@ -135,7 +133,6 @@ export async function savePdfToDownloadsFolder(
     : buildResumeDownloadPaths(options.companyName, options.jobRole, options.personName);
 
   const browserFileName = `${paths.dirName} - ${paths.fileName}`;
-  downloadPdfViaBrowser(pdfBase64, browserFileName);
 
   if (options.accessToken) {
     try {
@@ -151,10 +148,16 @@ export async function savePdfToDownloadsFolder(
         options.accessToken
       );
     } catch (error) {
-      console.warn("Server save to Downloads failed (browser download succeeded):", error);
+      console.warn("Server save to Downloads failed; falling back to browser download:", error);
+      downloadPdfViaBrowser(pdfBase64, browserFileName);
+      return {
+        paths,
+        savedPath: `Downloads\\${paths.dirName}\\${paths.fileName}`,
+      };
     }
   }
 
+  downloadPdfViaBrowser(pdfBase64, browserFileName);
   return {
     paths,
     savedPath: `Downloads\\${paths.dirName}\\${paths.fileName}`,
@@ -239,8 +242,6 @@ export async function saveGeneratedResumeToDownloads(
     throw new Error("PDF generation returned empty data");
   }
 
-  downloadPdfViaBrowser(normalized, `${paths.dirName} - ${paths.fileName}`);
-
   try {
     return await postSavePdf(
       "/api/save-pdf",
@@ -254,7 +255,8 @@ export async function saveGeneratedResumeToDownloads(
       SAVE_PDF_API_TIMEOUT_MS
     );
   } catch (error) {
-    console.warn("Server save to Downloads failed (browser download succeeded):", error);
+    console.warn("Server save to Downloads failed; falling back to browser download:", error);
+    downloadPdfViaBrowser(normalized, `${paths.dirName} - ${paths.fileName}`);
     return {
       paths,
       savedPath: `Downloads\\${paths.dirName}\\${paths.fileName}`,

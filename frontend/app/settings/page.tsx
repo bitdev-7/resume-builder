@@ -181,6 +181,30 @@ export default function SettingsPage() {
                       </span>
                     </span>
                   </label>
+
+                  <label className="flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={aiSettings.show_pdf_preview_after_resume}
+                      onChange={(e) =>
+                        setAiSettings((prev) => ({
+                          ...prev,
+                          show_pdf_preview_after_resume: e.target.checked,
+                        }))
+                      }
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-slate-900 dark:text-slate-50">
+                        Show PDF preview after generating resume
+                      </span>
+                      <span className="mt-1 block text-sm text-slate-500 dark:text-slate-300">
+                        When enabled, opens the preview modal so you can review and
+                        download. When disabled, downloads the PDF immediately without
+                        asking. You can still open Preview from the result card.
+                      </span>
+                    </span>
+                  </label>
                 </section>
 
                 <section className="card space-y-4 p-5">

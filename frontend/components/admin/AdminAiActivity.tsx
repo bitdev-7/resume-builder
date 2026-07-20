@@ -176,7 +176,9 @@ export default function AdminAiActivity({
         </div>
         <div className="p-6">
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-            No AI usage recorded yet for this user.
+            No AI usage recorded yet for this user. Usage is logged when they
+            generate resumes or run other AI features on a server that has
+            logging configured.
           </div>
         </div>
       </div>

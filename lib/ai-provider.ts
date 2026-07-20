@@ -575,9 +575,19 @@ function recordAiUsageCall(params: {
   modelFallback?: string;
 }): void {
   const ctx = getAiUsageContext();
-  if (!ctx) return;
+  if (!ctx) {
+    console.warn(
+      `[ai-usage] skipped recording for stage "${params.stage}" — no usage context (route must wrap AI work in runWithAiUsageContext*)`
+    );
+    return;
+  }
   const client = getAdminSupabaseClient() ?? ctx.client;
-  if (!client) return;
+  if (!client) {
+    console.warn(
+      `[ai-usage] skipped recording for stage "${params.stage}" — no Supabase client (set SUPABASE_SERVICE_ROLE_KEY or pass ctx.client)`
+    );
+    return;
+  }
 
   const success = !params.error;
   const usage = params.result?.usage;
