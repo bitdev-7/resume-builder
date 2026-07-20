@@ -9,7 +9,7 @@ export interface JobWorkTypeAnalysis {
 }
 
 const FULLY_REMOTE_PATTERN =
-  /\b(fully remote|100% remote|remote[- ]only|completely remote|entirely remote|remote-first with no office)\b/i;
+  /\b(fully remote|100% remote|remote[- ]only|completely remote|entirely remote|remote-first(?:\s+role|\s+position|\s+with\s+no\s+office)?)\b/i;
 
 const REMOTE_PATTERN =
   /\b(remote(?:ly)?|work from home|wfh|telecommute|work from anywhere|virtual(?:ly)?|distributed team)\b/i;
@@ -17,7 +17,13 @@ const REMOTE_PATTERN =
 const OFFICE_OR_ONSITE_PATTERN =
   /\b(in[-\s]?office|in[-\s]?person|on[-\s]?site|office[-\s]?based|in an office|in a laboratory|laboratory setting|at (?:the )?office|office setting|in the office)\b/i;
 
-const HYBRID_PATTERN = /\bhybrid\b/i;
+/** Work-location hybrid, not "hybrid support/dev role" role descriptions. */
+const HYBRID_LOCATION_PATTERN =
+  /\b(?:hybrid\s+(?:work(?:place|ing)?|schedule|model|arrangement|setup|environment|policy|remote|office|on[-\s]?site|in[-\s]?office|position|job|opportunity)|(?:work|working|schedule|model|arrangement)\s+hybrid|hybrid\b[^.\n]{0,60}\b(?:office|on[-\s]?site|in[-\s]?person|days?\s+(?:in|at|from)\s+(?:the\s+)?office)|(?:office|on[-\s]?site|in[-\s]?person)[^.\n]{0,60}\bhybrid)\b/i;
+
+/** Role mix, e.g. "hybrid support-and-development role" — not a location requirement. */
+const HYBRID_ROLE_DESCRIPTION_PATTERN =
+  /\bhybrid\s+(?:[\w-]+\s+){0,6}(?:role|position|track)\b/i;
 
 const TRAVEL_PATTERN =
   /\b(travel required|must travel|requires travel|business travel|willingness to travel|ability to travel|\d{1,3}%\s*travel|up to \d{1,3}% travel)\b/i;
@@ -43,7 +49,25 @@ function mentionsOfficeOrOnsite(text: string): boolean {
 }
 
 function mentionsHybrid(text: string): boolean {
-  return HYBRID_PATTERN.test(text);
+  const sample = String(text || "");
+  const locationHybrid =
+    HYBRID_LOCATION_PATTERN.test(sample) ||
+    (/\bhybrid\b/i.test(sample) && mentionsOfficeOrOnsite(sample));
+
+  if (!locationHybrid) return false;
+
+  if (
+    HYBRID_ROLE_DESCRIPTION_PATTERN.test(sample) &&
+    !HYBRID_LOCATION_PATTERN.test(sample)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function isRemoteFirstWithoutOffice(text: string): boolean {
+  return /\bremote-first\b/i.test(text) && !mentionsOfficeOrOnsite(text);
 }
 
 export function normalizeJobWorkType(value: unknown): JobWorkType {
@@ -110,20 +134,29 @@ export function analyzeJobWorkType(
   }
 
   for (const hint of normalizeJobWorkTypeList(aiTypesHint)) {
+    if (hint === "hybrid" && !mentionsHybrid(sample)) continue;
     types.add(hint);
   }
 
   const singleHint = normalizeJobWorkType(aiHint);
   if (singleHint !== "unknown") {
-    if (singleHint === "hybrid" && remote) {
+    if (singleHint === "hybrid" && remote && mentionsHybrid(sample)) {
       types.add("remote");
       types.add("hybrid");
     } else if (singleHint === "onsite" && remote && office) {
       types.add("remote");
       types.add("hybrid");
+    } else if (singleHint === "hybrid" && !mentionsHybrid(sample)) {
+      // Ignore AI hybrid hint when text only uses "hybrid" for role mix.
     } else {
       types.add(singleHint);
     }
+  }
+
+  if (isRemoteFirstWithoutOffice(sample)) {
+    types.delete("hybrid");
+    types.delete("onsite");
+    types.add("remote");
   }
 
   let jobTypes = sortJobTypes([...types]);

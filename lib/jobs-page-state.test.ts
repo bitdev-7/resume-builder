@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { UserJobListItem } from "@/lib/supabase/database.types";
-import { filterJobs, getExternalJobUrl, paginateJobs } from "./jobs-page-state";
+import { filterJobs, getExternalJobUrl, jobsInPipeline, paginateJobs } from "./jobs-page-state";
 
 const JOBS: UserJobListItem[] = [
   {
@@ -24,9 +24,14 @@ const JOBS: UserJobListItem[] = [
 ];
 
 describe("jobs page state", () => {
-  it("filters jobs by status", () => {
-    expect(filterJobs(JOBS, "applied").map((job) => job.job_id)).toEqual(["2", "3"]);
-    expect(filterJobs(JOBS, "")).toEqual(JOBS);
+  it("filters jobs by status and hides applied from the default pipeline", () => {
+    expect(filterJobs(JOBS, "applied").map((job) => job.job_id)).toEqual([]);
+    expect(filterJobs(JOBS, "").map((job) => job.job_id)).toEqual(["1"]);
+    expect(filterJobs(JOBS, "opened")).toEqual([]);
+  });
+
+  it("jobsInPipeline excludes applied rows", () => {
+    expect(jobsInPipeline(JOBS).map((job) => job.job_id)).toEqual(["1"]);
   });
 
   it("paginates filtered jobs", () => {

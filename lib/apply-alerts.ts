@@ -1,4 +1,5 @@
 import type { ResumeRecord } from "@/lib/supabase/database.types";
+import { analyzeJobWorkType, extractedJobIsHybridOrOnsite } from "@/lib/job-work-type";
 
 export interface DuplicateApplicationMatch {
   date: string;
@@ -54,11 +55,9 @@ export function findDuplicateCompanyApplications(
     }));
 }
 
-const HYBRID_ONSITE_PATTERN =
-  /\b(hybrid|on[-\s]?site|in[-\s]?office|office[-\s]?based)\b/i;
-
 export function jobContainsHybridOrOnsite(text: string): boolean {
-  return HYBRID_ONSITE_PATTERN.test(text);
+  const analysis = analyzeJobWorkType(text);
+  return extractedJobIsHybridOrOnsite(analysis);
 }
 
 export function formatDuplicateApplicationsMessage(

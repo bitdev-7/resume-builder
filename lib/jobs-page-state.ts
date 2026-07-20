@@ -1,10 +1,25 @@
 import type { BidStatus, UserJobListItem } from "@/lib/supabase/database.types";
+import { BID_STATUSES } from "@/lib/supabase/database.types";
+
+/** Statuses shown on the Jobs working list (applied bids live in History). */
+export const JOBS_PIPELINE_STATUSES: BidStatus[] = BID_STATUSES.filter(
+  (status) => status !== "applied"
+);
+
+export function isJobsPipelineStatus(status: BidStatus): boolean {
+  return status !== "applied";
+}
+
+export function jobsInPipeline(jobs: UserJobListItem[]): UserJobListItem[] {
+  return jobs.filter((job) => isJobsPipelineStatus(job.status));
+}
 
 export function filterJobs(
   jobs: UserJobListItem[],
   status: BidStatus | ""
 ): UserJobListItem[] {
-  return status ? jobs.filter((job) => job.status === status) : jobs;
+  const pipeline = jobsInPipeline(jobs);
+  return status ? pipeline.filter((job) => job.status === status) : pipeline;
 }
 
 export function paginateJobs(

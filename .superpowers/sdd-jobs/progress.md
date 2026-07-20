@@ -22,3 +22,5 @@ Task 6: complete (c9e7c0f, review clean)
 All tasks complete pending final review.
 
 Final-review fix: job URL link now calls handleOpen (promotes unapplied→opened).
+
+Final review Important fixed (URL click ? handleOpen). Ready to finish.

@@ -1,5 +1,5 @@
 Status: Implemented; manual generate→History/Jobs verification pending
-Commit: 6fae350 feat: fold resume generation into Jobs workflow
+Commit: 7b973b2 feat: fold resume generation into Jobs workflow
 Changes:
 - Recovered old `frontend/app/generator/page.tsx` (git show aa0fc22^) into new `frontend/components/JobsGeneratePanel.tsx` (job-scoped: props `jobId`, `jobUrl`, `bidStatus`, `onBack`; workspace autosave now keyed by `${userId}:${jobId}`)
 - `frontend/app/jobs/page.tsx`: added "Generate" action per row; `generateJobId` state renders `JobsGeneratePanel` in place of the list, with a "← Back to Jobs" header showing the locked job URL

@@ -6,7 +6,13 @@ import JobsGeneratePanel from "@/components/JobsGeneratePanel";
 import { ToastContainer, useToast } from "@/components/Toast";
 import { bidStatusRowClass, bidStatusSelectClass } from "@/lib/bid-status-colors";
 import { copyText } from "@/lib/clipboard";
-import { filterJobs, getExternalJobUrl, paginateJobs } from "@/lib/jobs-page-state";
+import {
+  filterJobs,
+  getExternalJobUrl,
+  jobsInPipeline,
+  JOBS_PIPELINE_STATUSES,
+  paginateJobs,
+} from "@/lib/jobs-page-state";
 import {
   BID_STATUSES,
   type BidStatus,
@@ -74,6 +80,7 @@ export default function JobsPage() {
     };
   }, [authLoading, showToast, user?.id]);
 
+  const pipelineJobs = useMemo(() => jobsInPipeline(jobs), [jobs]);
   const filteredJobs = useMemo(
     () => filterJobs(jobs, statusFilter),
     [jobs, statusFilter]
@@ -291,7 +298,7 @@ export default function JobsPage() {
                   className="filter-select"
                 >
                   <option value="">All statuses</option>
-                  {BID_STATUSES.map((status) => (
+                  {JOBS_PIPELINE_STATUSES.map((status) => (
                     <option key={status} value={status}>
                       {formatStatus(status)}
                     </option>
@@ -307,7 +314,9 @@ export default function JobsPage() {
                         page * pageSize,
                         filteredJobs.length
                       )} of ${filteredJobs.length}`}
-                  {filteredJobs.length !== jobs.length ? ` (${jobs.length} total)` : ""}
+                  {filteredJobs.length !== pipelineJobs.length
+                    ? ` (${pipelineJobs.length} active)`
+                    : ""}
                 </span>
                 <label className="flex items-center gap-1.5">
                   <span>Per page</span>
@@ -337,6 +346,15 @@ export default function JobsPage() {
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
                   Add a job URL above — every account will see it.
+                </p>
+              </div>
+            ) : pipelineJobs.length === 0 ? (
+              <div className="empty-state py-12 text-center">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  No active jobs here
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
+                  Jobs marked Applied are hidden from this list — check History for those bids.
                 </p>
               </div>
             ) : filteredJobs.length === 0 ? (
