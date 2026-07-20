@@ -274,7 +274,7 @@ create table if not exists public.resume_history (
   resume_file_path   text,
   bid_status         text not null default 'applied'
                        check (bid_status in (
-                         'unapplied', 'opened', 'applied', 'interviewing',
+                         'unapplied', 'opened', 'applied', 'ignored', 'interviewing',
                          'rejected', 'offer', 'accepted'
                        )),
   created_at         timestamptz not null default now(),
@@ -382,7 +382,7 @@ create table if not exists public.user_job_status (
   job_id uuid not null references public.jobs (id) on delete cascade,
   status text not null default 'unapplied'
     check (status in (
-      'unapplied', 'opened', 'applied', 'interviewing',
+      'unapplied', 'opened', 'applied', 'ignored', 'interviewing',
       'rejected', 'offer', 'accepted'
     )),
   updated_at timestamptz not null default now(),
@@ -409,7 +409,7 @@ alter table public.resume_history
 alter table public.resume_history
   add constraint resume_history_bid_status_check
   check (bid_status in (
-    'unapplied', 'opened', 'applied', 'interviewing',
+    'unapplied', 'opened', 'applied', 'ignored', 'interviewing',
     'rejected', 'offer', 'accepted'
   ));
 

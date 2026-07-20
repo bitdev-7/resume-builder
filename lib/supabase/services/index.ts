@@ -26,6 +26,7 @@ export {
   addJobForUser,
   openJobForUser,
   setJobStatusForUser,
+  ignoreJobForUser,
   removeMyJob,
 } from "@/lib/supabase/services/jobs";
 export {

@@ -34,7 +34,11 @@ export function resolveBidStatusForStats(status: string | null | undefined): str
 
 export function isBidApplied(status: string | null | undefined): boolean {
   const resolved = resolveBidStatusForStats(status);
-  return resolved !== "unapplied" && resolved !== "opened";
+  return (
+    resolved !== "unapplied" &&
+    resolved !== "opened" &&
+    resolved !== "ignored"
+  );
 }
 
 export function isBidAdvanced(

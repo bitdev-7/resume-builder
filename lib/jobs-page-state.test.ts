@@ -24,14 +24,25 @@ const JOBS: UserJobListItem[] = [
 ];
 
 describe("jobs page state", () => {
-  it("filters jobs by status and hides applied from the default pipeline", () => {
+  it("filters jobs by status and hides applied/ignored from the default pipeline", () => {
     expect(filterJobs(JOBS, "applied").map((job) => job.job_id)).toEqual([]);
     expect(filterJobs(JOBS, "").map((job) => job.job_id)).toEqual(["1"]);
     expect(filterJobs(JOBS, "opened")).toEqual([]);
   });
 
-  it("jobsInPipeline excludes applied rows", () => {
+  it("jobsInPipeline excludes applied and ignored rows", () => {
     expect(jobsInPipeline(JOBS).map((job) => job.job_id)).toEqual(["1"]);
+    expect(
+      jobsInPipeline([
+        ...JOBS,
+        {
+          job_id: "4",
+          url: "https://example.com/ignored",
+          created_at: "2026-07-13T00:00:00.000Z",
+          status: "ignored",
+        },
+      ]).map((job) => job.job_id)
+    ).toEqual(["1"]);
   });
 
   it("paginates filtered jobs", () => {

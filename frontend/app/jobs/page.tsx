@@ -11,15 +11,16 @@ import {
   getExternalJobUrl,
   jobsInPipeline,
   JOBS_PIPELINE_STATUSES,
+  JOBS_ROW_STATUSES,
   paginateJobs,
 } from "@/lib/jobs-page-state";
 import {
-  BID_STATUSES,
   type BidStatus,
   type UserJobListItem,
 } from "@/lib/supabase/database.types";
 import {
   addJobForUser,
+  ignoreJobForUser,
   listJobsForUser,
   openJobForUser,
   removeMyJob,
@@ -210,6 +211,33 @@ export default function JobsPage() {
     }
   };
 
+  const handleIgnore = async (job: UserJobListItem) => {
+    if (
+      !user?.id ||
+      !window.confirm(
+        "Hide this job from your list? Other accounts will still see it. Re-add the URL later to bring it back."
+      )
+    ) {
+      return;
+    }
+    setBusyJobId(job.job_id);
+    try {
+      await ignoreJobForUser(user.id, job.job_id);
+      setJobs((current) =>
+        current.map((item) =>
+          item.job_id === job.job_id ? { ...item, status: "ignored" } : item
+        )
+      );
+      if (analyseJobId === job.job_id) setAnalyseJobId(null);
+      showToast("success", "Job ignored — hidden from your list only");
+    } catch (error) {
+      console.error("Failed to ignore job:", error);
+      showToast("error", "Failed to ignore job");
+    } finally {
+      setBusyJobId(null);
+    }
+  };
+
   const handleRemove = async (job: UserJobListItem) => {
     if (
       !user?.id ||
@@ -354,7 +382,8 @@ export default function JobsPage() {
                   No active jobs here
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-300">
-                  Jobs marked Applied are hidden from this list — check History for those bids.
+                  Jobs marked Applied or Ignored are hidden here — Applied bids are in History;
+                  re-add an ignored URL to show it again.
                 </p>
               </div>
             ) : filteredJobs.length === 0 ? (
@@ -369,7 +398,7 @@ export default function JobsPage() {
                       <th className="px-4 py-3 font-semibold">URL</th>
                       <th className="w-44 px-4 py-3 font-semibold">Status</th>
                       <th className="w-36 px-4 py-3 font-semibold">Added</th>
-                      <th className="w-48 px-4 py-3 text-right font-semibold">Actions</th>
+                      <th className="w-56 px-4 py-3 text-right font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-600/60 dark:bg-slate-900/50">
@@ -410,7 +439,7 @@ export default function JobsPage() {
                               className={`select-compact w-full min-w-[8.5rem] ${bidStatusSelectClass(job.status)}`}
                               aria-label={`Status for ${job.url}`}
                             >
-                              {BID_STATUSES.map((status) => (
+                              {JOBS_ROW_STATUSES.map((status) => (
                                 <option key={status} value={status}>
                                   {formatStatus(status)}
                                 </option>
@@ -429,6 +458,14 @@ export default function JobsPage() {
                                 className="btn-compact"
                               >
                                 Analyze
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleIgnore(job)}
+                                disabled={busy}
+                                className="btn-compact"
+                              >
+                                Ignore
                               </button>
                               <button
                                 type="button"

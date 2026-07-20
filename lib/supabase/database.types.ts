@@ -7,6 +7,7 @@ export type BidStatus =
   | "unapplied"
   | "opened"
   | "applied"
+  | "ignored"
   | "interviewing"
   | "rejected"
   | "offer"
@@ -258,6 +259,7 @@ export const BID_STATUSES: BidStatus[] = [
   "unapplied",
   "opened",
   "applied",
+  "ignored",
   "interviewing",
   "rejected",
   "offer",

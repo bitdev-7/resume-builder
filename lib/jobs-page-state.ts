@@ -1,13 +1,18 @@
 import type { BidStatus, UserJobListItem } from "@/lib/supabase/database.types";
 import { BID_STATUSES } from "@/lib/supabase/database.types";
 
-/** Statuses shown on the Jobs working list (applied bids live in History). */
+/** Statuses shown on the Jobs working list (applied/ignored stay hidden for this user). */
 export const JOBS_PIPELINE_STATUSES: BidStatus[] = BID_STATUSES.filter(
-  (status) => status !== "applied"
+  (status) => status !== "applied" && status !== "ignored"
+);
+
+/** Statuses selectable on a Jobs row (Ignore uses its own button). */
+export const JOBS_ROW_STATUSES: BidStatus[] = BID_STATUSES.filter(
+  (status) => status !== "ignored"
 );
 
 export function isJobsPipelineStatus(status: BidStatus): boolean {
-  return status !== "applied";
+  return status !== "applied" && status !== "ignored";
 }
 
 export function jobsInPipeline(jobs: UserJobListItem[]): UserJobListItem[] {

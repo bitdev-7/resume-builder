@@ -9,6 +9,8 @@ export function bidStatusRowClass(status: BidStatus): string {
       return "bg-amber-50 dark:bg-amber-950/35";
     case "applied":
       return "bg-emerald-50 dark:bg-emerald-950/35";
+    case "ignored":
+      return "bg-slate-100 dark:bg-slate-800/60";
     case "interviewing":
       return "bg-sky-50 dark:bg-sky-950/35";
     case "rejected":
@@ -31,6 +33,8 @@ export function bidStatusSelectClass(status: BidStatus): string {
       return "border-amber-300 bg-amber-100 text-amber-950 dark:border-amber-700 dark:bg-amber-900/60 dark:text-amber-100";
     case "applied":
       return "border-emerald-300 bg-emerald-100 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-100";
+    case "ignored":
+      return "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200";
     case "interviewing":
       return "border-sky-300 bg-sky-100 text-sky-950 dark:border-sky-700 dark:bg-sky-900/60 dark:text-sky-100";
     case "rejected":

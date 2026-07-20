@@ -157,6 +157,19 @@ export async function addJobForUser(
     }
   }
 
+  // Re-adding an ignored URL brings it back into this user's Jobs list.
+  if (existingStatus?.status === "ignored") {
+    const { error: unignoreError } = await db
+      .from("user_job_status")
+      .update({ status: "unapplied", updated_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .eq("job_id", catalogJob.id);
+
+    if (unignoreError) throw unignoreError;
+    existingStatus = { status: "unapplied" };
+    attached = true;
+  }
+
   return {
     item: {
       job_id: catalogJob.id,
@@ -217,6 +230,9 @@ export async function setJobStatusForUser(
 
   if (statusError) throw statusError;
 
+  // Ignoring is Jobs-list only — do not rewrite History bid status.
+  if (status === "ignored") return;
+
   const { error: resumeError } = await db
     .from("resume_history")
     .update({ bid_status: status, updated_at: updatedAt })
@@ -224,6 +240,14 @@ export async function setJobStatusForUser(
     .in("job_id", jobIds);
 
   if (resumeError) throw resumeError;
+}
+
+export async function ignoreJobForUser(
+  userId: string,
+  jobId: string,
+  client?: SupabaseClient
+): Promise<void> {
+  await setJobStatusForUser(userId, [jobId], "ignored", client);
 }
 
 export async function removeMyJob(
