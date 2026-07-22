@@ -141,4 +141,18 @@ describe("ensureAllEligibleSkills — must-keep guarantee", () => {
     const result = ensureAllEligibleSkills(composerResult, ["Python"]);
     expect(result.skillCategories).toEqual({ Backend: ["Python"] });
   });
+
+  it("re-places eligible skills listed under non-canonical headings", () => {
+    const composerResult = {
+      summary: "s",
+      skillCategories: { Streaming: ["Kafka"], Backend: ["Python"] },
+      softSkills: [],
+      projects: [],
+    };
+    const result = ensureAllEligibleSkills(composerResult, ["Python", "Kafka"]);
+    expect(result.skillCategories).toEqual({
+      Backend: ["Python"],
+      "Tools & Protocols": ["Kafka"],
+    });
+  });
 });

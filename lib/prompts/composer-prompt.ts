@@ -23,8 +23,8 @@ Final skills policy:
 - Always include every "targetSkills" entry (JD-required technologies) when they are technologies/tools — do not omit those.
 - Also ADD other relevant skills dynamically when they strengthen the JD match: role/ecosystem skills and technologies that fit the candidate's trajectory and seniority — even if they are not in the profile skill list or "allowedSkills".
 - Prefer concrete, role-appropriate technologies over generic soft labels. Deduplicate near-aliases (e.g. do not list both "JS" and "JavaScript").
-- Group all final skills into role-appropriate categories drawn from the provided "categoryHints"; you may add a clearly-named category if some skills do not fit any hint. Every skill must land in exactly one category.
-- Soft skills: only include ones actually relevant to the role; it is fine to return an empty list.
+- Group hard skills ONLY into these exact category names (and only these): Languages, Backend, Frontend, Database, Cloud & DevOps, Tools & Protocols, Testing. Use the provided "categoryHints" list — it is exactly those seven labels. Do NOT invent any other category heading. If a skill does not fit any of the seven, omit it from skillCategories. Every included hard skill must land in exactly one of those categories.
+- Soft skills: only include ones actually relevant to the role in softSkills; never put soft skills inside skillCategories. It is fine to return an empty softSkills list.
 
 Project rules:
 - For each project you are given, write a short tailored description and technology list.
@@ -36,7 +36,7 @@ Project rules:
 const COMPOSER_CONTRACT = `Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
 {
   "summary": string,
-  "skillCategories": { "<category name>": string[] },
+  "skillCategories": { "<one of: Languages|Backend|Frontend|Database|Cloud & DevOps|Tools & Protocols|Testing>": string[] },
   "softSkills": string[],
   "projects": [ { "id": string, "description": string, "technologies": string[] } ]
 }`;

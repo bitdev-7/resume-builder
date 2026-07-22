@@ -15,7 +15,7 @@ import type {
 import { analyzeJobDescription } from "@/lib/tailoring/jd-analyzer";
 import { detectRoleArchetype } from "@/lib/tailoring/role-archetype";
 import { buildCandidateEvidenceProfile, getPossessedSkillNames } from "@/lib/tailoring/candidate-evidence";
-import { expandRoleSkills, getRoleCatalogEntryOrDefault } from "@/lib/tailoring/role-skill-expansion";
+import { expandRoleSkills } from "@/lib/tailoring/role-skill-expansion";
 import { resolveSkillEvidence } from "@/lib/tailoring/skill-evidence-resolver";
 import { createTailoringPlan, DEFAULT_BULLET_BUDGET } from "@/lib/tailoring/tailoring-planner";
 import { generateExperiencesInParallel, generateExperiencesBatched } from "@/lib/tailoring/experience-generator";
@@ -25,6 +25,10 @@ import {
   ensureAllEligibleSkills,
   DEFAULT_SKILL_BUDGET,
 } from "@/lib/tailoring/composer";
+import {
+  CANONICAL_SKILL_CATEGORIES,
+  normalizeSkillCategories,
+} from "@/lib/tailoring/skill-categories";
 import type { ComposerInput } from "@/lib/prompts/composer-prompt";
 import type { ExperienceWriterInput } from "@/lib/prompts/experience-writer-prompt";
 import { repairTailoredResume } from "@/lib/tailoring/repair";
@@ -202,12 +206,10 @@ export async function runTailoringPipeline(
   // grouping so it mirrors how the candidate categorized their skills, and (b) place any
   // leftover/introduced skill under its real category instead of an "Additional Skills" bucket.
   const profileSkillCategoryByKey = new Map<string, string>();
-  const profileSkillCategoryOrder: string[] = [];
   for (const record of [input.profileData.default_resume?.skills, input.profileData.default_resume?.hardSkills]) {
     if (!record) continue;
     for (const [category, list] of Object.entries(record)) {
       if (!category || /soft/i.test(category)) continue;
-      if (!profileSkillCategoryOrder.includes(category)) profileSkillCategoryOrder.push(category);
       for (const raw of list || []) {
         const key = skillKey(String(raw));
         if (key && !profileSkillCategoryByKey.has(key)) profileSkillCategoryByKey.set(key, category);
@@ -334,7 +336,7 @@ export async function runTailoringPipeline(
     .slice(0, 10)
     .map((r) => ({ id: r.id, text: r.text, priority: r.priority }));
 
-  const catalogEntry = getRoleCatalogEntryOrDefault(roleArchetype.primaryRoleArchetype);
+
   const composerInput: ComposerInput = {
     normalizedTitle: jdAnalysis.normalizedTitle,
     seniority: jdAnalysis.seniority,
@@ -346,8 +348,7 @@ export async function runTailoringPipeline(
     ],
     allowedSkills: resumeEligibleSkills.map((c) => c.canonicalName),
     targetSkills: targetSkillNames,
-    // Prefer the candidate's own categories, then fall back to role-catalog hints.
-    categoryHints: Array.from(new Set([...profileSkillCategoryOrder, ...catalogEntry.skillCategoryHints])),
+    categoryHints: [...CANONICAL_SKILL_CATEGORIES],
     projects: candidateProfile.projects.map((p) => ({
       id: p.id,
       name: p.name,
@@ -409,11 +410,15 @@ export async function runTailoringPipeline(
 
   // Guarantee JD-required target skills and technologies used in experience bullets
   // appear in the skills section. Unrelated profile skills may stay omitted.
-  const finalComposerResult = ensureAllEligibleSkills(
+  const ensured = ensureAllEligibleSkills(
     repairOutcome.composerResult,
     [...targetSkillNames, ...introducedSkillNames],
     profileSkillCategoryByKey
   );
+  const finalComposerResult = {
+    ...ensured,
+    skillCategories: normalizeSkillCategories(ensured.skillCategories),
+  };
 
   // Stage 11 — Final Resume Assembly
   const resume = assembleFinalResume(candidateProfile, coveredExperienceResults, finalComposerResult);

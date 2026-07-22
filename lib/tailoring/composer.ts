@@ -62,7 +62,8 @@ export function ensureAllEligibleSkills(
   categoryByKey?: Map<string, string>
 ): ComposerResult {
   const present = new Set<string>();
-  for (const skills of Object.values(composerResult.skillCategories)) {
+  for (const [category, skills] of Object.entries(composerResult.skillCategories)) {
+    if (!resolveCanonicalSkillCategory(category)) continue;
     for (const s of skills) present.add(skillKey(s));
   }
 
