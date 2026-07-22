@@ -10,6 +10,11 @@ import { composerAiOutputSchema } from "@/lib/tailoring/schemas";
 import { cleanJsonText } from "@/lib/analyze-json";
 import type { ComposerResult, SkillBudgetConfig } from "@/lib/types/tailoring";
 import { skillKey } from "@/lib/tailoring/skill-ontology";
+import {
+  FALLBACK_SKILL_CATEGORY,
+  normalizeSkillCategories,
+  resolveCanonicalSkillCategory,
+} from "@/lib/tailoring/skill-categories";
 import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 
 export const DEFAULT_SKILL_BUDGET: SkillBudgetConfig = {
@@ -33,24 +38,22 @@ export function buildDeterministicComposerFallback(input: {
   const summary = highlight
     ? `${input.normalizedTitle} with hands-on experience across ${highlight}. Focused on delivering well-tested, maintainable solutions aligned with team and business goals.`
     : `${input.normalizedTitle} with a track record of delivering well-tested, maintainable solutions aligned with team and business goals.`;
-  const category = input.categoryHints[0] || "Skills";
 
   return {
     summary,
-    skillCategories: topSkills.length > 0 ? { [category]: topSkills } : {},
+    skillCategories: normalizeSkillCategories(
+      topSkills.length > 0 ? { [FALLBACK_SKILL_CATEGORY]: topSkills } : {}
+    ),
     softSkills: [],
     projects: [],
   };
 }
 
-/** Fallback category for skills with no known category — a real, resume-appropriate name (never an "Additional Skills" catch-all). */
-const FALLBACK_SKILL_CATEGORY = "Tools & Technologies";
-
 /**
  * Guarantees selected skills appear in the skills section: typically JD-required
  * target skills and technologies introduced in experience bullets. Any omitted
  * names are placed under their real category (profile category when known,
- * otherwise "Tools & Technologies"). Unrelated profile skills may be omitted
+ * otherwise "Tools & Protocols"). Unrelated profile skills may be omitted
  * by the composer and are intentionally not forced back here.
  */
 export function ensureAllEligibleSkills(
@@ -72,14 +75,15 @@ export function ensureAllEligibleSkills(
     missing.push(name);
   }
 
-  if (missing.length === 0) return composerResult;
-
-  const skillCategories = { ...composerResult.skillCategories };
+  let skillCategories = { ...composerResult.skillCategories };
   for (const name of missing) {
-    const known = categoryByKey?.get(skillKey(name))?.trim();
-    const category = known || FALLBACK_SKILL_CATEGORY;
+    const knownRaw = categoryByKey?.get(skillKey(name))?.trim();
+    const category =
+      resolveCanonicalSkillCategory(knownRaw) ?? FALLBACK_SKILL_CATEGORY;
     skillCategories[category] = [...(skillCategories[category] ?? []), name];
   }
+
+  skillCategories = normalizeSkillCategories(skillCategories);
   return { ...composerResult, skillCategories };
 }
 
@@ -166,7 +170,7 @@ export async function composeResumeTopSection(
   return {
     result: {
       summary: parsed.data.summary,
-      skillCategories,
+      skillCategories: normalizeSkillCategories(skillCategories),
       softSkills: parsed.data.softSkills,
       projects: parsed.data.projects,
     },

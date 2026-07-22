@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ResolvedAIRequest } from "@/lib/ai-api";
 import type { ComposerInput } from "@/lib/prompts/composer-prompt";
+import { CANONICAL_SKILL_CATEGORIES } from "@/lib/tailoring/skill-categories";
 
 const callAIMock = vi.fn();
 
@@ -53,26 +54,81 @@ describe("composer — skill categories", () => {
     expect(result.skillCategories.Backend).toContain("Kubernetes");
   });
 
+  it("normalizes composer skillCategories — drops unknown headings", async () => {
+    callAIMock.mockResolvedValue({
+      providerUsed: "openai",
+      modelUsed: "gpt-4.1-mini",
+      text: "",
+      json: {
+        summary: "A".repeat(10),
+        skillCategories: {
+          Backend: ["Python"],
+          Streaming: ["Kafka"],
+        },
+        softSkills: [],
+        projects: [],
+      },
+      raw: {},
+      costUsd: 0,
+    });
+
+    const input: ComposerInput = {
+      normalizedTitle: "Backend Engineer",
+      seniority: "mid",
+      domains: [],
+      topRequirements: [],
+      summaryEvidence: [],
+      allowedSkills: ["Python"],
+      targetSkills: [],
+      categoryHints: [...CANONICAL_SKILL_CATEGORIES],
+      projects: [],
+    };
+
+    const { result } = await composeResumeTopSection(input, aiRequest);
+    expect(result.skillCategories).toEqual({ Backend: ["Python"] });
+  });
+
   it("uses the default skill budget when none is provided", () => {
     expect(DEFAULT_SKILL_BUDGET.maxSkillsPerCategory).toBeGreaterThan(0);
   });
 });
 
 describe("ensureAllEligibleSkills — must-keep guarantee", () => {
-  it("appends must-keep skills the composer omitted, and leaves present ones untouched", () => {
+  it("appends must-keep skills under Tools & Protocols when category is unknown", () => {
     const composerResult = {
       summary: "s",
       skillCategories: { Backend: ["Python", "FastAPI"] },
       softSkills: [],
       projects: [],
     };
-    // Redis (declared) and Kafka (JD-required) were both eligible but dropped by the composer.
     const result = ensureAllEligibleSkills(composerResult, ["Python", "FastAPI", "Redis", "Kafka"]);
+    expect(result.skillCategories).toEqual({
+      Backend: ["Python", "FastAPI"],
+      "Tools & Protocols": ["Redis", "Kafka"],
+    });
+  });
 
-    const allSkills = Object.values(result.skillCategories).flat();
-    expect(allSkills).toEqual(expect.arrayContaining(["Python", "FastAPI", "Redis", "Kafka"]));
-    // Original category preserved.
-    expect(result.skillCategories.Backend).toEqual(["Python", "FastAPI"]);
+  it("aliases profile categories, maps unmappable profile cats to Tools & Protocols, drops unknown headings", () => {
+    const composerResult = {
+      summary: "s",
+      skillCategories: { Streaming: ["Kafka"], Backend: ["Python"] },
+      softSkills: [],
+      projects: [],
+    };
+    const categoryByKey = new Map<string, string>([
+      ["redis", "Databases"],
+      ["pinecone", "AI/ML"],
+    ]);
+    const result = ensureAllEligibleSkills(
+      composerResult,
+      ["Python", "Redis", "Pinecone"],
+      categoryByKey
+    );
+    expect(result.skillCategories).toEqual({
+      Backend: ["Python"],
+      Database: ["Redis"],
+      "Tools & Protocols": ["Pinecone"],
+    });
   });
 
   it("returns the input unchanged when every eligible skill is already present", () => {
