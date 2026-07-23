@@ -380,9 +380,8 @@ export async function runTailoringPipeline(
     targetSkillNames
   );
 
-  // Technologies the writer introduced in the final experience bullets (beyond the
-  // candidate's declared + JD-required skills). Surface them in the skills section too,
-  // so a skill shown as used in an experience also appears categorized under Skills.
+  // Technologies the writer introduced in experience bullets — used only to filter
+  // enrichment recommendations (skills section comes from the profile, not composer).
   const introducedSkillNames = new Set<string>();
   for (const r of coveredExperienceResults) {
     for (const b of r.bullets) {

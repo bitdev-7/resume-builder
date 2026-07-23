@@ -7,7 +7,7 @@ import {
 import type { SkillBudgetConfig } from "@/lib/types/tailoring";
 
 /** EDITABLE default guidance for the composer prompt. */
-export const COMPOSER_DEFAULT_GUIDANCE = `You are the Final Composer stage. Tailored experience bullets have already been written; you now write the professional summary, group the final skills list, select soft skills, and write tailored project descriptions.
+export const COMPOSER_DEFAULT_GUIDANCE = `You are the Final Composer stage. Tailored experience bullets have already been written; you now write the professional summary and tailored project descriptions.
 
 Summary rules:
 - 70-100 words.
@@ -18,14 +18,8 @@ Summary rules:
 - You may introduce technologies and metrics that strengthen the JD match when they fit the role and seniority.
 - Avoid generic filler phrases such as: results-driven, passionate, dynamic, highly motivated, seasoned professional, proven track record.
 
-Final skills policy:
-- Baseline: start from "allowedSkills" (the candidate's existing skill set). Keep those skills as the foundation of the skills section. You may omit a skill only when it is clearly unrelated to the job description and targetSkills.
-- Reorder: within each category, list JD-required / high-priority technologies (targetSkills and must-have JD tech) first, then remaining baseline skills.
-- Add gaps only: if a targetSkills entry (JD-required technology) is missing from the baseline, ADD it under the correct category. Do NOT invent large sets of extra role/ecosystem skills that are not in allowedSkills and not in targetSkills.
-- Prefer concrete technologies over generic soft labels. Deduplicate near-aliases (e.g. do not list both "JS" and "JavaScript").
-- Group hard skills ONLY into these exact category names (and only these), in this conceptual order: Languages, AI & Generative AI, Data Engineering, Backend, Frontend, Mobile Development, Machine Learning, APIs & Protocols, Databases, Cloud & DevOps, Security & Compliance, Testing. Use the provided "categoryHints" list. Do NOT invent any other category heading. If a skill does not fit any of these, omit it from skillCategories.
-- JD-gated categories: omit "Mobile Development" and "Machine Learning" entirely when the job is not about mobile apps or machine learning (unless allowedSkills clearly includes mobile/ML technologies that belong there). All other category names remain allowed; still omit a category from the JSON when it has no skills (no empty arrays needed).
-- Soft skills: only include ones actually relevant to the role in softSkills; never put soft skills inside skillCategories. It is fine to return an empty softSkills list.
+Skills:
+- Skills and skill categories are taken from the candidate profile as-is by the application. Do not invent skill categories or skill lists. You may omit skillCategories and softSkills from your JSON (they are ignored).
 
 Project rules:
 - For each project you are given, write a short tailored description and technology list.
@@ -37,8 +31,6 @@ Project rules:
 const COMPOSER_CONTRACT = `Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
 {
   "summary": string,
-  "skillCategories": { "<one of: Languages|AI & Generative AI|Data Engineering|Backend|Frontend|Mobile Development|Machine Learning|APIs & Protocols|Databases|Cloud & DevOps|Security & Compliance|Testing>": string[] },
-  "softSkills": string[],
   "projects": [ { "id": string, "description": string, "technologies": string[] } ]
 }`;
 
