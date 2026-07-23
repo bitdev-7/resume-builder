@@ -94,7 +94,7 @@ describe("composer — skill categories", () => {
 });
 
 describe("ensureAllEligibleSkills — must-keep guarantee", () => {
-  it("appends must-keep skills under Tools & Protocols when category is unknown", () => {
+  it("appends must-keep skills under APIs & Protocols when category is unknown", () => {
     const composerResult = {
       summary: "s",
       skillCategories: { Backend: ["Python", "FastAPI"] },
@@ -104,11 +104,11 @@ describe("ensureAllEligibleSkills — must-keep guarantee", () => {
     const result = ensureAllEligibleSkills(composerResult, ["Python", "FastAPI", "Redis", "Kafka"]);
     expect(result.skillCategories).toEqual({
       Backend: ["Python", "FastAPI"],
-      "Tools & Protocols": ["Redis", "Kafka"],
+      "APIs & Protocols": ["Redis", "Kafka"],
     });
   });
 
-  it("aliases profile categories, maps unmappable profile cats to Tools & Protocols, drops unknown headings", () => {
+  it("aliases profile categories, maps unmappable profile cats to APIs & Protocols, drops unknown headings", () => {
     const composerResult = {
       summary: "s",
       skillCategories: { Streaming: ["Kafka"], Backend: ["Python"] },
@@ -126,8 +126,8 @@ describe("ensureAllEligibleSkills — must-keep guarantee", () => {
     );
     expect(result.skillCategories).toEqual({
       Backend: ["Python"],
-      Database: ["Redis"],
-      "Tools & Protocols": ["Pinecone"],
+      Databases: ["Redis"],
+      "APIs & Protocols": ["Pinecone"],
     });
   });
 
@@ -152,7 +152,7 @@ describe("ensureAllEligibleSkills — must-keep guarantee", () => {
     const result = ensureAllEligibleSkills(composerResult, ["Python", "Kafka"]);
     expect(result.skillCategories).toEqual({
       Backend: ["Python"],
-      "Tools & Protocols": ["Kafka"],
+      "APIs & Protocols": ["Kafka"],
     });
   });
 });

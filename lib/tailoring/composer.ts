@@ -53,7 +53,7 @@ export function buildDeterministicComposerFallback(input: {
  * Guarantees selected skills appear in the skills section: typically JD-required
  * target skills and technologies introduced in experience bullets. Any omitted
  * names are placed under their real category (profile category when known,
- * otherwise "Tools & Protocols"). Unrelated profile skills may be omitted
+ * otherwise "APIs & Protocols"). Unrelated profile skills may be omitted
  * by the composer and are intentionally not forced back here.
  */
 export function ensureAllEligibleSkills(

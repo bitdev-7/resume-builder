@@ -19,11 +19,12 @@ Summary rules:
 - Avoid generic filler phrases such as: results-driven, passionate, dynamic, highly motivated, seasoned professional, proven track record.
 
 Final skills policy:
-- Start from "allowedSkills" as the candidate skill pool, but you may OMIT skills that are clearly unrelated to the job description and its required skills (targetSkills). Prefer a focused, JD-aligned skills section over a complete dump of the profile.
-- Always include every "targetSkills" entry (JD-required technologies) when they are technologies/tools — do not omit those.
-- Also ADD other relevant skills dynamically when they strengthen the JD match: role/ecosystem skills and technologies that fit the candidate's trajectory and seniority — even if they are not in the profile skill list or "allowedSkills".
-- Prefer concrete, role-appropriate technologies over generic soft labels. Deduplicate near-aliases (e.g. do not list both "JS" and "JavaScript").
-- Group hard skills ONLY into these exact category names (and only these): Languages, Backend, Frontend, Database, Cloud & DevOps, Tools & Protocols, Testing. Use the provided "categoryHints" list — it is exactly those seven labels. Do NOT invent any other category heading. If a skill does not fit any of the seven, omit it from skillCategories. Every included hard skill must land in exactly one of those categories.
+- Baseline: start from "allowedSkills" (the candidate's existing skill set). Keep those skills as the foundation of the skills section. You may omit a skill only when it is clearly unrelated to the job description and targetSkills.
+- Reorder: within each category, list JD-required / high-priority technologies (targetSkills and must-have JD tech) first, then remaining baseline skills.
+- Add gaps only: if a targetSkills entry (JD-required technology) is missing from the baseline, ADD it under the correct category. Do NOT invent large sets of extra role/ecosystem skills that are not in allowedSkills and not in targetSkills.
+- Prefer concrete technologies over generic soft labels. Deduplicate near-aliases (e.g. do not list both "JS" and "JavaScript").
+- Group hard skills ONLY into these exact category names (and only these), in this conceptual order: Languages, AI & Generative AI, Data Engineering, Backend, Frontend, Mobile Development, Machine Learning, APIs & Protocols, Databases, Cloud & DevOps, Security & Compliance, Testing. Use the provided "categoryHints" list. Do NOT invent any other category heading. If a skill does not fit any of these, omit it from skillCategories.
+- JD-gated categories: omit "Mobile Development" and "Machine Learning" entirely when the job is not about mobile apps or machine learning (unless allowedSkills clearly includes mobile/ML technologies that belong there). All other category names remain allowed; still omit a category from the JSON when it has no skills (no empty arrays needed).
 - Soft skills: only include ones actually relevant to the role in softSkills; never put soft skills inside skillCategories. It is fine to return an empty softSkills list.
 
 Project rules:
@@ -36,7 +37,7 @@ Project rules:
 const COMPOSER_CONTRACT = `Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
 {
   "summary": string,
-  "skillCategories": { "<one of: Languages|Backend|Frontend|Database|Cloud & DevOps|Tools & Protocols|Testing>": string[] },
+  "skillCategories": { "<one of: Languages|AI & Generative AI|Data Engineering|Backend|Frontend|Mobile Development|Machine Learning|APIs & Protocols|Databases|Cloud & DevOps|Security & Compliance|Testing>": string[] },
   "softSkills": string[],
   "projects": [ { "id": string, "description": string, "technologies": string[] } ]
 }`;
