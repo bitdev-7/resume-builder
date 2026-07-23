@@ -21,14 +21,15 @@ function sanitizeJobTitle(rawTitle: string): string {
 
 /**
  * Stage 11 — final assembly. The model never generates contact info, company
- * names, titles, dates, or education — those are always taken from the
- * candidate's own profile. Only summary/bullets/skills/project descriptions
- * come from the generation stages.
+ * names, titles, dates, education, or skills — those are always taken from the
+ * candidate's own profile. Only summary/bullets/project descriptions come from
+ * the generation stages.
  */
 export function assembleFinalResume(
   profile: CandidateProfile,
   experienceResults: ExperienceGenerationResult[],
-  composerResult: ComposerResult
+  composerResult: ComposerResult,
+  profileHardSkills: Record<string, string[]>
 ): UpdatedResume {
   const bulletsByExperienceId = new Map(experienceResults.map((r) => [r.experienceId, r.bullets]));
 
@@ -74,8 +75,8 @@ export function assembleFinalResume(
     linkedin: profile.contact.linkedin || "",
     summary: composerResult.summary,
     experience,
-    hardSkills: composerResult.skillCategories,
-    softSkills: composerResult.softSkills,
+    hardSkills: profileHardSkills,
+    softSkills: [],
     education: profile.education,
     certifications: profile.certifications,
     projects,

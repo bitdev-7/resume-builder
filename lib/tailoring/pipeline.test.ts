@@ -119,8 +119,8 @@ describe("tailoring pipeline — end to end (mocked AI)", () => {
           json: {
             summary:
               "Backend engineer with hands-on Python and FastAPI experience building reliable services that support critical business workflows across teams and products consistently over time.",
-            skillCategories: { Backend: ["Python", "FastAPI"] },
-            softSkills: [],
+            skillCategories: { Invented: ["ShouldNotAppear"] },
+            softSkills: ["Leadership"],
             projects: [],
           },
           raw: {},
@@ -151,7 +151,8 @@ describe("tailoring pipeline — end to end (mocked AI)", () => {
 
     // Tailored content came from the generation stages.
     expect(result.resume.experience?.[0].achievements?.[0]).toContain("FastAPI");
-    expect(result.resume.hardSkills?.Backend).toContain("Python");
+    expect(result.resume.hardSkills).toEqual({ Backend: ["Python"] });
+    expect(result.resume.softSkills).toEqual([]);
     expect(result.roleArchetype.primaryRoleArchetype).toBeTruthy();
     expect(result.generationCostUsd).toBeGreaterThan(0);
   });

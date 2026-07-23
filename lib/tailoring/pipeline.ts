@@ -22,17 +22,13 @@ import { generateExperiencesInParallel, generateExperiencesBatched } from "@/lib
 import {
   buildDeterministicComposerFallback,
   composeResumeTopSection,
-  ensureAllEligibleSkills,
   DEFAULT_SKILL_BUDGET,
 } from "@/lib/tailoring/composer";
-import {
-  CANONICAL_SKILL_CATEGORIES,
-  normalizeSkillCategories,
-} from "@/lib/tailoring/skill-categories";
 import type { ComposerInput } from "@/lib/prompts/composer-prompt";
 import type { ExperienceWriterInput } from "@/lib/prompts/experience-writer-prompt";
 import { repairTailoredResume } from "@/lib/tailoring/repair";
 import { assembleFinalResume } from "@/lib/tailoring/assemble";
+import { buildProfileHardSkills } from "@/lib/tailoring/profile-hard-skills";
 import { buildEnrichmentRecommendations } from "@/lib/tailoring/enrichment";
 import { skillKey, detectSkillMentions } from "@/lib/tailoring/skill-ontology";
 import type { ExperienceGenerationMode } from "@/lib/workflow-settings";
@@ -200,21 +196,8 @@ export async function runTailoringPipeline(
       "No work experience found in your profile. Add at least one company under Profile before generating a tailored resume."
     );
   }
+  const profileHardSkills = buildProfileHardSkills(input.profileData.default_resume);
   const possessedSkillNames = getPossessedSkillNames(candidateProfile);
-
-  // Profile category map for must-keep placement only (ensureAllEligibleSkills). Composer
-  // grouping uses categoryHints — always the twelve canonical labels from CANONICAL_SKILL_CATEGORIES.
-  const profileSkillCategoryByKey = new Map<string, string>();
-  for (const record of [input.profileData.default_resume?.skills, input.profileData.default_resume?.hardSkills]) {
-    if (!record) continue;
-    for (const [category, list] of Object.entries(record)) {
-      if (!category || /soft/i.test(category)) continue;
-      for (const raw of list || []) {
-        const key = skillKey(String(raw));
-        if (key && !profileSkillCategoryByKey.has(key)) profileSkillCategoryByKey.set(key, category);
-      }
-    }
-  }
 
   // Stage 3 — Role Skill Expansion (deterministic)
   const rawCandidates = await expandRoleSkills(jdAnalysis, roleArchetype, possessedSkillNames);
@@ -347,7 +330,7 @@ export async function runTailoringPipeline(
     ],
     allowedSkills: resumeEligibleSkills.map((c) => c.canonicalName),
     targetSkills: targetSkillNames,
-    categoryHints: [...CANONICAL_SKILL_CATEGORIES],
+    categoryHints: Object.keys(profileHardSkills),
     projects: candidateProfile.projects.map((p) => ({
       id: p.id,
       name: p.name,
@@ -407,20 +390,19 @@ export async function runTailoringPipeline(
     }
   }
 
-  // Guarantee JD-required target skills and technologies used in experience bullets
-  // appear in the skills section. Unrelated profile skills may stay omitted.
-  const ensured = ensureAllEligibleSkills(
-    repairOutcome.composerResult,
-    [...targetSkillNames, ...introducedSkillNames],
-    profileSkillCategoryByKey
-  );
   const finalComposerResult = {
-    ...ensured,
-    skillCategories: normalizeSkillCategories(ensured.skillCategories),
+    ...repairOutcome.composerResult,
+    skillCategories: profileHardSkills,
+    softSkills: [] as string[],
   };
 
   // Stage 11 — Final Resume Assembly
-  const resume = assembleFinalResume(candidateProfile, coveredExperienceResults, finalComposerResult);
+  const resume = assembleFinalResume(
+    candidateProfile,
+    coveredExperienceResults,
+    finalComposerResult,
+    profileHardSkills
+  );
 
   // Guarantee every JD-required target skill also appears in the projects section.
   if (resume.projects && resume.projects.length > 0) {
@@ -428,7 +410,7 @@ export async function runTailoringPipeline(
   }
 
   // Stage 12 — Gap / Enrichment Recommendations (exclude skills already on the resume)
-  const skillsOnResume = Object.values(finalComposerResult.skillCategories).flat();
+  const skillsOnResume = Object.values(profileHardSkills).flat();
   const addedSkillKeys = new Set([
     ...skillsOnResume.map((n) => skillKey(n)),
     ...Array.from(introducedSkillNames).map((n) => skillKey(n)),
