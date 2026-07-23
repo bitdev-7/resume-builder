@@ -1,4 +1,4 @@
-# Task 1 Report: Brand constants + icon assets
+# Task 1 Report: Canonical skill-categories module
 
 ## Status
 
@@ -6,16 +6,23 @@
 
 ## Summary
 
-Added Cubi brand constants (`APP_NAME`, `APP_ICON_SRC`) in `lib/brand.ts`, a focused Vitest in `lib/brand.test.ts`, and copied the session icon PNG to `frontend/public/cubi-icon.png` and `frontend/app/icon.png`. No UI components were modified (Task 2 scope).
+Created shared skill category module at `lib/tailoring/skill-categories.ts` with the seven canonical labels, alias map, `resolveCanonicalSkillCategory`, and `normalizeSkillCategories` (simpler two-pass loop per brief). Added focused Vitest coverage in `lib/tailoring/skill-categories.test.ts`. No composer/pipeline wiring (later tasks).
 
 ## Files Created
 
 | File | Purpose |
 |------|---------|
-| `lib/brand.ts` | Exports `APP_NAME = "Cubi"` and `APP_ICON_SRC = "/cubi-icon.png"` |
-| `lib/brand.test.ts` | Vitest asserting exact brand string values |
-| `frontend/public/cubi-icon.png` | Public static asset for in-app `<img>` usage |
-| `frontend/app/icon.png` | Next.js App Router favicon/metadata icon |
+| `lib/tailoring/skill-categories.ts` | Canonical labels, alias resolution, category normalization |
+| `lib/tailoring/skill-categories.test.ts` | Vitest for constants, resolver, and normalizer |
+
+## Exports
+
+| Export | Description |
+|--------|-------------|
+| `CANONICAL_SKILL_CATEGORIES` | Seven labels in fixed order (`Languages` … `Testing`) |
+| `FALLBACK_SKILL_CATEGORY` | `"Tools & Protocols"` |
+| `resolveCanonicalSkillCategory(raw)` | Alias/exact match → canonical label; unknown/empty → `null` |
+| `normalizeSkillCategories(input)` | Remap aliases, drop unknown buckets, dedupe by `skillKey` (earlier canonical category wins), emit non-empty in order |
 
 ## TDD Evidence
 
@@ -24,58 +31,50 @@ Added Cubi brand constants (`APP_NAME`, `APP_ICON_SRC`) in `lib/brand.ts`, a foc
 Command:
 
 ```bash
-npm test -- lib/brand.test.ts
+npm test -- lib/tailoring/skill-categories.test.ts
 ```
 
 Result: **FAIL**
 
 ```
- FAIL  lib/brand.test.ts [ lib/brand.test.ts ]
-Error: Failed to load url ./brand (resolved id: ./brand) in D:/Projects/Services/resuma/lib/brand.test.ts. Does the file exist?
+ FAIL  lib/tailoring/skill-categories.test.ts [ lib/tailoring/skill-categories.test.ts ]
+Error: Cannot find module '@/lib/tailoring/skill-categories' imported from 'E:/Profiles/resume-maker/lib/tailoring/skill-categories.test.ts'.
 ```
 
-Cause: `lib/brand.ts` did not exist yet; test imported `./brand` before implementation.
+Cause: `lib/tailoring/skill-categories.ts` did not exist yet; test imported module before implementation.
 
 ### GREEN (Step 4)
 
-After creating `lib/brand.ts` and copying icon assets:
+After creating `lib/tailoring/skill-categories.ts` with the simpler two-pass `normalizeSkillCategories` implementation:
 
 Command:
 
 ```bash
-npm test -- lib/brand.test.ts
+npm test -- lib/tailoring/skill-categories.test.ts
 ```
 
 Result: **PASS**
 
 ```
- ✓ lib/brand.test.ts (1 test) 1ms
+ ✓ lib/tailoring/skill-categories.test.ts (7 tests) 3ms
  Test Files  1 passed (1)
-      Tests  1 passed (1)
+      Tests  7 passed (7)
 ```
-
-### Asset verification
-
-```powershell
-(Get-Item frontend/public/cubi-icon.png).Length -gt 1000  # True
-(Get-Item frontend/app/icon.png).Length -gt 1000          # True
-```
-
-Both icon copies are non-empty binary files (>1000 bytes).
 
 ## Commit
 
 | SHA | Subject |
 |-----|---------|
-| `05d385e` | feat: add Cubi brand constants and icon assets |
+| `c44d584` | feat: add canonical skill category normalizer |
 
 ## Self-Review
 
-- **Scope:** Only brand constants, test, and icon copies — no UI/component changes.
-- **Values:** `APP_NAME` is exactly `"Cubi"`; `APP_ICON_SRC` is exactly `"/cubi-icon.png"` per brief and global constraints.
-- **Icon source:** Copied from session asset path specified in brief/global constraints.
-- **Conventions:** Test follows existing Vitest patterns in `lib/*.test.ts`; constants live at repo-root `lib/` alongside other shared modules.
-- **Global constraints:** No package.json or README renames; functional “resume” copy untouched.
+- **Scope:** Only the two files named in the brief — no composer/pipeline changes.
+- **Implementation:** Used the simpler second `normalizeSkillCategories` loop (pending collect + canonical-order assign) as instructed.
+- **Dedupe:** Skills deduped via `skillKey` from existing `skill-ontology`; earlier canonical category wins (e.g. `Backend` before `Testing`).
+- **Aliases:** All brief-specified aliases covered in `CATEGORY_ALIASES`; case-insensitive via `toLowerCase()`.
+- **Conventions:** Matches existing `lib/tailoring/*.test.ts` Vitest patterns and `@/` import alias used elsewhere.
+- **Dependencies:** Consumes only `skillKey` from `skill-ontology` (pre-existing); produces module for later tasks.
 
 ## Concerns
 

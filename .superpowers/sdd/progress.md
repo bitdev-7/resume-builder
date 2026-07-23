@@ -1,12 +1,15 @@
-# Cubi branding SDD progress
+# Skill categories SDD progress
 
 Branch: develop
-Plan: docs/superpowers/plans/2026-07-16-cubi-branding.md
-Started: 2026-07-16
+Plan: docs/superpowers/plans/2026-07-23-skill-categories.md
+Started: 2026-07-23
 
-Task 1: complete (commits 63df325..05d385e, review clean)
 
-Task 2: complete (commits 05d385e..6542ba9, review clean after a11y fix)
+Task 1: complete (commits 7147ea5..c44d584, review clean)
 
-Final review: ready to merge (Minor only: no-img-element comment, relative test import, no fs.exists for png).
+Task 2: complete (commits c44d584..c92f44e, review clean; minor: ensure present-set ignores non-canonical only via compose-first)
+
+Task 3: complete (commits c92f44e..8c9762a, review clean; minor: stale pipeline comment)
+
+Final review: Ready to merge (Minor only: pre-normalize dedup edge, stale comment, pipeline.test categoryHints, unused catalog import).
 All tasks complete.

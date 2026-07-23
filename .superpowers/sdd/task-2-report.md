@@ -1,52 +1,76 @@
-# Task 2 Report: BrandMark + UI wiring
+# Task 2 Report: Wire composer placement + normalize
 
 ## Status
 
-**DONE_WITH_CONCERNS**
+**DONE**
 
 ## Summary
 
-Created the reusable `BrandMark` component and wired it into the authenticated navigation and both desktop/mobile login layouts. Updated Next.js metadata so the browser title is exactly `Cubi`; existing functional resume copy remains unchanged.
+Wired Task 1 skill-category helpers into `lib/tailoring/composer.ts`. `ensureAllEligibleSkills`, `buildDeterministicComposerFallback`, and `composeResumeTopSection` now resolve profile categories via `resolveCanonicalSkillCategory`, fall back to `FALLBACK_SKILL_CATEGORY` (`Tools & Protocols`), and always return `normalizeSkillCategories` output. Updated composer tests per brief (TDD RED → GREEN). No pipeline or prompt changes (Task 3).
 
-## Files
+## Files Modified
 
-- `frontend/components/BrandMark.tsx` — consumes `APP_NAME` and `APP_ICON_SRC` with the exact prop interface and defaults from the brief.
-- `frontend/components/AppNav.tsx` — replaces the legacy RT/Resume Tailor badge with `BrandMark`.
-- `frontend/components/Auth.tsx` — shows the brand on the desktop hero and mobile form column.
-- `frontend/app/layout.tsx` — changes the metadata title from `Resume Generator` to `Cubi`.
+| File | Purpose |
+|------|---------|
+| `lib/tailoring/composer.ts` | Import shared normalizer; canonical placement in all three export paths |
+| `lib/tailoring/composer.test.ts` | Must-keep, alias/drop, and compose normalization assertions |
 
-## Verification
+## Changes
 
-- Required `Select-String` scan returned no matches.
-- `npm test -- lib/brand.test.ts`: PASS (1 file, 1 test).
-- `npx tsc --noEmit -p frontend/tsconfig.json`: PASS.
-- `git diff --check`: PASS.
-- `npm run build -w resume-frontend`: not completed because Windows returned `EPERM` while opening `frontend/.next/trace`, consistent with the existing dev server holding the build directory.
-- Manual browser verification was not performed.
+| Function | Behavior |
+|----------|----------|
+| `ensureAllEligibleSkills` | Missing skills placed via `resolveCanonicalSkillCategory(knownRaw) ?? FALLBACK_SKILL_CATEGORY`; always `normalizeSkillCategories` before return (drops unknown headings like `Streaming`) |
+| `buildDeterministicComposerFallback` | All skills under `FALLBACK_SKILL_CATEGORY`, then normalized |
+| `composeResumeTopSection` | AI skill map deduped as before, then `normalizeSkillCategories` on return |
+
+Removed local `FALLBACK_SKILL_CATEGORY = "Tools & Technologies"` in favor of shared module export.
+
+## TDD Evidence
+
+### RED (Step 2)
+
+Command:
+
+```bash
+npm test -- lib/tailoring/composer.test.ts
+```
+
+Result: **FAIL** (3 failed, 3 passed)
+
+- Unknown headings (`Streaming`) not stripped in `composeResumeTopSection`
+- Must-keep fallback still used `"Tools & Technologies"`
+- Profile aliases not resolved; `Streaming`/`AI/ML`/`Databases` left unmigrated
+
+### GREEN (Step 4)
+
+Command:
+
+```bash
+npm test -- lib/tailoring/composer.test.ts lib/tailoring/skill-categories.test.ts
+```
+
+Result: **PASS**
+
+```
+ ✓ lib/tailoring/skill-categories.test.ts (7 tests)
+ ✓ lib/tailoring/composer.test.ts (6 tests)
+ Test Files  2 passed (2)
+      Tests  13 passed (13)
+```
 
 ## Commit
 
-- `edcafc7` — `feat: show Cubi brand mark in nav, login, and tab title`
+| SHA | Subject |
+|-----|---------|
+| `c92f44e` | feat: normalize composer skill categories to canonical set |
 
 ## Self-Review
 
-- Compared all four files against the brief's exact snippets and values.
-- Confirmed the old `RT`, `Resume Tailor`, and `Resume Generator` brand strings are absent from the scoped files.
-- Confirmed the login headline and “Sign in to continue tailoring resumes.” copy are unchanged.
-- Confirmed no package or README renames and no unrelated source changes were included in the commit.
+- **Scope:** Only `composer.ts` and `composer.test.ts` per brief; did not touch `pipeline.ts` or `composer-prompt.ts`.
+- **Imports:** Uses `FALLBACK_SKILL_CATEGORY`, `resolveCanonicalSkillCategory`, `normalizeSkillCategories` from Task 1; no reimplementation.
+- **Tests:** Exact must-keep and alias blocks from brief; added compose strip-unknown test with `CANONICAL_SKILL_CATEGORIES` import.
+- **Edge case:** `ensureAllEligibleSkills` now normalizes even when no missing skills (e.g. drops non-canonical headings on existing map).
 
 ## Concerns
 
-The optional production build could not run concurrently with the existing process because `.next/trace` was locked. The required test and independent TypeScript check both passed.
-
-## Accessibility Fix (Task 2 review)
-
-**Finding:** On mobile, the nav brand `Link` had no accessible name — `BrandMark` icon uses `alt=""` and `aria-hidden`, and the wordmark is hidden below `sm`.
-
-**Fix:** Added `aria-label={APP_NAME}` to the dashboard `Link` wrapping `BrandMark` in `frontend/components/AppNav.tsx`; imported `APP_NAME` from `@/lib/brand`.
-
-**Verification:**
-- `Select-String` on `AppNav.tsx`, `Auth.tsx`, `layout.tsx` for `Resume Tailor|Resume Generator|\bRT\b`: no matches.
-- `npm test -- lib/brand.test.ts`: PASS (1 file, 1 test).
-
-**Commit:** `6542ba9` — `fix: add accessible name to Cubi nav brand link`
+None.
