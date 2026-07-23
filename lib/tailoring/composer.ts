@@ -32,15 +32,24 @@ export function buildDeterministicComposerFallback(input: {
   normalizedTitle: string;
   allowedSkills: string[];
   categoryHints: string[];
+  profileHardSkills?: Record<string, string[]>;
 }): ComposerResult {
   const highlight = input.allowedSkills.slice(0, 3).join(", ");
   const summary = highlight
     ? `${input.normalizedTitle} with hands-on experience across ${highlight}. Focused on delivering well-tested, maintainable solutions aligned with team and business goals.`
     : `${input.normalizedTitle} with a track record of delivering well-tested, maintainable solutions aligned with team and business goals.`;
 
+  const fromProfile = input.profileHardSkills;
+  const skillCategories =
+    fromProfile && Object.keys(fromProfile).length > 0
+      ? fromProfile
+      : input.allowedSkills.length > 0
+        ? { [input.categoryHints[0] || "Skills"]: input.allowedSkills.slice(0, 20) }
+        : {};
+
   return {
     summary,
-    skillCategories: {},
+    skillCategories,
     softSkills: [],
     projects: [],
   };
@@ -91,8 +100,8 @@ export interface ComposerCallResult {
 }
 
 /**
- * Stage 8 — summary/projects. Runs only after experience bullets exist.
- * Skills are profile-owned; any model skill fields are ignored.
+ * Stage 8 — summary/skills/projects. Runs only after experience bullets exist.
+ * Returns composer-chosen skills with within-category dedupe (no normalizeSkillCategories).
  */
 export async function composeResumeTopSection(
   input: ComposerInput,
@@ -149,11 +158,24 @@ export async function composeResumeTopSection(
     throw new Error(`Composer output failed validation: ${parsed.error.issues.map((i) => i.message).join("; ")}`);
   }
 
+  const skillCategories: Record<string, string[]> = {};
+  for (const [category, skills] of Object.entries(parsed.data.skillCategories)) {
+    const seenInCategory = new Set<string>();
+    const unique: string[] = [];
+    for (const s of skills) {
+      const key = skillKey(s);
+      if (!key || seenInCategory.has(key)) continue;
+      seenInCategory.add(key);
+      unique.push(s);
+    }
+    if (unique.length > 0) skillCategories[category] = unique;
+  }
+
   return {
     result: {
       summary: parsed.data.summary,
-      skillCategories: {},
-      softSkills: [],
+      skillCategories,
+      softSkills: parsed.data.softSkills,
       projects: parsed.data.projects,
     },
     costUsd: resp.costUsd,

@@ -13,15 +13,18 @@ const { composeResumeTopSection, DEFAULT_SKILL_BUDGET } = await import("@/lib/ta
 
 const aiRequest: ResolvedAIRequest = { useOpenRouter: true, model: "openai/gpt-4.1-mini" };
 
-describe("composer — skills ignored", () => {
-  it("returns empty skillCategories and softSkills even if the model sent skills", async () => {
+describe("composer — prompt-driven skills", () => {
+  it("keeps skillCategories and softSkills from the model (deduped within category)", async () => {
     callAIMock.mockResolvedValue({
       providerUsed: "openai",
       modelUsed: "gpt-4.1-mini",
       text: "",
       json: {
         summary: "A".repeat(80),
-        skillCategories: { Backend: ["Python"] },
+        skillCategories: {
+          Backend: ["Python", "Python", "FastAPI"],
+          Languages: ["Go"],
+        },
         softSkills: ["Leadership"],
         projects: [],
       },
@@ -35,15 +38,18 @@ describe("composer — skills ignored", () => {
       domains: [],
       topRequirements: [],
       summaryEvidence: [],
-      allowedSkills: ["Python"],
+      allowedSkills: ["Python", "FastAPI", "Go"],
       targetSkills: [],
-      categoryHints: ["Backend"],
+      categoryHints: ["Languages", "Backend"],
       projects: [],
     };
 
     const { result } = await composeResumeTopSection(input, aiRequest);
-    expect(result.skillCategories).toEqual({});
-    expect(result.softSkills).toEqual([]);
+    expect(result.skillCategories).toEqual({
+      Backend: ["Python", "FastAPI"],
+      Languages: ["Go"],
+    });
+    expect(result.softSkills).toEqual(["Leadership"]);
   });
 });
 

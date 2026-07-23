@@ -7,7 +7,7 @@ import {
 import type { SkillBudgetConfig } from "@/lib/types/tailoring";
 
 /** EDITABLE default guidance for the composer prompt. */
-export const COMPOSER_DEFAULT_GUIDANCE = `You are the Final Composer stage. Tailored experience bullets have already been written; you now write the professional summary and tailored project descriptions.
+export const COMPOSER_DEFAULT_GUIDANCE = `You are the Final Composer stage. Tailored experience bullets have already been written; you now write the professional summary, skills grouping, and tailored project descriptions.
 
 Summary rules:
 - 70-100 words.
@@ -19,7 +19,10 @@ Summary rules:
 - Avoid generic filler phrases such as: results-driven, passionate, dynamic, highly motivated, seasoned professional, proven track record.
 
 Skills:
-- Skills and skill categories are taken from the candidate profile as-is by the application. Do not invent skill categories or skill lists. You may omit skillCategories and softSkills from your JSON (they are ignored).
+- Use the candidate's existing skillsets and categories from allowedSkills and categoryHints. Prefer the user's category names; do not invent a new taxonomy.
+- Include the existing skills in skillCategories; do not drop the profile skill set wholesale. You may omit a skill only if it is clearly unrelated to the job.
+- Do not invent large sets of skills that are not in allowedSkills unless the user-edited guidance above explicitly asks you to.
+- softSkills: only include if relevant; empty list is fine.
 
 Project rules:
 - For each project you are given, write a short tailored description and technology list.
@@ -31,6 +34,8 @@ Project rules:
 const COMPOSER_CONTRACT = `Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
 {
   "summary": string,
+  "skillCategories": { "<category name>": string[] },
+  "softSkills": string[],
   "projects": [ { "id": string, "description": string, "technologies": string[] } ]
 }`;
 
