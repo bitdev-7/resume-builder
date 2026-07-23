@@ -65,11 +65,16 @@ Build `hardSkills` for the resume from profile data already available to the pip
 - Validators that require JD target skills to appear in `skillCategories` must be relaxed or removed for the skills section (JD coverage stays in experience/project bullets if those policies remain).
 - Repair must not rewrite skill categories.
 
-## Prompt-only future
+## Skill development policy (prompt-only)
 
-Because skills never come from the model, later “prompt-only” edits cannot change the skills section unless code is changed again. That matches the user’s intent: **Profile owns skills; prompts do not.** If they later want prompt-driven skills again, that would be a new design.
+**Do not build more skill-rewrite logic** (canonical taxonomies, JD-gap adds, reorder, soft-skill inventing). Skills work for this change is:
 
-Clarify for the user in the product sense: updating Settings composer guidance will affect summary/projects, not Profile skills.
+1. **Code (now):** copy Profile skill categories → resume `hardSkills` as-is; `softSkills = []`.
+2. **Prompt (thin):** one editable line that skills come from the profile / use existing skillsets and categories — so Settings prompt text can be tweaked later without a second skills engine.
+
+The resume skills section is owned by Profile data. Further “skill development” = prompt wording only, not new pipeline features, unless a new design says otherwise.
+
+**Note:** Changing the composer prompt alone will not alter category names or skill lists on the PDF — those come from Profile copy. Prompt edits affect how the model is instructed for summary/projects (and any leftover skill fields that code ignores).
 
 ## Scope
 
