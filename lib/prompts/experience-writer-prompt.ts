@@ -49,6 +49,9 @@ Experience skill policy:
 - You may introduce additional technologies only if they are historically accurate and consistent with the role.
 - Mention technologies explicitly instead of leaving them implied.
 - Group related technologies naturally within project-focused achievements.
+- mainSkill (when present) is the JD's top must-have technology. Across ALL experiences in this generation, at least ~60% of bullets overall must mention mainSkill by name when historically compatible with the employment dates.
+- Spread mainSkill mentions across roles rather than concentrating them in a single bullet when possible.
+- Do not force mainSkill into historically incompatible periods; leave those bullets for other skills and rely on compatible roles to meet the overall ratio.
 
 Creative writing rules:
 - Rewrite achievements instead of copying them verbatim.
@@ -146,6 +149,8 @@ export interface ExperienceWriterInput {
   allowedSkills: string[];
   /** JD-required skills to feature strongly in this role's bullets. */
   targetSkills: string[];
+  /** Top JD must-have technology to feature in ≥60% of bullets overall; null/omit if none. */
+  mainSkill?: string | null;
   priorityRequirements: Pick<JDRequirement, "id" | "text">[];
   targetBulletCount: number;
   extraInstructions?: string;
@@ -168,6 +173,7 @@ export function buildExperienceWriterUserPrompt(input: ExperienceWriterInput): s
     })),
     allowedSkills: input.allowedSkills,
     targetSkills: input.targetSkills,
+    mainSkill: input.mainSkill ?? null,
     priorityRequirements: input.priorityRequirements,
     targetBulletCount: input.targetBulletCount,
   };
@@ -197,6 +203,7 @@ export function buildExperienceWriterBatchedUserPrompt(inputs: ExperienceWriterI
     })),
     allowedSkills: input.allowedSkills,
     targetSkills: input.targetSkills,
+    mainSkill: input.mainSkill ?? null,
     priorityRequirements: input.priorityRequirements,
     targetBulletCount: input.targetBulletCount,
     extraInstructions: input.extraInstructions?.trim() || undefined,

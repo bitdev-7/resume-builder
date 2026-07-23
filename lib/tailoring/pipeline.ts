@@ -30,6 +30,10 @@ import { repairTailoredResume } from "@/lib/tailoring/repair";
 import { assembleFinalResume } from "@/lib/tailoring/assemble";
 import { buildProfileHardSkills } from "@/lib/tailoring/profile-hard-skills";
 import { buildEnrichmentRecommendations } from "@/lib/tailoring/enrichment";
+import {
+  ensureMainSkillBulletCoverage,
+  selectMainSkill,
+} from "@/lib/tailoring/main-skill-coverage";
 import { skillKey, detectSkillMentions } from "@/lib/tailoring/skill-ontology";
 import type { ExperienceGenerationMode } from "@/lib/workflow-settings";
 import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
@@ -258,6 +262,9 @@ export async function runTailoringPipeline(
     `[tailoring] target skills to weave (${targetSkillNames.length}): ${targetSkillNames.join(", ") || "(none)"}`
   );
 
+  const mainSkill = selectMainSkill(jdAnalysis);
+  console.log(`[tailoring] main skill for 60% coverage: ${mainSkill ?? "(none)"}`);
+
   const experienceWriterInputsById = new Map<string, ExperienceWriterInput>();
   for (const expPlan of plan.experiencePlans) {
     const exp = experiencesById.get(expPlan.experienceId);
@@ -281,6 +288,7 @@ export async function runTailoringPipeline(
       allowedEvidence: exp.facts,
       allowedSkills,
       targetSkills: targetSkillNames,
+      mainSkill,
       priorityRequirements,
       targetBulletCount: expPlan.targetBulletCount,
       extraInstructions: input.customPromptOverride ?? undefined,
@@ -376,9 +384,9 @@ export async function runTailoringPipeline(
 
   // Guarantee every JD-required target skill is shown as used in the experience bullets
   // (user policy: all target skills must appear in experiences, not just the skills list).
-  const coveredExperienceResults = ensureTargetSkillsInExperiences(
-    repairOutcome.experienceResults,
-    targetSkillNames
+  const coveredExperienceResults = ensureMainSkillBulletCoverage(
+    ensureTargetSkillsInExperiences(repairOutcome.experienceResults, targetSkillNames),
+    mainSkill
   );
 
   // Technologies the writer introduced in experience bullets — used only to filter
