@@ -2,33 +2,51 @@ import { skillKey } from "@/lib/tailoring/skill-ontology";
 
 export const CANONICAL_SKILL_CATEGORIES = [
   "Languages",
+  "AI & Generative AI",
+  "Data Engineering",
   "Backend",
   "Frontend",
-  "Database",
+  "Mobile Development",
+  "Machine Learning",
+  "APIs & Protocols",
+  "Databases",
   "Cloud & DevOps",
-  "Tools & Protocols",
+  "Security & Compliance",
   "Testing",
 ] as const;
 
 export type CanonicalSkillCategory = (typeof CANONICAL_SKILL_CATEGORIES)[number];
 
-export const FALLBACK_SKILL_CATEGORY: CanonicalSkillCategory = "Tools & Protocols";
+export const FALLBACK_SKILL_CATEGORY: CanonicalSkillCategory = "APIs & Protocols";
 
-/** Lowercase alias / exact label → canonical label */
 const CATEGORY_ALIASES: Record<string, CanonicalSkillCategory> = {
   languages: "Languages",
+  "ai & generative ai": "AI & Generative AI",
+  ai: "AI & Generative AI",
+  "generative ai": "AI & Generative AI",
+  "data engineering": "Data Engineering",
+  data: "Data Engineering",
   backend: "Backend",
   frontend: "Frontend",
-  database: "Database",
-  databases: "Database",
-  data: "Database",
+  "mobile development": "Mobile Development",
+  mobile: "Mobile Development",
+  "machine learning": "Machine Learning",
+  ml: "Machine Learning",
+  "apis & protocols": "APIs & Protocols",
+  apis: "APIs & Protocols",
+  "api & protocols": "APIs & Protocols",
+  "tools & protocols": "APIs & Protocols",
+  "tools & technologies": "APIs & Protocols",
+  tools: "APIs & Protocols",
+  databases: "Databases",
+  database: "Databases",
   "cloud & devops": "Cloud & DevOps",
   "cloud and devops": "Cloud & DevOps",
   cloud: "Cloud & DevOps",
   devops: "Cloud & DevOps",
-  "tools & protocols": "Tools & Protocols",
-  "tools & technologies": "Tools & Protocols",
-  tools: "Tools & Protocols",
+  "security & compliance": "Security & Compliance",
+  security: "Security & Compliance",
+  compliance: "Security & Compliance",
   testing: "Testing",
   "testing & tools": "Testing",
 };
@@ -41,25 +59,16 @@ export function resolveCanonicalSkillCategory(
   return CATEGORY_ALIASES[trimmed.toLowerCase()] ?? null;
 }
 
-/**
- * Remap known aliases, drop skills under unknown headings, dedupe by skill key
- * (earlier canonical category wins), emit only non-empty categories in fixed order.
- */
 export function normalizeSkillCategories(
   skillCategories: Record<string, string[]>
 ): Record<string, string[]> {
-  const buckets: Record<CanonicalSkillCategory, string[]> = {
-    Languages: [],
-    Backend: [],
-    Frontend: [],
-    Database: [],
-    "Cloud & DevOps": [],
-    "Tools & Protocols": [],
-    Testing: [],
-  };
-  const seen = new Set<string>();
+  const buckets = Object.fromEntries(
+    CANONICAL_SKILL_CATEGORIES.map((label) => [label, [] as string[]])
+  ) as Record<CanonicalSkillCategory, string[]>;
 
+  const seen = new Set<string>();
   const pending: { category: CanonicalSkillCategory; skill: string }[] = [];
+
   for (const [rawCategory, skills] of Object.entries(skillCategories)) {
     const canonical = resolveCanonicalSkillCategory(rawCategory);
     if (!canonical) continue;

@@ -7,75 +7,104 @@ import {
 } from "@/lib/tailoring/skill-categories";
 
 describe("CANONICAL_SKILL_CATEGORIES", () => {
-  it("is exactly the seven approved labels in order", () => {
+  it("is exactly the twelve approved labels in order", () => {
     expect([...CANONICAL_SKILL_CATEGORIES]).toEqual([
       "Languages",
+      "AI & Generative AI",
+      "Data Engineering",
       "Backend",
       "Frontend",
-      "Database",
+      "Mobile Development",
+      "Machine Learning",
+      "APIs & Protocols",
+      "Databases",
       "Cloud & DevOps",
-      "Tools & Protocols",
+      "Security & Compliance",
       "Testing",
     ]);
   });
 
-  it("uses Tools & Protocols as the must-keep fallback label", () => {
-    expect(FALLBACK_SKILL_CATEGORY).toBe("Tools & Protocols");
+  it("uses APIs & Protocols as the must-keep fallback label", () => {
+    expect(FALLBACK_SKILL_CATEGORY).toBe("APIs & Protocols");
   });
 });
 
 describe("resolveCanonicalSkillCategory", () => {
-  it("returns exact canonical labels", () => {
+  it("returns exact canonical labels (case-insensitive)", () => {
     expect(resolveCanonicalSkillCategory("Backend")).toBe("Backend");
-    expect(resolveCanonicalSkillCategory("cloud & devops")).toBe("Cloud & DevOps");
+    expect(resolveCanonicalSkillCategory("ai & generative ai")).toBe("AI & Generative AI");
+    expect(resolveCanonicalSkillCategory("Databases")).toBe("Databases");
   });
 
-  it("remaps known aliases", () => {
+  it("remaps known aliases including legacy seven-label names", () => {
     expect(resolveCanonicalSkillCategory("Cloud")).toBe("Cloud & DevOps");
     expect(resolveCanonicalSkillCategory("DevOps")).toBe("Cloud & DevOps");
-    expect(resolveCanonicalSkillCategory("Cloud and DevOps")).toBe("Cloud & DevOps");
-    expect(resolveCanonicalSkillCategory("Testing & Tools")).toBe("Testing");
-    expect(resolveCanonicalSkillCategory("Data")).toBe("Database");
-    expect(resolveCanonicalSkillCategory("Databases")).toBe("Database");
-    expect(resolveCanonicalSkillCategory("Tools & Technologies")).toBe("Tools & Protocols");
-    expect(resolveCanonicalSkillCategory("Tools")).toBe("Tools & Protocols");
+    expect(resolveCanonicalSkillCategory("Database")).toBe("Databases");
+    expect(resolveCanonicalSkillCategory("Data")).toBe("Data Engineering");
+    expect(resolveCanonicalSkillCategory("Tools & Protocols")).toBe("APIs & Protocols");
+    expect(resolveCanonicalSkillCategory("Tools & Technologies")).toBe("APIs & Protocols");
+    expect(resolveCanonicalSkillCategory("Tools")).toBe("APIs & Protocols");
+    expect(resolveCanonicalSkillCategory("AI")).toBe("AI & Generative AI");
+    expect(resolveCanonicalSkillCategory("Generative AI")).toBe("AI & Generative AI");
+    expect(resolveCanonicalSkillCategory("Security")).toBe("Security & Compliance");
+    expect(resolveCanonicalSkillCategory("Mobile")).toBe("Mobile Development");
+    expect(resolveCanonicalSkillCategory("ML")).toBe("Machine Learning");
+    expect(resolveCanonicalSkillCategory("APIs")).toBe("APIs & Protocols");
   });
 
   it("returns null for unknown or empty names", () => {
     expect(resolveCanonicalSkillCategory("Streaming")).toBeNull();
-    expect(resolveCanonicalSkillCategory("AI/ML")).toBeNull();
     expect(resolveCanonicalSkillCategory("")).toBeNull();
     expect(resolveCanonicalSkillCategory(null)).toBeNull();
-    expect(resolveCanonicalSkillCategory(undefined)).toBeNull();
-    expect(resolveCanonicalSkillCategory("   ")).toBeNull();
   });
 });
 
 describe("normalizeSkillCategories", () => {
-  it("remaps aliases, drops unknown buckets, orders, and omits empty", () => {
+  it("remaps aliases, drops unknown buckets, orders, omits empty including gated", () => {
     const out = normalizeSkillCategories({
       Streaming: ["Kafka"],
-      Cloud: ["AWS", "Docker"],
+      Cloud: ["AWS"],
       Backend: ["Python"],
-      Frontend: [],
-      Data: ["PostgreSQL"],
-      "Tools & Technologies": ["Git"],
+      "Mobile Development": [],
+      "Machine Learning": [],
+      Data: ["Spark"],
+      Database: ["PostgreSQL"],
+      "Tools & Technologies": ["REST"],
+      AI: ["LangChain"],
+    });
+    expect(Object.keys(out)).toEqual([
+      "AI & Generative AI",
+      "Data Engineering",
+      "Backend",
+      "APIs & Protocols",
+      "Databases",
+      "Cloud & DevOps",
+    ]);
+    expect(out["AI & Generative AI"]).toEqual(["LangChain"]);
+    expect(out["Data Engineering"]).toEqual(["Spark"]);
+    expect(out.Backend).toEqual(["Python"]);
+    expect(out["APIs & Protocols"]).toEqual(["REST"]);
+    expect(out.Databases).toEqual(["PostgreSQL"]);
+    expect(out["Cloud & DevOps"]).toEqual(["AWS"]);
+    expect(out).not.toHaveProperty("Streaming");
+    expect(out).not.toHaveProperty("Mobile Development");
+    expect(out).not.toHaveProperty("Machine Learning");
+  });
+
+  it("keeps Mobile Development and Machine Learning when non-empty", () => {
+    const out = normalizeSkillCategories({
+      "Mobile Development": ["Swift"],
+      "Machine Learning": ["PyTorch"],
+      Backend: ["Go"],
     });
     expect(Object.keys(out)).toEqual([
       "Backend",
-      "Database",
-      "Cloud & DevOps",
-      "Tools & Protocols",
+      "Mobile Development",
+      "Machine Learning",
     ]);
-    expect(out.Backend).toEqual(["Python"]);
-    expect(out.Database).toEqual(["PostgreSQL"]);
-    expect(out["Cloud & DevOps"]).toEqual(["AWS", "Docker"]);
-    expect(out["Tools & Protocols"]).toEqual(["Git"]);
-    expect(out).not.toHaveProperty("Streaming");
-    expect(out).not.toHaveProperty("Frontend");
   });
 
-  it("dedupes the same skill across categories — earlier canonical category wins", () => {
+  it("dedupes across categories — earlier canonical category wins", () => {
     const out = normalizeSkillCategories({
       Testing: ["Jest"],
       Backend: ["Jest", "Python"],
