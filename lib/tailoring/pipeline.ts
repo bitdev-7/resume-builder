@@ -352,6 +352,7 @@ export async function runTailoringPipeline(
       normalizedTitle: jdAnalysis.normalizedTitle,
       allowedSkills: composerInput.allowedSkills,
       categoryHints: composerInput.categoryHints,
+      profileHardSkills,
     });
   }
 
@@ -381,7 +382,7 @@ export async function runTailoringPipeline(
   );
 
   // Technologies the writer introduced in experience bullets — used only to filter
-  // enrichment recommendations (skills section comes from the profile, not composer).
+  // enrichment recommendations.
   const introducedSkillNames = new Set<string>();
   for (const r of coveredExperienceResults) {
     for (const b of r.bullets) {
@@ -389,18 +390,13 @@ export async function runTailoringPipeline(
     }
   }
 
-  const finalComposerResult = {
-    ...repairOutcome.composerResult,
-    skillCategories: profileHardSkills,
-    softSkills: [] as string[],
-  };
+  const finalComposerResult = repairOutcome.composerResult;
 
   // Stage 11 — Final Resume Assembly
   const resume = assembleFinalResume(
     candidateProfile,
     coveredExperienceResults,
-    finalComposerResult,
-    profileHardSkills
+    finalComposerResult
   );
 
   // Guarantee every JD-required target skill also appears in the projects section.
@@ -409,7 +405,7 @@ export async function runTailoringPipeline(
   }
 
   // Stage 12 — Gap / Enrichment Recommendations (exclude skills already on the resume)
-  const skillsOnResume = Object.values(profileHardSkills).flat();
+  const skillsOnResume = Object.values(finalComposerResult.skillCategories).flat();
   const addedSkillKeys = new Set([
     ...skillsOnResume.map((n) => skillKey(n)),
     ...Array.from(introducedSkillNames).map((n) => skillKey(n)),

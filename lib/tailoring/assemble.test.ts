@@ -34,7 +34,7 @@ describe("final assembly — immutable identity fields", () => {
       { experienceId: "exp_1", bullets: [{ text: "Built services at a different company", evidenceIds: ["fact_1"], requirementIds: [] }] },
     ];
 
-    const resume = assembleFinalResume(profile, experienceResults, composerResult, {});
+    const resume = assembleFinalResume(profile, experienceResults, composerResult);
     expect(resume.experience?.[0].company).toBe("Acme Corp");
     expect(resume.experience?.[0].title).toBe("Senior Backend Engineer");
   });
@@ -44,7 +44,7 @@ describe("final assembly — immutable identity fields", () => {
       { experienceId: "exp_1", bullets: [{ text: "Built authentication APIs", evidenceIds: ["fact_1"], requirementIds: [] }] },
     ];
 
-    const resume = assembleFinalResume(profile, experienceResults, composerResult, {});
+    const resume = assembleFinalResume(profile, experienceResults, composerResult);
     expect(resume.experience?.[0].startDate).toBe("01/2022");
     expect(resume.experience?.[0].endDate).toBe("Present");
   });
@@ -54,7 +54,7 @@ describe("final assembly — immutable identity fields", () => {
       { experienceId: "exp_1", bullets: [{ text: "Built authentication APIs", evidenceIds: ["fact_1"], requirementIds: [] }] },
     ];
 
-    const resume = assembleFinalResume(profile, experienceResults, composerResult, {});
+    const resume = assembleFinalResume(profile, experienceResults, composerResult);
     expect(resume.name).toBe("Jane Doe");
     expect(resume.email).toBe("jane@example.com");
     expect(resume.education).toEqual(profile.education);
@@ -64,26 +64,26 @@ describe("final assembly — immutable identity fields", () => {
     const experienceResults: ExperienceGenerationResult[] = [
       { experienceId: "exp_1", bullets: [{ text: "Built authentication APIs", evidenceIds: ["fact_1"], requirementIds: [] }] },
     ];
-    const resume = assembleFinalResume(profile, experienceResults, composerResult, {});
+    const resume = assembleFinalResume(profile, experienceResults, composerResult);
     expect(resume.linkedin).toBe("");
   });
 
   it("falls back to original facts when no generated bullets exist for an experience", () => {
-    const resume = assembleFinalResume(profile, [], composerResult, {});
+    const resume = assembleFinalResume(profile, [], composerResult);
     expect(resume.experience?.[0].achievements).toEqual(["Built authentication APIs"]);
   });
 
-  it("uses profileHardSkills for hardSkills and always empty softSkills (ignores composer skills)", () => {
+  it("uses composer skillCategories and softSkills on the resume", () => {
     const experienceResults: ExperienceGenerationResult[] = [
       { experienceId: "exp_1", bullets: [{ text: "Built authentication APIs", evidenceIds: ["fact_1"], requirementIds: [] }] },
     ];
-    const profileHardSkills = { Languages: ["Go"], Backend: ["Python"] };
     const resume = assembleFinalResume(profile, experienceResults, {
-      ...composerResult,
-      skillCategories: { Invented: ["ShouldNotAppear"] },
+      summary: "Backend engineer with strong Python experience.",
+      skillCategories: { Backend: ["Python"], Languages: ["Go"] },
       softSkills: ["Leadership"],
-    }, profileHardSkills);
-    expect(resume.hardSkills).toEqual(profileHardSkills);
-    expect(resume.softSkills).toEqual([]);
+      projects: [],
+    });
+    expect(resume.hardSkills).toEqual({ Backend: ["Python"], Languages: ["Go"] });
+    expect(resume.softSkills).toEqual(["Leadership"]);
   });
 });

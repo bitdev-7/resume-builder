@@ -28,8 +28,7 @@ function sanitizeJobTitle(rawTitle: string): string {
 export function assembleFinalResume(
   profile: CandidateProfile,
   experienceResults: ExperienceGenerationResult[],
-  composerResult: ComposerResult,
-  profileHardSkills: Record<string, string[]>
+  composerResult: ComposerResult
 ): UpdatedResume {
   const bulletsByExperienceId = new Map(experienceResults.map((r) => [r.experienceId, r.bullets]));
 
@@ -75,8 +74,8 @@ export function assembleFinalResume(
     linkedin: profile.contact.linkedin || "",
     summary: composerResult.summary,
     experience,
-    hardSkills: profileHardSkills,
-    softSkills: [],
+    hardSkills: composerResult.skillCategories,
+    softSkills: composerResult.softSkills,
     education: profile.education,
     certifications: profile.certifications,
     projects,
