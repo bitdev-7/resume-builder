@@ -20,10 +20,11 @@ function sanitizeJobTitle(rawTitle: string): string {
 }
 
 /**
- * Stage 11 — final assembly. The model never generates contact info, company
- * names, titles, dates, education, or skills — those are always taken from the
- * candidate's own profile. Only summary/bullets/project descriptions come from
- * the generation stages.
+ * Stage 11 — final assembly. Contact info, company names, titles, dates, and
+ * education always come from the candidate profile. Skills come from the
+ * composer output (the pipeline falls back to profile hard skills when the
+ * composer succeeds but returns none). Summary, bullets, and project
+ * descriptions come from the generation stages.
  */
 export function assembleFinalResume(
   profile: CandidateProfile,

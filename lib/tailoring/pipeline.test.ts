@@ -157,6 +157,91 @@ describe("tailoring pipeline — end to end (mocked AI)", () => {
     expect(result.generationCostUsd).toBeGreaterThan(0);
   });
 
+  it("falls back to profile hard skills when composer succeeds with empty skillCategories", async () => {
+    callAIMock.mockImplementation(async (opts: { messages: MockAIMessage[] }) => {
+      const systemContent = opts.messages.find((m) => m.role === "system")!.content;
+      const userContent = opts.messages.find((m) => m.role === "user")!.content;
+
+      if (systemContent.includes("JD Analyzer stage")) {
+        return {
+          providerUsed: "openai",
+          modelUsed: "gpt-4.1-mini",
+          text: "",
+          json: {
+            normalizedTitle: "Backend Engineer",
+            seniority: "mid",
+            roleFamily: "software_engineering",
+            domains: [],
+            requirements: [
+              { text: "Python", type: "must_have", category: "technology", canonicalTerm: "Python" },
+            ],
+            responsibilityThemes: [],
+            atsTerms: [],
+          },
+          raw: {},
+          costUsd: 0.001,
+        };
+      }
+
+      if (systemContent.includes("Experience Writer stage")) {
+        const parsed = JSON.parse(userContent.split("\n\nPREVIOUS")[0].split("\n\nADDITIONAL")[0]);
+        const inputExperiences: Array<{
+          experienceId: string;
+          allowedEvidence: Array<{ id: string }>;
+        }> = parsed.experiences ?? [
+          { experienceId: parsed.experienceId, allowedEvidence: parsed.allowedEvidence },
+        ];
+        return {
+          providerUsed: "openai",
+          modelUsed: "gpt-4.1-mini",
+          text: "",
+          json: {
+            experiences: inputExperiences.map((exp) => ({
+              experienceId: exp.experienceId,
+              bullets: [
+                {
+                  text: "Built Python services for the checkout flow",
+                  evidenceIds: [exp.allowedEvidence[0].id],
+                  requirementIds: [],
+                },
+              ],
+            })),
+          },
+          raw: {},
+          costUsd: 0.001,
+        };
+      }
+
+      if (systemContent.includes("Final Composer stage")) {
+        return {
+          providerUsed: "openai",
+          modelUsed: "gpt-4.1-mini",
+          text: "",
+          json: {
+            summary:
+              "Backend engineer with hands-on Python experience building reliable services that support critical business workflows across teams and products consistently over time.",
+            skillCategories: {},
+            softSkills: [],
+            projects: [],
+          },
+          raw: {},
+          costUsd: 0.001,
+        };
+      }
+
+      throw new Error(`Unexpected AI call in test: ${systemContent.slice(0, 50)}`);
+    });
+
+    const result = await runTailoringPipeline({
+      jd: "Looking for a Backend Engineer with Python experience.",
+      profileData: profileData(),
+      aiRequest,
+    });
+
+    expect(result.resume.hardSkills).toEqual({ Backend: ["Python"] });
+    expect(result.resume.softSkills).toEqual([]);
+  });
+
   it("throws a clear error when the profile has no work experience", async () => {
     const empty = profileData();
     empty.company_1 = null;

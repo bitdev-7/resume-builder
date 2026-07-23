@@ -390,7 +390,17 @@ export async function runTailoringPipeline(
     }
   }
 
-  const finalComposerResult = repairOutcome.composerResult;
+  let finalComposerResult = repairOutcome.composerResult;
+  if (
+    Object.keys(finalComposerResult.skillCategories).length === 0 &&
+    Object.keys(profileHardSkills).length > 0
+  ) {
+    finalComposerResult = {
+      ...finalComposerResult,
+      skillCategories: profileHardSkills,
+      softSkills: finalComposerResult.softSkills ?? [],
+    };
+  }
 
   // Stage 11 — Final Resume Assembly
   const resume = assembleFinalResume(
