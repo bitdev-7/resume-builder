@@ -202,9 +202,8 @@ export async function runTailoringPipeline(
   }
   const possessedSkillNames = getPossessedSkillNames(candidateProfile);
 
-  // The user's own skill categories (from their profile). Used to (a) hint the composer's
-  // grouping so it mirrors how the candidate categorized their skills, and (b) place any
-  // leftover/introduced skill under its real category instead of an "Additional Skills" bucket.
+  // Profile category map for must-keep placement only (ensureAllEligibleSkills). Composer
+  // grouping uses categoryHints — always the twelve canonical labels from CANONICAL_SKILL_CATEGORIES.
   const profileSkillCategoryByKey = new Map<string, string>();
   for (const record of [input.profileData.default_resume?.skills, input.profileData.default_resume?.hardSkills]) {
     if (!record) continue;
