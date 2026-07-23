@@ -61,6 +61,13 @@ function rebuildAliasToCanonical(): void {
 
 rebuildAliasToCanonical();
 
+/** True when trimmed lowercased name is a canonical skill or registered alias. */
+export function isKnownSkillName(raw: string): boolean {
+  const trimmed = String(raw || "").trim();
+  if (!trimmed) return false;
+  return ALIAS_TO_CANONICAL.has(trimmed.toLowerCase());
+}
+
 /** Normalize a raw skill/technology string to its canonical name (best-effort). */
 export function normalizeSkillName(raw: string): string {
   const trimmed = String(raw || "").trim();

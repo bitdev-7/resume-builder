@@ -1,5 +1,5 @@
 import type { ExperienceGenerationResult, JDAnalysis } from "@/lib/types/tailoring";
-import { normalizeSkillName } from "@/lib/tailoring/skill-ontology";
+import { isKnownSkillName, normalizeSkillName } from "@/lib/tailoring/skill-ontology";
 
 export const MAIN_SKILL_COVERAGE_RATIO = 0.6;
 
@@ -31,12 +31,15 @@ export function selectMainSkill(
 
   for (const r of mustTech) {
     const raw = (r.canonicalTerm || r.text || "").trim();
+    if (!isKnownSkillName(raw)) continue;
     const canonical = normalizeSkillName(raw);
     if (canonical) return canonical;
   }
 
   for (const term of jdAnalysis.atsTerms ?? []) {
-    const canonical = normalizeSkillName(String(term || "").trim());
+    const raw = String(term || "").trim();
+    if (!isKnownSkillName(raw)) continue;
+    const canonical = normalizeSkillName(raw);
     if (canonical) return canonical;
   }
   return null;

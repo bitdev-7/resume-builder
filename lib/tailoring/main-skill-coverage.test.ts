@@ -37,6 +37,18 @@ describe("selectMainSkill", () => {
     expect(skill).toBe("Kubernetes");
   });
 
+  it("atsTerms fallback skips unknown phrases and picks the first known skill", () => {
+    const skill = selectMainSkill(
+      jd({
+        requirements: [
+          { id: "r1", text: "Communicate well", type: "must_have", category: "soft_skill", canonicalTerm: null, priority: 9 },
+        ],
+        atsTerms: ["excellent communication", "Kubernetes"],
+      })
+    );
+    expect(skill).toBe("Kubernetes");
+  });
+
   it("returns null when nothing usable", () => {
     expect(selectMainSkill(jd({ requirements: [], atsTerms: [] }))).toBeNull();
   });
