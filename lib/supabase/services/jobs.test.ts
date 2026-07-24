@@ -5,7 +5,9 @@ import {
   listJobsForUser,
   mergeCatalogJobsWithUserStatus,
   nextStatusAfterOpen,
+  openJobForUser,
   resolveJobDescriptionOnAdd,
+  setJobStatusForUser,
 } from "./jobs";
 
 function scriptedClient(
@@ -32,6 +34,83 @@ function scriptedClient(
         }
       );
       return builder;
+    },
+  } as unknown as SupabaseClient;
+}
+
+type CapturedWrite = {
+  table: string;
+  method: "upsert" | "update";
+  payload: unknown;
+  options?: unknown;
+};
+
+function capturingClient(
+  reads: Array<{ data: unknown; error: unknown }>,
+  onWrite?: (capture: CapturedWrite) => void
+): SupabaseClient {
+  let readIndex = 0;
+
+  return {
+    from(table: string) {
+      let method: CapturedWrite["method"] | null = null;
+      let payload: unknown;
+      let options: unknown;
+      const filters: Record<string, unknown> = {};
+
+      const finalize = () => ({
+        data: null,
+        error: null,
+      });
+
+      const builder: Record<string, unknown> = {
+        select() {
+          return builder;
+        },
+        eq(column: string, value: unknown) {
+          filters[column] = value;
+          return builder;
+        },
+        in(column: string, value: unknown) {
+          filters[column] = value;
+          return builder;
+        },
+        single() {
+          const response = reads[readIndex++];
+          return Promise.resolve(response);
+        },
+        maybeSingle() {
+          const response = reads[readIndex++];
+          return Promise.resolve(response);
+        },
+        upsert(nextPayload: unknown, nextOptions?: unknown) {
+          method = "upsert";
+          payload = nextPayload;
+          options = nextOptions;
+          return builder;
+        },
+        update(nextPayload: unknown) {
+          method = "update";
+          payload = nextPayload;
+          return builder;
+        },
+        order() {
+          return builder;
+        },
+        then(
+          resolve: (value: { data: unknown; error: unknown }) => unknown,
+          reject?: (reason: unknown) => unknown
+        ) {
+          if (method) {
+            onWrite?.({ table, method, payload, options });
+            return Promise.resolve(finalize()).then(resolve, reject);
+          }
+          const response = reads[readIndex++];
+          return Promise.resolve(response).then(resolve, reject);
+        },
+      };
+
+      return builder as unknown as ReturnType<SupabaseClient["from"]>;
     },
   } as unknown as SupabaseClient;
 }
@@ -165,6 +244,99 @@ describe("nextStatusAfterOpen", () => {
 
   it("leaves applied alone", () => {
     expect(nextStatusAfterOpen("applied")).toBe("applied");
+  });
+});
+
+describe("openJobForUser", () => {
+  const job = {
+    id: "job-1",
+    url: "https://example.com/jobs/1",
+    created_at: "2026-07-16T00:00:00.000Z",
+  };
+
+  it("upserts status with array payload when no existing row", async () => {
+    const writes: CapturedWrite[] = [];
+    const client = capturingClient(
+      [{ data: job, error: null }, { data: null, error: null }],
+      (capture) => writes.push(capture)
+    );
+
+    const result = await openJobForUser("user-1", "job-1", client);
+
+    expect(result.status).toBe("opened");
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({
+      table: "user_job_status",
+      method: "upsert",
+      options: { onConflict: "user_id,job_id" },
+    });
+    expect(Array.isArray(writes[0].payload)).toBe(true);
+    expect(writes[0].payload).toEqual([
+      expect.objectContaining({
+        user_id: "user-1",
+        job_id: "job-1",
+        status: "opened",
+      }),
+    ]);
+    expect(
+      (writes[0].payload as Array<Record<string, unknown>>)[0]
+    ).not.toHaveProperty("job_description");
+  });
+
+  it("upserts with array payload and omits job_description when row has JD", async () => {
+    const writes: CapturedWrite[] = [];
+    const client = capturingClient(
+      [
+        { data: job, error: null },
+        {
+          data: { status: "unapplied", job_description: "Need a Java engineer" },
+          error: null,
+        },
+      ],
+      (capture) => writes.push(capture)
+    );
+
+    const result = await openJobForUser("user-1", "job-1", client);
+
+    expect(result.status).toBe("opened");
+    expect(result.job_description).toBe("Need a Java engineer");
+    expect(writes).toHaveLength(1);
+    expect(Array.isArray(writes[0].payload)).toBe(true);
+    expect(
+      (writes[0].payload as Array<Record<string, unknown>>)[0]
+    ).not.toHaveProperty("job_description");
+  });
+});
+
+describe("setJobStatusForUser", () => {
+  it("uses bulk array upsert (not update) when no pre-existing row", async () => {
+    const writes: CapturedWrite[] = [];
+    const client = capturingClient([], (capture) => writes.push(capture));
+
+    await setJobStatusForUser("user-1", ["job-a", "job-b"], "applied", client);
+
+    const statusWrite = writes.find((w) => w.table === "user_job_status");
+    expect(statusWrite?.method).toBe("upsert");
+    expect(statusWrite?.options).toEqual({ onConflict: "user_id,job_id" });
+    expect(Array.isArray(statusWrite?.payload)).toBe(true);
+    expect(statusWrite?.payload).toEqual([
+      expect.objectContaining({
+        user_id: "user-1",
+        job_id: "job-a",
+        status: "applied",
+      }),
+      expect.objectContaining({
+        user_id: "user-1",
+        job_id: "job-b",
+        status: "applied",
+      }),
+    ]);
+    for (const row of statusWrite?.payload as Array<Record<string, unknown>>) {
+      expect(row).not.toHaveProperty("job_description");
+    }
+    expect(writes.some((w) => w.table === "user_job_status" && w.method === "update")).toBe(
+      false
+    );
   });
 });
 

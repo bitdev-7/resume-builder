@@ -247,12 +247,14 @@ export async function openJobForUser(
 
   if (nextStatus !== item.status) {
     const { error } = await db.from("user_job_status").upsert(
-      {
-        user_id: userId,
-        job_id: jobId,
-        status: nextStatus,
-        updated_at: new Date().toISOString(),
-      },
+      [
+        {
+          user_id: userId,
+          job_id: jobId,
+          status: nextStatus,
+          updated_at: new Date().toISOString(),
+        },
+      ],
       { onConflict: "user_id,job_id" }
     );
 
@@ -272,11 +274,15 @@ export async function setJobStatusForUser(
 
   const db = await resolveClient(client);
   const updatedAt = new Date().toISOString();
-  const { error: statusError } = await db
-    .from("user_job_status")
-    .update({ status, updated_at: updatedAt })
-    .eq("user_id", userId)
-    .in("job_id", jobIds);
+  const { error: statusError } = await db.from("user_job_status").upsert(
+    jobIds.map((jobId) => ({
+      user_id: userId,
+      job_id: jobId,
+      status,
+      updated_at: updatedAt,
+    })),
+    { onConflict: "user_id,job_id" }
+  );
 
   if (statusError) throw statusError;
 
