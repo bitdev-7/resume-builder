@@ -49,6 +49,7 @@ export default function JobsPage() {
   const { toasts, showToast, dismissToast } = useToast();
   const [jobs, setJobs] = useState<UserJobListItem[]>([]);
   const [jobUrl, setJobUrl] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
   const [statusFilter, setStatusFilter] = useState<BidStatus | "">("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
@@ -181,12 +182,13 @@ export default function JobsPage() {
 
     setAdding(true);
     try {
-      const result = await addJobForUser(user.id, jobUrl);
+      const result = await addJobForUser(user.id, jobUrl, jobDescription);
       setJobs((current) => {
         const withoutExisting = current.filter((job) => job.job_id !== result.item.job_id);
         return [result.item, ...withoutExisting];
       });
       setJobUrl("");
+      setJobDescription("");
       setStatusFilter("");
       setPage(1);
       showToast(
@@ -336,30 +338,41 @@ export default function JobsPage() {
           </div>
 
           <div className="space-y-4 p-4 sm:p-6">
-            <form
-              onSubmit={handleAdd}
-              className="card-soft flex flex-col gap-2 p-3 sm:flex-row"
-            >
-              <label htmlFor="job-url" className="sr-only">
-                Job URL
+            <form onSubmit={handleAdd} className="card-soft flex flex-col gap-2 p-3">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <label htmlFor="job-url" className="sr-only">
+                  Job URL
+                </label>
+                <input
+                  id="job-url"
+                  type="text"
+                  inputMode="url"
+                  value={jobUrl}
+                  onChange={(event) => setJobUrl(event.target.value)}
+                  placeholder="Paste a job URL"
+                  className="input-shell min-w-0 flex-1"
+                  disabled={adding}
+                />
+                <button
+                  type="submit"
+                  className="btn-primary shrink-0 sm:min-w-24"
+                  disabled={adding}
+                >
+                  {adding ? "Adding…" : "Add job"}
+                </button>
+              </div>
+              <label htmlFor="job-description" className="sr-only">
+                Job description
               </label>
-              <input
-                id="job-url"
-                type="text"
-                inputMode="url"
-                value={jobUrl}
-                onChange={(event) => setJobUrl(event.target.value)}
-                placeholder="Paste a job URL"
-                className="input-shell min-w-0 flex-1"
+              <textarea
+                id="job-description"
+                value={jobDescription}
+                onChange={(event) => setJobDescription(event.target.value)}
+                placeholder="Paste the job description (required for one-click Generate)"
+                rows={4}
+                className="input-shell min-w-0 w-full resize-y"
                 disabled={adding}
               />
-              <button
-                type="submit"
-                className="btn-primary shrink-0 sm:min-w-24"
-                disabled={adding}
-              >
-                {adding ? "Adding…" : "Add job"}
-              </button>
             </form>
 
             <div className="card-soft flex flex-wrap items-end justify-between gap-3 p-3">
