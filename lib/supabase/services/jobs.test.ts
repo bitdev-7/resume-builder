@@ -8,6 +8,7 @@ import {
   openJobForUser,
   resolveJobDescriptionOnAdd,
   setJobStatusForUser,
+  updateJobDescriptionForUser,
 } from "./jobs";
 
 function scriptedClient(
@@ -337,6 +338,47 @@ describe("setJobStatusForUser", () => {
     expect(writes.some((w) => w.table === "user_job_status" && w.method === "update")).toBe(
       false
     );
+  });
+});
+
+describe("updateJobDescriptionForUser", () => {
+  it("upserts trimmed JD with array payload and no status column", async () => {
+    const writes: CapturedWrite[] = [];
+    const client = capturingClient([], (capture) => writes.push(capture));
+
+    const saved = await updateJobDescriptionForUser(
+      "user-1",
+      "job-1",
+      "  Need a Java engineer  ",
+      client
+    );
+
+    expect(saved).toBe("Need a Java engineer");
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({
+      table: "user_job_status",
+      method: "upsert",
+      options: { onConflict: "user_id,job_id" },
+    });
+    expect(Array.isArray(writes[0].payload)).toBe(true);
+    const row = (writes[0].payload as Array<Record<string, unknown>>)[0];
+    expect(row).toMatchObject({
+      user_id: "user-1",
+      job_id: "job-1",
+      job_description: "Need a Java engineer",
+    });
+    expect(row).not.toHaveProperty("status");
+  });
+
+  it("allows clearing the JD with an empty string", async () => {
+    const writes: CapturedWrite[] = [];
+    const client = capturingClient([], (capture) => writes.push(capture));
+
+    const saved = await updateJobDescriptionForUser("user-1", "job-1", "   ", client);
+
+    expect(saved).toBe("");
+    const row = (writes[0].payload as Array<Record<string, unknown>>)[0];
+    expect(row.job_description).toBe("");
   });
 });
 

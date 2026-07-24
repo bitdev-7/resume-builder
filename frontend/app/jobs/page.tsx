@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ApplyAlertDialog from "@/components/ApplyAlertDialog";
 import { useAuth } from "@/components/AuthProvider";
+import JobDescriptionEditDialog from "@/components/JobDescriptionEditDialog";
 import JobsBatchPanel from "@/components/JobsBatchPanel";
 import JobsGeneratePanel from "@/components/JobsGeneratePanel";
 import ResumePreviewDialog from "@/components/ResumePreviewDialog";
@@ -63,6 +64,7 @@ import {
   openJobForUser,
   removeMyJob,
   setJobStatusForUser,
+  updateJobDescriptionForUser,
 } from "@/lib/supabase/services/jobs";
 import { listResumes } from "@/lib/supabase/services/resumes";
 
@@ -98,6 +100,8 @@ export default function JobsPage() {
     () => new Set()
   );
   const [batchJobs, setBatchJobs] = useState<UserJobListItem[] | null>(null);
+  const [jdDialogJobId, setJdDialogJobId] = useState<string | null>(null);
+  const [savingJd, setSavingJd] = useState(false);
   const [generatingJobId, setGeneratingJobId] = useState<string | null>(null);
   const [loadingGeneratePrefs, setLoadingGeneratePrefs] = useState(true);
   const [activeProfileId, setActiveProfileId] = useState("");
@@ -616,6 +620,39 @@ export default function JobsPage() {
     }
   };
 
+  const jdDialogJob = jdDialogJobId
+    ? jobs.find((job) => job.job_id === jdDialogJobId) ?? null
+    : null;
+
+  const handleSaveJobDescription = async (nextJd: string) => {
+    if (!user?.id || !jdDialogJob || savingJd) return;
+    setSavingJd(true);
+    try {
+      const savedJd = await updateJobDescriptionForUser(
+        user.id,
+        jdDialogJob.job_id,
+        nextJd
+      );
+      setJobs((current) =>
+        current.map((item) =>
+          item.job_id === jdDialogJob.job_id
+            ? { ...item, job_description: savedJd }
+            : item
+        )
+      );
+      setJdDialogJobId(null);
+      showToast("success", "Job description saved");
+    } catch (error) {
+      console.error("Failed to save job description:", error);
+      showToast(
+        "error",
+        error instanceof Error ? error.message : "Failed to save job description"
+      );
+    } finally {
+      setSavingJd(false);
+    }
+  };
+
   const handleIgnore = async (job: UserJobListItem) => {
     if (
       !user?.id ||
@@ -689,6 +726,17 @@ export default function JobsPage() {
         showHybridOnsite={showHybridOnsiteAlert}
         onCancel={handleCancelOneClickAlert}
         onContinue={() => void handleContinueOneClickAfterAlert()}
+      />
+
+      <JobDescriptionEditDialog
+        open={jdDialogJob !== null}
+        jobUrl={jdDialogJob?.url ?? ""}
+        initialJobDescription={jdDialogJob?.job_description ?? ""}
+        saving={savingJd}
+        onCancel={() => {
+          if (!savingJd) setJdDialogJobId(null);
+        }}
+        onSave={(nextJd) => void handleSaveJobDescription(nextJd)}
       />
 
       <ResumePreviewDialog
@@ -956,6 +1004,19 @@ export default function JobsPage() {
                                 ) : (
                                   "Generate"
                                 )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setJdDialogJobId(job.job_id)}
+                                disabled={busy || generatingJobId === job.job_id}
+                                className="btn-compact"
+                                title={
+                                  job.job_description.trim()
+                                    ? "View or edit the job description"
+                                    : "Paste the job description"
+                                }
+                              >
+                                JD
                               </button>
                               <button
                                 type="button"

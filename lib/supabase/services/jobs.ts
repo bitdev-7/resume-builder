@@ -298,6 +298,33 @@ export async function setJobStatusForUser(
   if (resumeError) throw resumeError;
 }
 
+export async function updateJobDescriptionForUser(
+  userId: string,
+  jobId: string,
+  jobDescription: string,
+  client?: SupabaseClient
+): Promise<string> {
+  const db = await resolveClient(client);
+  const resolvedJd = jobDescription.trim();
+
+  // Array payload so postgrest-js restricts columns to the payload keys:
+  // new rows get the status default, existing rows keep their status.
+  const { error } = await db.from("user_job_status").upsert(
+    [
+      {
+        user_id: userId,
+        job_id: jobId,
+        job_description: resolvedJd,
+        updated_at: new Date().toISOString(),
+      },
+    ],
+    { onConflict: "user_id,job_id" }
+  );
+
+  if (error) throw error;
+  return resolvedJd;
+}
+
 export async function ignoreJobForUser(
   userId: string,
   jobId: string,
