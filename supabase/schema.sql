@@ -385,6 +385,7 @@ create table if not exists public.user_job_status (
       'unapplied', 'opened', 'applied', 'ignored', 'interviewing',
       'rejected', 'offer', 'accepted'
     )),
+  job_description text not null default '',
   updated_at timestamptz not null default now(),
   primary key (user_id, job_id)
 );
