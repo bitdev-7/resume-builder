@@ -14,6 +14,7 @@ const job = {
   url: "https://example.com/a",
   created_at: "2026-07-21T00:00:00.000Z",
   status: "unapplied" as const,
+  job_description: "",
 };
 
 describe("jobs-batch-state", () => {

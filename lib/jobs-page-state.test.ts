@@ -8,18 +8,21 @@ const JOBS: UserJobListItem[] = [
     url: "example.com/first",
     created_at: "2026-07-16T00:00:00.000Z",
     status: "unapplied",
+    job_description: "",
   },
   {
     job_id: "2",
     url: "https://example.com/second",
     created_at: "2026-07-15T00:00:00.000Z",
     status: "applied",
+    job_description: "",
   },
   {
     job_id: "3",
     url: "http://example.com/third",
     created_at: "2026-07-14T00:00:00.000Z",
     status: "applied",
+    job_description: "",
   },
 ];
 
@@ -40,6 +43,7 @@ describe("jobs page state", () => {
           url: "https://example.com/ignored",
           created_at: "2026-07-13T00:00:00.000Z",
           status: "ignored",
+          job_description: "",
         },
       ]).map((job) => job.job_id)
     ).toEqual(["1"]);

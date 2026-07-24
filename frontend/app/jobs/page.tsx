@@ -1,13 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ApplyAlertDialog from "@/components/ApplyAlertDialog";
 import { useAuth } from "@/components/AuthProvider";
 import JobsBatchPanel from "@/components/JobsBatchPanel";
 import JobsGeneratePanel from "@/components/JobsGeneratePanel";
+import ResumePreviewDialog from "@/components/ResumePreviewDialog";
 import { ToastContainer, useToast } from "@/components/Toast";
+import { DEFAULT_AI_SETTINGS } from "@/lib/ai-settings";
+import {
+  DEFAULT_APPLY_ALERT_SETTINGS,
+  type ApplyAlertSettings,
+} from "@/lib/apply-alert-settings";
+import {
+  findDuplicateCompanyApplications,
+  type DuplicateApplicationMatch,
+} from "@/lib/apply-alerts";
 import { bidStatusRowClass, bidStatusSelectClass } from "@/lib/bid-status-colors";
 import { copyText } from "@/lib/clipboard";
+import { notifyCompletion } from "@/lib/desktop-notify";
+import { extractedJobIsHybridOrOnsite } from "@/lib/job-work-type";
 import { toggleJobSelection } from "@/lib/jobs-batch-state";
+import {
+  extractJobForOneClickGenerate,
+  JOBS_ONE_CLICK_FIXED_AI_MODEL,
+  JOBS_ONE_CLICK_FIXED_USE_OPENROUTER,
+  runJobsOneClickGenerate,
+  type OneClickExtractedContext,
+} from "@/lib/jobs-one-click-generate";
 import {
   filterJobs,
   getExternalJobUrl,
@@ -16,10 +36,26 @@ import {
   JOBS_ROW_STATUSES,
   paginateJobs,
 } from "@/lib/jobs-page-state";
+import { DEFAULT_JOBSITE, type JobsiteId } from "@/lib/jobsites";
+import {
+  formatPdfSaveMessage,
+  renderResumePdfBase64,
+  savePdfToDownloadsFolder,
+} from "@/lib/pdf-download";
+import {
+  DEFAULT_RESUME_TEMPLATE,
+  resolveResumeTemplate,
+  type ResumeTemplateId,
+} from "@/lib/resume-templates";
+import type { AnalysisResult } from "@/lib/types/resume";
+import { supabase } from "@/lib/supabase";
 import {
   type BidStatus,
   type UserJobListItem,
 } from "@/lib/supabase/database.types";
+import { loadProfileForApp } from "@/lib/supabase/load-profile-for-app";
+import { loadAiSettings } from "@/lib/supabase/services/ai-settings";
+import { loadApplyAlertSettings } from "@/lib/supabase/services/apply-alert-settings";
 import {
   addJobForUser,
   ignoreJobForUser,
@@ -28,6 +64,7 @@ import {
   removeMyJob,
   setJobStatusForUser,
 } from "@/lib/supabase/services/jobs";
+import { listResumes } from "@/lib/supabase/services/resumes";
 
 const PAGE_SIZE_OPTIONS = [30, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 30;
@@ -61,6 +98,40 @@ export default function JobsPage() {
     () => new Set()
   );
   const [batchJobs, setBatchJobs] = useState<UserJobListItem[] | null>(null);
+  const [generatingJobId, setGeneratingJobId] = useState<string | null>(null);
+  const [loadingGeneratePrefs, setLoadingGeneratePrefs] = useState(true);
+  const [activeProfileId, setActiveProfileId] = useState("");
+  const [resumeTemplate, setResumeTemplate] =
+    useState<ResumeTemplateId>(DEFAULT_RESUME_TEMPLATE);
+  const [promptOverrides, setPromptOverrides] = useState<
+    Record<string, string> | undefined
+  >(undefined);
+  const [headlineOverride, setHeadlineOverride] = useState("");
+  const [jobsite, setJobsite] = useState<JobsiteId>(DEFAULT_JOBSITE);
+  const [showPdfPreviewAfterResume, setShowPdfPreviewAfterResume] = useState(
+    DEFAULT_AI_SETTINGS.show_pdf_preview_after_resume
+  );
+  const [applyAlertSettings, setApplyAlertSettings] = useState<ApplyAlertSettings>(
+    DEFAULT_APPLY_ALERT_SETTINGS
+  );
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [duplicateMatches, setDuplicateMatches] = useState<DuplicateApplicationMatch[]>(
+    []
+  );
+  const [showHybridOnsiteAlert, setShowHybridOnsiteAlert] = useState(false);
+  const [oneClickPreview, setOneClickPreview] = useState<{
+    pdfBase64: string;
+    jobTitle: string;
+    companyName: string;
+    template: ResumeTemplateId;
+    job: UserJobListItem;
+    resume: AnalysisResult;
+    previewLoading: boolean;
+  } | null>(null);
+  const pendingGenerateRef = useRef<{
+    job: UserJobListItem;
+    extracted: OneClickExtractedContext;
+  } | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -87,6 +158,52 @@ export default function JobsPage() {
       cancelled = true;
     };
   }, [authLoading, showToast, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLoadingGeneratePrefs(false);
+      return;
+    }
+
+    let cancelled = false;
+    void Promise.all([
+      loadProfileForApp(supabase, { email: user.email, userId: user.id }),
+      loadAiSettings(user.id),
+      loadApplyAlertSettings(user.id),
+    ])
+      .then(([loadedProfile, loadedAi, loadedAlerts]) => {
+        if (cancelled) return;
+        setActiveProfileId(loadedProfile.activeProfileId);
+        setPromptOverrides(
+          loadedProfile.profiles.find(
+            (profile) => profile.id === loadedProfile.activeProfileId
+          )?.prompt_overrides ?? undefined
+        );
+        setResumeTemplate(
+          resolveResumeTemplate(
+            loadedProfile.legacyAnalyzeProfile.default_resume?.resume_template
+          )
+        );
+        setHeadlineOverride(
+          loadedProfile.legacyAnalyzeProfile.default_resume?.headline?.trim() ?? ""
+        );
+        const defaultJobsite =
+          loadedProfile.bundle.profile.default_settings?.default_jobsite;
+        if (defaultJobsite) setJobsite(defaultJobsite);
+        setShowPdfPreviewAfterResume(loadedAi.show_pdf_preview_after_resume);
+        setApplyAlertSettings(loadedAlerts);
+      })
+      .catch((error) => {
+        console.warn("Error loading generate preferences:", error);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingGeneratePrefs(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.email, user?.id]);
 
   const pipelineJobs = useMemo(() => jobsInPipeline(jobs), [jobs]);
   const filteredJobs = useMemo(
@@ -263,6 +380,242 @@ export default function JobsPage() {
     }
   };
 
+  const runPreflightBeforeOneClickGenerate = useCallback(
+    async (extracted: OneClickExtractedContext): Promise<boolean> => {
+      if (!user?.id) return false;
+
+      let duplicates: DuplicateApplicationMatch[] = [];
+      let hybridOnsite = false;
+
+      if (
+        applyAlertSettings.duplicate_apply_alert_enabled &&
+        extracted.companyName.trim()
+      ) {
+        try {
+          const records = await listResumes(user.id);
+          duplicates = findDuplicateCompanyApplications(
+            records,
+            extracted.companyName,
+            applyAlertSettings.duplicate_apply_months
+          );
+        } catch (error) {
+          console.warn("Failed to check duplicate applications:", error);
+        }
+      }
+
+      if (applyAlertSettings.hybrid_onsite_alert_enabled) {
+        hybridOnsite = extractedJobIsHybridOrOnsite({
+          jobType: extracted.jobType,
+          jobTypes: extracted.jobTypes,
+        });
+      }
+
+      if (duplicates.length > 0 || hybridOnsite) {
+        setDuplicateMatches(duplicates);
+        setShowHybridOnsiteAlert(hybridOnsite);
+        setAlertOpen(true);
+        return true;
+      }
+
+      return false;
+    },
+    [applyAlertSettings, user?.id]
+  );
+
+  const executeOneClickGenerate = useCallback(
+    async (job: UserJobListItem, extracted: OneClickExtractedContext) => {
+      if (!user?.id) return;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("You must be signed in to generate a resume");
+
+      const result = await runJobsOneClickGenerate(
+        {
+          accessToken: session.access_token,
+          userId: user.id,
+          jobId: job.job_id,
+          jobUrl: job.url,
+          jobDescription: job.job_description,
+          bidStatus: job.status,
+          profileId: activeProfileId,
+          resumeTemplate,
+          promptOverrides,
+          useOpenRouter: JOBS_ONE_CLICK_FIXED_USE_OPENROUTER,
+          apiModel: JOBS_ONE_CLICK_FIXED_AI_MODEL,
+          showPdfPreview: showPdfPreviewAfterResume,
+          headlineOverride,
+          jobsite,
+        },
+        { extracted }
+      );
+
+      const resumeLabel =
+        [result.jobTitle, result.companyName].filter(Boolean).join(" @ ") || "Resume";
+
+      if (showPdfPreviewAfterResume && result.previewPdfBase64) {
+        setOneClickPreview({
+          pdfBase64: result.previewPdfBase64,
+          jobTitle: result.jobTitle,
+          companyName: result.companyName,
+          template: resumeTemplate,
+          job,
+          resume: result.resume,
+          previewLoading: false,
+        });
+        showToast(
+          "success",
+          `Generate complete — ${resumeLabel}. Preview and download when ready.`
+        );
+        void notifyCompletion(
+          "Cubi — Generate complete",
+          `${resumeLabel} is ready to preview and download.`
+        );
+      } else {
+        showToast("success", formatPdfSaveMessage(result.savedPath, true));
+        void notifyCompletion("Cubi — Generate complete", `${resumeLabel} downloaded.`);
+      }
+    },
+    [
+      activeProfileId,
+      headlineOverride,
+      jobsite,
+      promptOverrides,
+      resumeTemplate,
+      showPdfPreviewAfterResume,
+      showToast,
+      user?.id,
+    ]
+  );
+
+  const handleOneClickGenerate = async (job: UserJobListItem) => {
+    if (!user?.id || generatingJobId !== null) return;
+    if (!job.job_description.trim()) {
+      showToast(
+        "warning",
+        "Add a job description when adding this job, or re-add the URL with the JD pasted."
+      );
+      return;
+    }
+    if (!activeProfileId) {
+      showToast("warning", "No profile resume — go to Profile first.");
+      return;
+    }
+
+    setGeneratingJobId(job.job_id);
+    let blockedByAlert = false;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("You must be signed in");
+
+      const extracted = await extractJobForOneClickGenerate({
+        accessToken: session.access_token,
+        jobDescription: job.job_description,
+        useOpenRouter: JOBS_ONE_CLICK_FIXED_USE_OPENROUTER,
+        promptOverrides,
+      });
+
+      pendingGenerateRef.current = { job, extracted };
+      blockedByAlert = await runPreflightBeforeOneClickGenerate(extracted);
+      if (blockedByAlert) return;
+
+      await executeOneClickGenerate(job, extracted);
+      pendingGenerateRef.current = null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Generate failed";
+      showToast("error", `Generate failed: ${message}`);
+      void notifyCompletion("Cubi — Generate failed", message);
+      pendingGenerateRef.current = null;
+    } finally {
+      if (!blockedByAlert) {
+        setGeneratingJobId(null);
+      }
+    }
+  };
+
+  const handleContinueOneClickAfterAlert = async () => {
+    setAlertOpen(false);
+    const pending = pendingGenerateRef.current;
+    if (!pending || !user?.id) {
+      setGeneratingJobId(null);
+      pendingGenerateRef.current = null;
+      return;
+    }
+
+    setGeneratingJobId(pending.job.job_id);
+    try {
+      await executeOneClickGenerate(pending.job, pending.extracted);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Generate failed";
+      showToast("error", `Generate failed: ${message}`);
+      void notifyCompletion("Cubi — Generate failed", message);
+    } finally {
+      setGeneratingJobId(null);
+      pendingGenerateRef.current = null;
+    }
+  };
+
+  const handleCancelOneClickAlert = () => {
+    setAlertOpen(false);
+    setGeneratingJobId(null);
+    pendingGenerateRef.current = null;
+  };
+
+  const handleOneClickPreviewDownload = async () => {
+    if (!oneClickPreview?.pdfBase64) return;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const { savedPath } = await savePdfToDownloadsFolder(oneClickPreview.pdfBase64, {
+        companyName: oneClickPreview.companyName,
+        jobRole: oneClickPreview.jobTitle,
+        personName: oneClickPreview.resume.name || "resume",
+        accessToken: session?.access_token ?? null,
+      });
+      showToast("success", formatPdfSaveMessage(savedPath, true));
+    } catch (error) {
+      showToast(
+        "error",
+        error instanceof Error ? error.message : "Failed to download"
+      );
+    }
+  };
+
+  const handleOneClickPreviewTemplateChange = async (template: ResumeTemplateId) => {
+    if (!oneClickPreview) return;
+    setOneClickPreview((current) =>
+      current ? { ...current, template, previewLoading: true } : current
+    );
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("You must be signed in");
+      const previewPdfBase64 = await renderResumePdfBase64(
+        oneClickPreview.resume,
+        template,
+        session.access_token
+      );
+      setOneClickPreview((current) =>
+        current
+          ? { ...current, template, pdfBase64: previewPdfBase64, previewLoading: false }
+          : current
+      );
+    } catch (error) {
+      setOneClickPreview((current) =>
+        current ? { ...current, previewLoading: false } : current
+      );
+      showToast(
+        "error",
+        error instanceof Error ? error.message : "Failed to render template"
+      );
+    }
+  };
+
   const handleIgnore = async (job: UserJobListItem) => {
     if (
       !user?.id ||
@@ -328,6 +681,32 @@ export default function JobsPage() {
   return (
     <main className="page-shell">
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      <ApplyAlertDialog
+        open={alertOpen}
+        duplicateMatches={duplicateMatches}
+        duplicateMonths={applyAlertSettings.duplicate_apply_months}
+        showHybridOnsite={showHybridOnsiteAlert}
+        onCancel={handleCancelOneClickAlert}
+        onContinue={() => void handleContinueOneClickAfterAlert()}
+      />
+
+      <ResumePreviewDialog
+        open={oneClickPreview !== null}
+        onClose={() => setOneClickPreview(null)}
+        pdfBase64={oneClickPreview?.pdfBase64}
+        previewLoading={oneClickPreview?.previewLoading}
+        regenerating={generatingJobId === oneClickPreview?.job.job_id}
+        template={resolveResumeTemplate(oneClickPreview?.template)}
+        jobTitle={oneClickPreview?.jobTitle}
+        companyName={oneClickPreview?.companyName}
+        onTemplateChange={(template) => void handleOneClickPreviewTemplateChange(template)}
+        onRegenerate={() => {
+          if (oneClickPreview) void handleOneClickGenerate(oneClickPreview.job);
+        }}
+        onDownload={() => void handleOneClickPreviewDownload()}
+      />
+
       <div className="mx-auto w-full max-w-7xl">
         <div className="glass-panel overflow-hidden">
           <div className="page-header">
@@ -552,8 +931,36 @@ export default function JobsPage() {
                             <div className="flex justify-end gap-1.5">
                               <button
                                 type="button"
+                                className="btn-secondary btn-compact inline-flex items-center gap-1.5"
+                                disabled={
+                                  !job.job_description.trim() ||
+                                  generatingJobId !== null ||
+                                  loadingGeneratePrefs ||
+                                  busy
+                                }
+                                title={
+                                  !job.job_description.trim()
+                                    ? "Add a job description first"
+                                    : "Generate resume and download"
+                                }
+                                onClick={() => void handleOneClickGenerate(job)}
+                              >
+                                {generatingJobId === job.job_id ? (
+                                  <>
+                                    <span
+                                      className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600 dark:border-blue-900/50 dark:border-t-blue-400"
+                                      aria-hidden
+                                    />
+                                    Generating…
+                                  </>
+                                ) : (
+                                  "Generate"
+                                )}
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => setAnalyseJobId(job.job_id)}
-                                disabled={busy}
+                                disabled={busy || generatingJobId !== null}
                                 className="btn-compact"
                               >
                                 Analyze
