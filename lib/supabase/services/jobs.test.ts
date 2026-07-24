@@ -5,6 +5,7 @@ import {
   listJobsForUser,
   mergeCatalogJobsWithUserStatus,
   nextStatusAfterOpen,
+  resolveJobDescriptionOnAdd,
 } from "./jobs";
 
 function scriptedClient(
@@ -87,14 +88,47 @@ describe("mergeCatalogJobsWithUserStatus", () => {
         url: "https://example.com/a",
         created_at: "2026-07-16T00:00:00.000Z",
         status: "applied",
+        job_description: "",
       },
       {
         job_id: "job-b",
         url: "https://example.com/b",
         created_at: "2026-07-15T00:00:00.000Z",
         status: "unapplied",
+        job_description: "",
       },
     ]);
+  });
+});
+
+describe("mergeCatalogJobsWithUserStatus — job_description", () => {
+  it("includes job_description from status rows (default empty)", () => {
+    const merged = mergeCatalogJobsWithUserStatus(
+      [{ id: "job-a", url: "https://example.com/a", created_at: "2026-07-16T00:00:00.000Z" }],
+      [{ job_id: "job-a", status: "opened", job_description: "Need a Java engineer" }]
+    );
+    expect(merged[0].job_description).toBe("Need a Java engineer");
+  });
+
+  it("defaults job_description to empty string when status has none", () => {
+    const merged = mergeCatalogJobsWithUserStatus(
+      [{ id: "job-a", url: "https://example.com/a", created_at: "2026-07-16T00:00:00.000Z" }],
+      []
+    );
+    expect(merged[0].job_description).toBe("");
+  });
+});
+
+describe("resolveJobDescriptionOnAdd", () => {
+  it("keeps existing when incoming is empty", () => {
+    expect(resolveJobDescriptionOnAdd("old JD", "")).toBe("old JD");
+    expect(resolveJobDescriptionOnAdd("old JD", "   ")).toBe("old JD");
+  });
+  it("overwrites when incoming is non-empty", () => {
+    expect(resolveJobDescriptionOnAdd("old JD", " new JD ")).toBe("new JD");
+  });
+  it("uses incoming when no existing", () => {
+    expect(resolveJobDescriptionOnAdd("", "hello")).toBe("hello");
   });
 });
 
@@ -118,6 +152,7 @@ describe("listJobsForUser", () => {
         url: "https://example.com/shared",
         created_at: "2026-07-16T00:00:00.000Z",
         status: "unapplied",
+        job_description: "",
       },
     ]);
   });
@@ -145,12 +180,13 @@ describe("addJobForUser", () => {
       { data: null, error: null },
       { data: null, error: null },
       { data: job, error: null },
-      { data: { status: "opened" }, error: null },
+      { data: { status: "opened", job_description: "" }, error: null },
     ]);
 
     const result = await addJobForUser(
       "user-1",
       "https://example.com/jobs/1",
+      "",
       client
     );
 
@@ -164,12 +200,13 @@ describe("addJobForUser", () => {
       { data: job, error: null },
       { data: null, error: null },
       { data: null, error: duplicateKeyError },
-      { data: { status: "opened" }, error: null },
+      { data: { status: "opened", job_description: "" }, error: null },
     ]);
 
     const result = await addJobForUser(
       "user-1",
       "https://example.com/jobs/1",
+      "",
       client
     );
 

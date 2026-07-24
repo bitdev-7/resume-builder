@@ -15,19 +15,41 @@ export function nextStatusAfterOpen(status: BidStatus): BidStatus {
   return status === "unapplied" ? "opened" : status;
 }
 
+export function resolveJobDescriptionOnAdd(
+  existingJd: string | null | undefined,
+  incomingJd: string | null | undefined
+): string {
+  const incoming = typeof incomingJd === "string" ? incomingJd.trim() : "";
+  const existing = typeof existingJd === "string" ? existingJd.trim() : "";
+  if (incoming) return incoming;
+  return existing;
+}
+
+type UserJobStatusRow = {
+  job_id: string;
+  status: BidStatus;
+  job_description?: string;
+};
+
 /** Merge the global catalog with per-user status rows (default `unapplied`). */
 export function mergeCatalogJobsWithUserStatus(
   jobs: JobRecord[],
-  statuses: Array<{ job_id: string; status: BidStatus }>
+  statuses: Array<{ job_id: string; status: BidStatus; job_description?: string }>
 ): UserJobListItem[] {
-  const statusByJobId = new Map(statuses.map((row) => [row.job_id, row.status]));
+  const statusByJobId = new Map(
+    statuses.map((row) => [row.job_id, row] as const)
+  );
 
-  return jobs.map((job) => ({
-    job_id: job.id,
-    url: job.url,
-    created_at: job.created_at,
-    status: statusByJobId.get(job.id) ?? "unapplied",
-  }));
+  return jobs.map((job) => {
+    const row = statusByJobId.get(job.id);
+    return {
+      job_id: job.id,
+      url: job.url,
+      created_at: job.created_at,
+      status: row?.status ?? "unapplied",
+      job_description: row?.job_description ?? "",
+    };
+  });
 }
 
 async function getJobForUser(
@@ -45,7 +67,7 @@ async function getJobForUser(
 
   const { data: statusRow, error: statusError } = await client
     .from("user_job_status")
-    .select("status")
+    .select("status,job_description")
     .eq("user_id", userId)
     .eq("job_id", jobId)
     .maybeSingle();
@@ -58,6 +80,7 @@ async function getJobForUser(
     url: catalogJob.url,
     created_at: catalogJob.created_at,
     status: (statusRow?.status as BidStatus | undefined) ?? "unapplied",
+    job_description: statusRow?.job_description ?? "",
   };
 }
 
@@ -69,7 +92,7 @@ export async function listJobsForUser(
 
   const [jobsResult, statusResult] = await Promise.all([
     db.from("jobs").select("id,url,created_at").order("created_at", { ascending: false }),
-    db.from("user_job_status").select("job_id,status").eq("user_id", userId),
+    db.from("user_job_status").select("job_id,status,job_description").eq("user_id", userId),
   ]);
 
   if (jobsResult.error) throw jobsResult.error;
@@ -77,13 +100,14 @@ export async function listJobsForUser(
 
   return mergeCatalogJobsWithUserStatus(
     (jobsResult.data ?? []) as JobRecord[],
-    ((statusResult.data ?? []) as Array<{ job_id: string; status: BidStatus }>)
+    (statusResult.data ?? []) as UserJobStatusRow[]
   );
 }
 
 export async function addJobForUser(
   userId: string,
   rawUrl: string,
+  jobDescription = "",
   client?: SupabaseClient
 ): Promise<{
   item: UserJobListItem;
@@ -125,7 +149,7 @@ export async function addJobForUser(
   const catalogJob = job as JobRecord;
   let { data: existingStatus, error: statusError } = await db
     .from("user_job_status")
-    .select("status")
+    .select("status,job_description")
     .eq("user_id", userId)
     .eq("job_id", catalogJob.id)
     .maybeSingle();
@@ -134,16 +158,18 @@ export async function addJobForUser(
 
   let attached = false;
   if (!existingStatus) {
+    const resolvedJd = resolveJobDescriptionOnAdd("", jobDescription);
     const { error: attachError } = await db.from("user_job_status").insert({
       user_id: userId,
       job_id: catalogJob.id,
       status: "unapplied",
+      job_description: resolvedJd,
     });
 
     if (attachError?.code === "23505") {
       const { data: concurrentStatus, error: concurrentStatusError } = await db
         .from("user_job_status")
-        .select("status")
+        .select("status,job_description")
         .eq("user_id", userId)
         .eq("job_id", catalogJob.id)
         .single();
@@ -154,20 +180,47 @@ export async function addJobForUser(
       throw attachError;
     } else {
       attached = true;
+      existingStatus = { status: "unapplied", job_description: resolvedJd };
     }
   }
 
   // Re-adding an ignored URL brings it back into this user's Jobs list.
   if (existingStatus?.status === "ignored") {
+    const resolvedJd = resolveJobDescriptionOnAdd(
+      existingStatus.job_description,
+      jobDescription
+    );
     const { error: unignoreError } = await db
       .from("user_job_status")
-      .update({ status: "unapplied", updated_at: new Date().toISOString() })
+      .update({
+        status: "unapplied",
+        job_description: resolvedJd,
+        updated_at: new Date().toISOString(),
+      })
       .eq("user_id", userId)
       .eq("job_id", catalogJob.id);
 
     if (unignoreError) throw unignoreError;
-    existingStatus = { status: "unapplied" };
+    existingStatus = { status: "unapplied", job_description: resolvedJd };
     attached = true;
+  } else if (existingStatus) {
+    const resolvedJd = resolveJobDescriptionOnAdd(
+      existingStatus.job_description,
+      jobDescription
+    );
+    if (resolvedJd !== (existingStatus.job_description ?? "")) {
+      const { error: jdError } = await db
+        .from("user_job_status")
+        .update({
+          job_description: resolvedJd,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .eq("job_id", catalogJob.id);
+
+      if (jdError) throw jdError;
+      existingStatus = { ...existingStatus, job_description: resolvedJd };
+    }
   }
 
   return {
@@ -176,6 +229,7 @@ export async function addJobForUser(
       url: catalogJob.url,
       created_at: catalogJob.created_at,
       status: (existingStatus?.status as BidStatus | undefined) ?? "unapplied",
+      job_description: existingStatus?.job_description ?? "",
     },
     createdCatalog,
     attached,
@@ -218,15 +272,11 @@ export async function setJobStatusForUser(
 
   const db = await resolveClient(client);
   const updatedAt = new Date().toISOString();
-  const { error: statusError } = await db.from("user_job_status").upsert(
-    jobIds.map((jobId) => ({
-      user_id: userId,
-      job_id: jobId,
-      status,
-      updated_at: updatedAt,
-    })),
-    { onConflict: "user_id,job_id" }
-  );
+  const { error: statusError } = await db
+    .from("user_job_status")
+    .update({ status, updated_at: updatedAt })
+    .eq("user_id", userId)
+    .in("job_id", jobIds);
 
   if (statusError) throw statusError;
 

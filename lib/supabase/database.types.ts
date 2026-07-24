@@ -277,6 +277,7 @@ export interface UserJobListItem {
   url: string;
   created_at: string;
   status: BidStatus;
+  job_description: string;
 }
 
 export const INTERVIEW_CALL_TYPES: InterviewCallType[] = [
