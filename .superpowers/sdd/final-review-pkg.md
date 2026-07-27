@@ -1,613 +1,346 @@
-Base: 7147ea5994c621c826cf3361952ca5549ff62f49
-Head: 8c9762a13245d88b71b7bad1df2ebbfa9f683b03
+Base: 0da141056c3864c76fcccc4d0609e00fd1208067
+Head: 0985b3ac88d8e4ab86f9948eee155db577e1aef5
 
 ## Commits
-8c9762a feat: lock resume skill headings to seven canonical categories
-c92f44e feat: normalize composer skill categories to canonical set
-c44d584 feat: add canonical skill category normalizer
+0985b3a feat: enforce 60% main-skill coverage in experience bullets
+c32b5ed feat: add main-skill bullet coverage helpers
 
 ## Stat
- lib/prompts/composer-prompt.ts         |  6 +--
- lib/tailoring/composer.test.ts         | 82 +++++++++++++++++++++++++++++---
- lib/tailoring/composer.ts              | 31 +++++++-----
- lib/tailoring/pipeline.ts              | 19 +++++---
- lib/tailoring/skill-categories.test.ts | 86 +++++++++++++++++++++++++++++++++
- lib/tailoring/skill-categories.ts      | 87 ++++++++++++++++++++++++++++++++++
- 6 files changed, 282 insertions(+), 29 deletions(-)
+ lib/prompts/experience-writer-prompt.ts   |   7 ++
+ lib/tailoring/main-skill-coverage.test.ts | 112 ++++++++++++++++++++++++++++++
+ lib/tailoring/main-skill-coverage.ts      |  90 ++++++++++++++++++++++++
+ lib/tailoring/pipeline.ts                 |  14 +++-
+ 4 files changed, 220 insertions(+), 3 deletions(-)
 
 ## Diff
-diff --git a/lib/prompts/composer-prompt.ts b/lib/prompts/composer-prompt.ts
-index a4ea775..9bbb2fc 100644
---- a/lib/prompts/composer-prompt.ts
-+++ b/lib/prompts/composer-prompt.ts
-@@ -18,30 +18,30 @@ Summary rules:
- - You may introduce technologies and metrics that strengthen the JD match when they fit the role and seniority.
- - Avoid generic filler phrases such as: results-driven, passionate, dynamic, highly motivated, seasoned professional, proven track record.
+diff --git a/lib/prompts/experience-writer-prompt.ts b/lib/prompts/experience-writer-prompt.ts
+index 1169373..ff91602 100644
+--- a/lib/prompts/experience-writer-prompt.ts
++++ b/lib/prompts/experience-writer-prompt.ts
+@@ -47,10 +47,13 @@ Experience skill policy:
+ - Do not force historically incompatible targetSkills into this experience.
+ - Prefer allowedSkills and targetSkills whenever appropriate.
+ - You may introduce additional technologies only if they are historically accurate and consistent with the role.
+ - Mention technologies explicitly instead of leaving them implied.
+ - Group related technologies naturally within project-focused achievements.
++- mainSkill (when present) is the JD's top must-have technology. Across ALL experiences in this generation, at least ~60% of bullets overall must mention mainSkill by name when historically compatible with the employment dates.
++- Spread mainSkill mentions across roles rather than concentrating them in a single bullet when possible.
++- Do not force mainSkill into historically incompatible periods; leave those bullets for other skills and rely on compatible roles to meet the overall ratio.
  
- Final skills policy:
- - Start from "allowedSkills" as the candidate skill pool, but you may OMIT skills that are clearly unrelated to the job description and its required skills (targetSkills). Prefer a focused, JD-aligned skills section over a complete dump of the profile.
- - Always include every "targetSkills" entry (JD-required technologies) when they are technologies/tools ΓÇö do not omit those.
- - Also ADD other relevant skills dynamically when they strengthen the JD match: role/ecosystem skills and technologies that fit the candidate's trajectory and seniority ΓÇö even if they are not in the profile skill list or "allowedSkills".
- - Prefer concrete, role-appropriate technologies over generic soft labels. Deduplicate near-aliases (e.g. do not list both "JS" and "JavaScript").
--- Group all final skills into role-appropriate categories drawn from the provided "categoryHints"; you may add a clearly-named category if some skills do not fit any hint. Every skill must land in exactly one category.
--- Soft skills: only include ones actually relevant to the role; it is fine to return an empty list.
-+- Group hard skills ONLY into these exact category names (and only these): Languages, Backend, Frontend, Database, Cloud & DevOps, Tools & Protocols, Testing. Use the provided "categoryHints" list ΓÇö it is exactly those seven labels. Do NOT invent any other category heading. If a skill does not fit any of the seven, omit it from skillCategories. Every included hard skill must land in exactly one of those categories.
-+- Soft skills: only include ones actually relevant to the role in softSkills; never put soft skills inside skillCategories. It is fine to return an empty softSkills list.
- 
- Project rules:
- - For each project you are given, write a short tailored description and technology list.
- - Use project reference facts as a starting point, then strengthen and JD-align the description creatively.
- - Technologies: include the project's real technologies, and ALSO add the "targetSkills" (JD-required technologies) so that EVERY targetSkill appears somewhere in the projects section. Spread them across projects where they best fit.
- - You may omit a project if it is not relevant to the target role.`;
- 
- /** FIXED output contract ΓÇö never user-editable. */
- const COMPOSER_CONTRACT = `Return ONLY valid JSON matching this exact shape, no markdown, no commentary:
- {
-   "summary": string,
--  "skillCategories": { "<category name>": string[] },
-+  "skillCategories": { "<one of: Languages|Backend|Frontend|Database|Cloud & DevOps|Tools & Protocols|Testing>": string[] },
-   "softSkills": string[],
-   "projects": [ { "id": string, "description": string, "technologies": string[] } ]
- }`;
- 
- export function buildComposerSystemPrompt(
-   _skillBudget: SkillBudgetConfig,
-   overrides?: PromptOverrides
- ): string {
-diff --git a/lib/tailoring/composer.test.ts b/lib/tailoring/composer.test.ts
-index 45dfce5..bd1bd2a 100644
---- a/lib/tailoring/composer.test.ts
-+++ b/lib/tailoring/composer.test.ts
-@@ -1,11 +1,12 @@
- import { describe, expect, it, vi } from "vitest";
- import type { ResolvedAIRequest } from "@/lib/ai-api";
- import type { ComposerInput } from "@/lib/prompts/composer-prompt";
-+import { CANONICAL_SKILL_CATEGORIES } from "@/lib/tailoring/skill-categories";
- 
- const callAIMock = vi.fn();
- 
- vi.mock("@/lib/ai-provider", async (importOriginal) => {
-   const actual = await importOriginal<typeof import("@/lib/ai-provider")>();
-   return { ...actual, callAI: callAIMock };
- });
- 
-@@ -48,41 +49,110 @@ describe("composer ΓÇö skill categories", () => {
-     };
- 
-     const { result } = await composeResumeTopSection(input, aiRequest, { maxTotalSkills: 35, maxSkillsPerCategory: 10 });
- 
-     expect(result.skillCategories.Backend).toHaveLength(21); // 20 allowed + Kubernetes; Skill0 deduped
-     expect(result.skillCategories.Backend).toContain("Kubernetes");
-   });
- 
-+  it("normalizes composer skillCategories ΓÇö drops unknown headings", async () => {
-+    callAIMock.mockResolvedValue({
-+      providerUsed: "openai",
-+      modelUsed: "gpt-4.1-mini",
-+      text: "",
-+      json: {
-+        summary: "A".repeat(10),
-+        skillCategories: {
-+          Backend: ["Python"],
-+          Streaming: ["Kafka"],
-+        },
-+        softSkills: [],
-+        projects: [],
-+      },
-+      raw: {},
-+      costUsd: 0,
-+    });
-+
-+    const input: ComposerInput = {
-+      normalizedTitle: "Backend Engineer",
-+      seniority: "mid",
-+      domains: [],
-+      topRequirements: [],
-+      summaryEvidence: [],
-+      allowedSkills: ["Python"],
-+      targetSkills: [],
-+      categoryHints: [...CANONICAL_SKILL_CATEGORIES],
-+      projects: [],
-+    };
-+
-+    const { result } = await composeResumeTopSection(input, aiRequest);
-+    expect(result.skillCategories).toEqual({ Backend: ["Python"] });
-+  });
-+
-   it("uses the default skill budget when none is provided", () => {
-     expect(DEFAULT_SKILL_BUDGET.maxSkillsPerCategory).toBeGreaterThan(0);
-   });
- });
- 
- describe("ensureAllEligibleSkills ΓÇö must-keep guarantee", () => {
--  it("appends must-keep skills the composer omitted, and leaves present ones untouched", () => {
-+  it("appends must-keep skills under Tools & Protocols when category is unknown", () => {
-     const composerResult = {
-       summary: "s",
-       skillCategories: { Backend: ["Python", "FastAPI"] },
-       softSkills: [],
-       projects: [],
-     };
--    // Redis (declared) and Kafka (JD-required) were both eligible but dropped by the composer.
-     const result = ensureAllEligibleSkills(composerResult, ["Python", "FastAPI", "Redis", "Kafka"]);
-+    expect(result.skillCategories).toEqual({
-+      Backend: ["Python", "FastAPI"],
-+      "Tools & Protocols": ["Redis", "Kafka"],
-+    });
-+  });
- 
--    const allSkills = Object.values(result.skillCategories).flat();
--    expect(allSkills).toEqual(expect.arrayContaining(["Python", "FastAPI", "Redis", "Kafka"]));
--    // Original category preserved.
--    expect(result.skillCategories.Backend).toEqual(["Python", "FastAPI"]);
-+  it("aliases profile categories, maps unmappable profile cats to Tools & Protocols, drops unknown headings", () => {
-+    const composerResult = {
-+      summary: "s",
-+      skillCategories: { Streaming: ["Kafka"], Backend: ["Python"] },
-+      softSkills: [],
-+      projects: [],
-+    };
-+    const categoryByKey = new Map<string, string>([
-+      ["redis", "Databases"],
-+      ["pinecone", "AI/ML"],
-+    ]);
-+    const result = ensureAllEligibleSkills(
-+      composerResult,
-+      ["Python", "Redis", "Pinecone"],
-+      categoryByKey
-+    );
-+    expect(result.skillCategories).toEqual({
-+      Backend: ["Python"],
-+      Database: ["Redis"],
-+      "Tools & Protocols": ["Pinecone"],
-+    });
-   });
- 
-   it("returns the input unchanged when every eligible skill is already present", () => {
-     const composerResult = {
-       summary: "s",
-       skillCategories: { Backend: ["Python"] },
-       softSkills: [],
-       projects: [],
-     };
-     const result = ensureAllEligibleSkills(composerResult, ["Python"]);
-     expect(result.skillCategories).toEqual({ Backend: ["Python"] });
-   });
-+
-+  it("re-places eligible skills listed under non-canonical headings", () => {
-+    const composerResult = {
-+      summary: "s",
-+      skillCategories: { Streaming: ["Kafka"], Backend: ["Python"] },
-+      softSkills: [],
-+      projects: [],
-+    };
-+    const result = ensureAllEligibleSkills(composerResult, ["Python", "Kafka"]);
-+    expect(result.skillCategories).toEqual({
-+      Backend: ["Python"],
-+      "Tools & Protocols": ["Kafka"],
-+    });
-+  });
- });
-diff --git a/lib/tailoring/composer.ts b/lib/tailoring/composer.ts
-index 3193236..890d5ec 100644
---- a/lib/tailoring/composer.ts
-+++ b/lib/tailoring/composer.ts
-@@ -5,16 +5,21 @@ import {
-   buildComposerSystemPrompt,
-   buildComposerUserPrompt,
-   type ComposerInput,
- } from "@/lib/prompts/composer-prompt";
- import { composerAiOutputSchema } from "@/lib/tailoring/schemas";
- import { cleanJsonText } from "@/lib/analyze-json";
- import type { ComposerResult, SkillBudgetConfig } from "@/lib/types/tailoring";
- import { skillKey } from "@/lib/tailoring/skill-ontology";
-+import {
-+  FALLBACK_SKILL_CATEGORY,
-+  normalizeSkillCategories,
-+  resolveCanonicalSkillCategory,
-+} from "@/lib/tailoring/skill-categories";
- import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
- 
- export const DEFAULT_SKILL_BUDGET: SkillBudgetConfig = {
-   maxTotalSkills: 35,
-   maxSkillsPerCategory: 10,
- };
- 
- /**
-@@ -28,63 +33,63 @@ export function buildDeterministicComposerFallback(input: {
+ Creative writing rules:
+ - Rewrite achievements instead of copying them verbatim.
+ - Improve technical depth, ownership, business impact, and clarity.
+ - Use believable implementation details that fit the role.
+@@ -144,10 +147,12 @@ export interface ExperienceWriterInput {
+   endDate: string;
+   allowedEvidence: EvidenceFact[];
    allowedSkills: string[];
-   categoryHints: string[];
- }): ComposerResult {
-   const topSkills = input.allowedSkills.slice(0, 20);
-   const highlight = input.allowedSkills.slice(0, 3).join(", ");
-   const summary = highlight
-     ? `${input.normalizedTitle} with hands-on experience across ${highlight}. Focused on delivering well-tested, maintainable solutions aligned with team and business goals.`
-     : `${input.normalizedTitle} with a track record of delivering well-tested, maintainable solutions aligned with team and business goals.`;
--  const category = input.categoryHints[0] || "Skills";
- 
-   return {
-     summary,
--    skillCategories: topSkills.length > 0 ? { [category]: topSkills } : {},
-+    skillCategories: normalizeSkillCategories(
-+      topSkills.length > 0 ? { [FALLBACK_SKILL_CATEGORY]: topSkills } : {}
-+    ),
-     softSkills: [],
-     projects: [],
-   };
+   /** JD-required skills to feature strongly in this role's bullets. */
+   targetSkills: string[];
++  /** Top JD must-have technology to feature in ΓëÑ60% of bullets overall; null/omit if none. */
++  mainSkill?: string | null;
+   priorityRequirements: Pick<JDRequirement, "id" | "text">[];
+   targetBulletCount: number;
+   extraInstructions?: string;
  }
  
--/** Fallback category for skills with no known category ΓÇö a real, resume-appropriate name (never an "Additional Skills" catch-all). */
--const FALLBACK_SKILL_CATEGORY = "Tools & Technologies";
--
- /**
-  * Guarantees selected skills appear in the skills section: typically JD-required
-  * target skills and technologies introduced in experience bullets. Any omitted
-  * names are placed under their real category (profile category when known,
-- * otherwise "Tools & Technologies"). Unrelated profile skills may be omitted
-+ * otherwise "Tools & Protocols"). Unrelated profile skills may be omitted
-  * by the composer and are intentionally not forced back here.
-  */
- export function ensureAllEligibleSkills(
-   composerResult: ComposerResult,
-   eligibleSkillNames: string[],
-   categoryByKey?: Map<string, string>
- ): ComposerResult {
-   const present = new Set<string>();
--  for (const skills of Object.values(composerResult.skillCategories)) {
-+  for (const [category, skills] of Object.entries(composerResult.skillCategories)) {
-+    if (!resolveCanonicalSkillCategory(category)) continue;
-     for (const s of skills) present.add(skillKey(s));
-   }
+@@ -166,10 +171,11 @@ export function buildExperienceWriterUserPrompt(input: ExperienceWriterInput): s
+       factType: f.factType,
+       metrics: f.metrics?.map((m) => ({ id: m.id, value: m.value })) ?? [],
+     })),
+     allowedSkills: input.allowedSkills,
+     targetSkills: input.targetSkills,
++    mainSkill: input.mainSkill ?? null,
+     priorityRequirements: input.priorityRequirements,
+     targetBulletCount: input.targetBulletCount,
+   };
  
-   const missing: string[] = [];
-   const seen = new Set<string>();
-   for (const name of eligibleSkillNames) {
-     const key = skillKey(name);
-     if (present.has(key) || seen.has(key)) continue;
-     seen.add(key);
-     missing.push(name);
-   }
+   const extra = input.extraInstructions?.trim()
+@@ -195,10 +201,11 @@ export function buildExperienceWriterBatchedUserPrompt(inputs: ExperienceWriterI
+       factType: f.factType,
+       metrics: f.metrics?.map((m) => ({ id: m.id, value: m.value })) ?? [],
+     })),
+     allowedSkills: input.allowedSkills,
+     targetSkills: input.targetSkills,
++    mainSkill: input.mainSkill ?? null,
+     priorityRequirements: input.priorityRequirements,
+     targetBulletCount: input.targetBulletCount,
+     extraInstructions: input.extraInstructions?.trim() || undefined,
+   }));
  
--  if (missing.length === 0) return composerResult;
--
--  const skillCategories = { ...composerResult.skillCategories };
-+  let skillCategories = { ...composerResult.skillCategories };
-   for (const name of missing) {
--    const known = categoryByKey?.get(skillKey(name))?.trim();
--    const category = known || FALLBACK_SKILL_CATEGORY;
-+    const knownRaw = categoryByKey?.get(skillKey(name))?.trim();
-+    const category =
-+      resolveCanonicalSkillCategory(knownRaw) ?? FALLBACK_SKILL_CATEGORY;
-     skillCategories[category] = [...(skillCategories[category] ?? []), name];
-   }
+diff --git a/lib/tailoring/main-skill-coverage.test.ts b/lib/tailoring/main-skill-coverage.test.ts
+new file mode 100644
+index 0000000..1465fcf
+--- /dev/null
++++ b/lib/tailoring/main-skill-coverage.test.ts
+@@ -0,0 +1,112 @@
++import { describe, expect, it } from "vitest";
++import type { JDAnalysis } from "@/lib/types/tailoring";
++import {
++  MAIN_SKILL_COVERAGE_RATIO,
++  bulletMentionsSkill,
++  ensureMainSkillBulletCoverage,
++  selectMainSkill,
++} from "@/lib/tailoring/main-skill-coverage";
 +
-+  skillCategories = normalizeSkillCategories(skillCategories);
-   return { ...composerResult, skillCategories };
- }
- 
- export interface ComposerCallResult {
-   result: ComposerResult;
-   costUsd?: number;
- }
- 
-@@ -161,15 +166,15 @@ export async function composeResumeTopSection(
-       unique.push(s);
-     }
-     if (unique.length > 0) skillCategories[category] = unique;
-   }
- 
-   return {
-     result: {
-       summary: parsed.data.summary,
--      skillCategories,
-+      skillCategories: normalizeSkillCategories(skillCategories),
-       softSkills: parsed.data.softSkills,
-       projects: parsed.data.projects,
-     },
-     costUsd: resp.costUsd,
-   };
- }
++function jd(partial: Partial<JDAnalysis> & Pick<JDAnalysis, "requirements">): Pick<JDAnalysis, "requirements" | "atsTerms"> {
++  return { atsTerms: [], ...partial };
++}
++
++describe("selectMainSkill", () => {
++  it("picks highest-priority must_have technology by canonicalTerm", () => {
++    const skill = selectMainSkill(
++      jd({
++        requirements: [
++          { id: "r1", text: "Python", type: "must_have", category: "technology", canonicalTerm: "Python", priority: 5 },
++          { id: "r2", text: "Java", type: "must_have", category: "technology", canonicalTerm: "Java", priority: 9 },
++          { id: "r3", text: "Teamwork", type: "must_have", category: "soft_skill", canonicalTerm: null, priority: 10 },
++        ],
++      })
++    );
++    expect(skill).toBe("Java");
++  });
++
++  it("falls back to first known atsTerms skill when no must_have tech", () => {
++    const skill = selectMainSkill(
++      jd({
++        requirements: [
++          { id: "r1", text: "Communicate well", type: "must_have", category: "soft_skill", canonicalTerm: null, priority: 9 },
++        ],
++        atsTerms: ["Kubernetes", "Java"],
++      })
++    );
++    expect(skill).toBe("Kubernetes");
++  });
++
++  it("returns null when nothing usable", () => {
++    expect(selectMainSkill(jd({ requirements: [], atsTerms: [] }))).toBeNull();
++  });
++});
++
++describe("bulletMentionsSkill", () => {
++  it("matches word-boundary skill mentions", () => {
++    expect(bulletMentionsSkill("Built APIs in Java and Spring", "Java")).toBe(true);
++    expect(bulletMentionsSkill("Built JavaScript UIs", "Java")).toBe(false);
++  });
++});
++
++describe("ensureMainSkillBulletCoverage", () => {
++  it("is a no-op when mainSkill is null or already >= 60%", () => {
++    const results = [
++      {
++        experienceId: "e1",
++        bullets: [
++          { text: "Built services in Java", evidenceIds: ["f1"], requirementIds: [] },
++          { text: "Shipped Java APIs", evidenceIds: [], requirementIds: [] },
++          { text: "Mentored teammates", evidenceIds: [], requirementIds: [] },
++        ],
++      },
++    ];
++    // 2/3 >= 0.6
++    expect(ensureMainSkillBulletCoverage(results, "Java")).toEqual(results);
++    expect(ensureMainSkillBulletCoverage(results, null)).toEqual(results);
++  });
++
++  it("injects mainSkill into enough uncovered bullets to reach ceil(60%)", () => {
++    const results = [
++      {
++        experienceId: "e1",
++        bullets: [
++          { text: "Built payment APIs", evidenceIds: ["f1"], requirementIds: [] },
++          { text: "Improved latency", evidenceIds: [], requirementIds: [] },
++          { text: "Mentored teammates", evidenceIds: [], requirementIds: [] },
++          { text: "Owned on-call", evidenceIds: [], requirementIds: [] },
++          { text: "Documented runbooks", evidenceIds: [], requirementIds: [] },
++        ],
++      },
++    ];
++    // needed = ceil(0.6*5) = 3; currently 0 covered
++    const out = ensureMainSkillBulletCoverage(results, "Java");
++    const covered = out[0].bullets.filter((b) => bulletMentionsSkill(b.text, "Java")).length;
++    expect(covered).toBeGreaterThanOrEqual(Math.ceil(MAIN_SKILL_COVERAGE_RATIO * 5));
++    expect(out[0].bullets).toHaveLength(5); // prefer mutate, not append
++    expect(out[0].bullets[0].evidenceIds).toEqual(["f1"]);
++  });
++
++  it("prefers larger experiences when choosing bullets to rewrite", () => {
++    const results = [
++      {
++        experienceId: "small",
++        bullets: [{ text: "Did stuff", evidenceIds: [], requirementIds: [] }],
++      },
++      {
++        experienceId: "large",
++        bullets: [
++          { text: "Built APIs", evidenceIds: [], requirementIds: [] },
++          { text: "Shipped features", evidenceIds: [], requirementIds: [] },
++          { text: "Led reviews", evidenceIds: [], requirementIds: [] },
++        ],
++      },
++    ];
++    // total 4, needed = ceil(2.4)=3
++    const out = ensureMainSkillBulletCoverage(results, "Go");
++    const largeCovered = out.find((r) => r.experienceId === "large")!.bullets.filter((b) =>
++      bulletMentionsSkill(b.text, "Go")
++    ).length;
++    expect(largeCovered).toBeGreaterThanOrEqual(2);
++  });
++});
+diff --git a/lib/tailoring/main-skill-coverage.ts b/lib/tailoring/main-skill-coverage.ts
+new file mode 100644
+index 0000000..69f7ecc
+--- /dev/null
++++ b/lib/tailoring/main-skill-coverage.ts
+@@ -0,0 +1,90 @@
++import type { ExperienceGenerationResult, JDAnalysis } from "@/lib/types/tailoring";
++import { normalizeSkillName } from "@/lib/tailoring/skill-ontology";
++
++export const MAIN_SKILL_COVERAGE_RATIO = 0.6;
++
++function escapeRegExp(value: string): string {
++  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
++}
++
++export function bulletMentionsSkill(text: string, skillName: string): boolean {
++  const canonical = normalizeSkillName(skillName) || skillName;
++  if (!canonical.trim()) return false;
++  const re = new RegExp(
++    `(^|[^a-z0-9+#.])${escapeRegExp(canonical.toLowerCase())}([^a-z0-9+#]|$)`,
++    "i"
++  );
++  return re.test(String(text || "").toLowerCase());
++}
++
++export function selectMainSkill(
++  jdAnalysis: Pick<JDAnalysis, "requirements" | "atsTerms">
++): string | null {
++  const mustTech = jdAnalysis.requirements
++    .filter(
++      (r) =>
++        r.type === "must_have" &&
++        (r.category === "technology" || Boolean(r.canonicalTerm))
++    )
++    .slice()
++    .sort((a, b) => b.priority - a.priority);
++
++  for (const r of mustTech) {
++    const raw = (r.canonicalTerm || r.text || "").trim();
++    const canonical = normalizeSkillName(raw);
++    if (canonical) return canonical;
++  }
++
++  for (const term of jdAnalysis.atsTerms ?? []) {
++    const canonical = normalizeSkillName(String(term || "").trim());
++    if (canonical) return canonical;
++  }
++  return null;
++}
++
++function injectSkillIntoBullet(text: string, skill: string): string {
++  const trimmed = text.trim().replace(/\.$/, "");
++  return `${trimmed} using ${skill}.`;
++}
++
++export function ensureMainSkillBulletCoverage(
++  results: ExperienceGenerationResult[],
++  mainSkill: string | null,
++  minRatio: number = MAIN_SKILL_COVERAGE_RATIO
++): ExperienceGenerationResult[] {
++  if (!mainSkill || results.length === 0) return results;
++
++  const total = results.reduce((n, r) => n + r.bullets.length, 0);
++  if (total === 0) return results;
++
++  const needed = Math.ceil(minRatio * total);
++
++  type Loc = { expIdx: number; bulletIdx: number; expSize: number };
++  const uncovered: Loc[] = [];
++  let covered = 0;
++
++  results.forEach((r, expIdx) => {
++    r.bullets.forEach((b, bulletIdx) => {
++      if (bulletMentionsSkill(b.text, mainSkill)) covered += 1;
++      else uncovered.push({ expIdx, bulletIdx, expSize: r.bullets.length });
++    });
++  });
++
++  if (covered >= needed) return results;
++
++  uncovered.sort((a, b) => b.expSize - a.expSize || a.bulletIdx - b.bulletIdx);
++
++  const next = results.map((r) => ({
++    ...r,
++    bullets: r.bullets.map((b) => ({ ...b })),
++  }));
++  let i = 0;
++  while (covered < needed && i < uncovered.length) {
++    const loc = uncovered[i++];
++    const bullet = next[loc.expIdx].bullets[loc.bulletIdx];
++    if (bulletMentionsSkill(bullet.text, mainSkill)) continue;
++    bullet.text = injectSkillIntoBullet(bullet.text, mainSkill);
++    covered += 1;
++  }
++  return next;
++}
 diff --git a/lib/tailoring/pipeline.ts b/lib/tailoring/pipeline.ts
-index bc13c0b..0850340 100644
+index 0aa170a..1a2deba 100644
 --- a/lib/tailoring/pipeline.ts
 +++ b/lib/tailoring/pipeline.ts
-@@ -10,26 +10,30 @@ import type {
-   RoleArchetypeDetection,
-   SkillBudgetConfig,
-   ValidationIssue,
- } from "@/lib/types/tailoring";
- 
- import { analyzeJobDescription } from "@/lib/tailoring/jd-analyzer";
- import { detectRoleArchetype } from "@/lib/tailoring/role-archetype";
- import { buildCandidateEvidenceProfile, getPossessedSkillNames } from "@/lib/tailoring/candidate-evidence";
--import { expandRoleSkills, getRoleCatalogEntryOrDefault } from "@/lib/tailoring/role-skill-expansion";
-+import { expandRoleSkills } from "@/lib/tailoring/role-skill-expansion";
- import { resolveSkillEvidence } from "@/lib/tailoring/skill-evidence-resolver";
- import { createTailoringPlan, DEFAULT_BULLET_BUDGET } from "@/lib/tailoring/tailoring-planner";
- import { generateExperiencesInParallel, generateExperiencesBatched } from "@/lib/tailoring/experience-generator";
- import {
-   buildDeterministicComposerFallback,
-   composeResumeTopSection,
-   ensureAllEligibleSkills,
-   DEFAULT_SKILL_BUDGET,
- } from "@/lib/tailoring/composer";
-+import {
-+  CANONICAL_SKILL_CATEGORIES,
-+  normalizeSkillCategories,
-+} from "@/lib/tailoring/skill-categories";
- import type { ComposerInput } from "@/lib/prompts/composer-prompt";
+@@ -28,10 +28,14 @@ import type { ComposerInput } from "@/lib/prompts/composer-prompt";
  import type { ExperienceWriterInput } from "@/lib/prompts/experience-writer-prompt";
  import { repairTailoredResume } from "@/lib/tailoring/repair";
  import { assembleFinalResume } from "@/lib/tailoring/assemble";
+ import { buildProfileHardSkills } from "@/lib/tailoring/profile-hard-skills";
  import { buildEnrichmentRecommendations } from "@/lib/tailoring/enrichment";
++import {
++  ensureMainSkillBulletCoverage,
++  selectMainSkill,
++} from "@/lib/tailoring/main-skill-coverage";
  import { skillKey, detectSkillMentions } from "@/lib/tailoring/skill-ontology";
  import type { ExperienceGenerationMode } from "@/lib/workflow-settings";
  import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
-@@ -197,22 +201,20 @@ export async function runTailoringPipeline(
-     );
-   }
-   const possessedSkillNames = getPossessedSkillNames(candidateProfile);
  
-   // The user's own skill categories (from their profile). Used to (a) hint the composer's
-   // grouping so it mirrors how the candidate categorized their skills, and (b) place any
-   // leftover/introduced skill under its real category instead of an "Additional Skills" bucket.
-   const profileSkillCategoryByKey = new Map<string, string>();
--  const profileSkillCategoryOrder: string[] = [];
-   for (const record of [input.profileData.default_resume?.skills, input.profileData.default_resume?.hardSkills]) {
-     if (!record) continue;
-     for (const [category, list] of Object.entries(record)) {
-       if (!category || /soft/i.test(category)) continue;
--      if (!profileSkillCategoryOrder.includes(category)) profileSkillCategoryOrder.push(category);
-       for (const raw of list || []) {
-         const key = skillKey(String(raw));
-         if (key && !profileSkillCategoryByKey.has(key)) profileSkillCategoryByKey.set(key, category);
-       }
-     }
-   }
- 
-   // Stage 3 ΓÇö Role Skill Expansion (deterministic)
-@@ -329,30 +331,29 @@ export async function runTailoringPipeline(
-     .filter((s): s is string => Boolean(s));
- 
-   const topRequirements = jdAnalysis.requirements
-     .filter((r) => r.type === "must_have" || r.priority >= 8)
-     .sort((a, b) => b.priority - a.priority)
-     .slice(0, 10)
-     .map((r) => ({ id: r.id, text: r.text, priority: r.priority }));
- 
--  const catalogEntry = getRoleCatalogEntryOrDefault(roleArchetype.primaryRoleArchetype);
-+
-   const composerInput: ComposerInput = {
-     normalizedTitle: jdAnalysis.normalizedTitle,
-     seniority: jdAnalysis.seniority,
-     domains: jdAnalysis.domains,
-     topRequirements,
-     summaryEvidence: [
-       ...summaryEvidence,
-       ...jdRequiredMissingSkills.map((c) => `Required skill: ${c.canonicalName}`),
-     ],
-     allowedSkills: resumeEligibleSkills.map((c) => c.canonicalName),
-     targetSkills: targetSkillNames,
--    // Prefer the candidate's own categories, then fall back to role-catalog hints.
--    categoryHints: Array.from(new Set([...profileSkillCategoryOrder, ...catalogEntry.skillCategoryHints])),
-+    categoryHints: [...CANONICAL_SKILL_CATEGORIES],
-     projects: candidateProfile.projects.map((p) => ({
-       id: p.id,
-       name: p.name,
-       facts: p.facts.map((f) => f.text),
-       technologies: p.technologies.map((t) => t.name),
-     })),
-     extraInstructions: input.customPromptOverride ?? undefined,
-   };
-@@ -404,21 +405,25 @@ export async function runTailoringPipeline(
-   for (const r of coveredExperienceResults) {
-     for (const b of r.bullets) {
-       for (const mention of detectSkillMentions(b.text)) introducedSkillNames.add(mention);
-     }
-   }
- 
-   // Guarantee JD-required target skills and technologies used in experience bullets
-   // appear in the skills section. Unrelated profile skills may stay omitted.
--  const finalComposerResult = ensureAllEligibleSkills(
-+  const ensured = ensureAllEligibleSkills(
-     repairOutcome.composerResult,
-     [...targetSkillNames, ...introducedSkillNames],
-     profileSkillCategoryByKey
+ export interface RunTailoringPipelineInput {
+@@ -256,10 +260,13 @@ export async function runTailoringPipeline(
+   ).slice(0, 20);
+   console.log(
+     `[tailoring] target skills to weave (${targetSkillNames.length}): ${targetSkillNames.join(", ") || "(none)"}`
    );
-+  const finalComposerResult = {
-+    ...ensured,
-+    skillCategories: normalizeSkillCategories(ensured.skillCategories),
-+  };
  
-   // Stage 11 ΓÇö Final Resume Assembly
-   const resume = assembleFinalResume(candidateProfile, coveredExperienceResults, finalComposerResult);
++  const mainSkill = selectMainSkill(jdAnalysis);
++  console.log(`[tailoring] main skill for 60% coverage: ${mainSkill ?? "(none)"}`);
++
+   const experienceWriterInputsById = new Map<string, ExperienceWriterInput>();
+   for (const expPlan of plan.experiencePlans) {
+     const exp = experiencesById.get(expPlan.experienceId);
+     if (!exp) continue;
  
-   // Guarantee every JD-required target skill also appears in the projects section.
-   if (resume.projects && resume.projects.length > 0) {
-     resume.projects = ensureTargetSkillsInProjects(resume.projects, targetSkillNames);
+@@ -279,10 +286,11 @@ export async function runTailoringPipeline(
+       startDate: exp.startDate,
+       endDate: exp.endDate,
+       allowedEvidence: exp.facts,
+       allowedSkills,
+       targetSkills: targetSkillNames,
++      mainSkill,
+       priorityRequirements,
+       targetBulletCount: expPlan.targetBulletCount,
+       extraInstructions: input.customPromptOverride ?? undefined,
+     });
    }
-diff --git a/lib/tailoring/skill-categories.test.ts b/lib/tailoring/skill-categories.test.ts
-new file mode 100644
-index 0000000..2a64be1
---- /dev/null
-+++ b/lib/tailoring/skill-categories.test.ts
-@@ -0,0 +1,86 @@
-+import { describe, expect, it } from "vitest";
-+import {
-+  CANONICAL_SKILL_CATEGORIES,
-+  FALLBACK_SKILL_CATEGORY,
-+  normalizeSkillCategories,
-+  resolveCanonicalSkillCategory,
-+} from "@/lib/tailoring/skill-categories";
-+
-+describe("CANONICAL_SKILL_CATEGORIES", () => {
-+  it("is exactly the seven approved labels in order", () => {
-+    expect([...CANONICAL_SKILL_CATEGORIES]).toEqual([
-+      "Languages",
-+      "Backend",
-+      "Frontend",
-+      "Database",
-+      "Cloud & DevOps",
-+      "Tools & Protocols",
-+      "Testing",
-+    ]);
-+  });
-+
-+  it("uses Tools & Protocols as the must-keep fallback label", () => {
-+    expect(FALLBACK_SKILL_CATEGORY).toBe("Tools & Protocols");
-+  });
-+});
-+
-+describe("resolveCanonicalSkillCategory", () => {
-+  it("returns exact canonical labels", () => {
-+    expect(resolveCanonicalSkillCategory("Backend")).toBe("Backend");
-+    expect(resolveCanonicalSkillCategory("cloud & devops")).toBe("Cloud & DevOps");
-+  });
-+
-+  it("remaps known aliases", () => {
-+    expect(resolveCanonicalSkillCategory("Cloud")).toBe("Cloud & DevOps");
-+    expect(resolveCanonicalSkillCategory("DevOps")).toBe("Cloud & DevOps");
-+    expect(resolveCanonicalSkillCategory("Cloud and DevOps")).toBe("Cloud & DevOps");
-+    expect(resolveCanonicalSkillCategory("Testing & Tools")).toBe("Testing");
-+    expect(resolveCanonicalSkillCategory("Data")).toBe("Database");
-+    expect(resolveCanonicalSkillCategory("Databases")).toBe("Database");
-+    expect(resolveCanonicalSkillCategory("Tools & Technologies")).toBe("Tools & Protocols");
-+    expect(resolveCanonicalSkillCategory("Tools")).toBe("Tools & Protocols");
-+  });
-+
-+  it("returns null for unknown or empty names", () => {
-+    expect(resolveCanonicalSkillCategory("Streaming")).toBeNull();
-+    expect(resolveCanonicalSkillCategory("AI/ML")).toBeNull();
-+    expect(resolveCanonicalSkillCategory("")).toBeNull();
-+    expect(resolveCanonicalSkillCategory(null)).toBeNull();
-+    expect(resolveCanonicalSkillCategory(undefined)).toBeNull();
-+    expect(resolveCanonicalSkillCategory("   ")).toBeNull();
-+  });
-+});
-+
-+describe("normalizeSkillCategories", () => {
-+  it("remaps aliases, drops unknown buckets, orders, and omits empty", () => {
-+    const out = normalizeSkillCategories({
-+      Streaming: ["Kafka"],
-+      Cloud: ["AWS", "Docker"],
-+      Backend: ["Python"],
-+      Frontend: [],
-+      Data: ["PostgreSQL"],
-+      "Tools & Technologies": ["Git"],
-+    });
-+    expect(Object.keys(out)).toEqual([
-+      "Backend",
-+      "Database",
-+      "Cloud & DevOps",
-+      "Tools & Protocols",
-+    ]);
-+    expect(out.Backend).toEqual(["Python"]);
-+    expect(out.Database).toEqual(["PostgreSQL"]);
-+    expect(out["Cloud & DevOps"]).toEqual(["AWS", "Docker"]);
-+    expect(out["Tools & Protocols"]).toEqual(["Git"]);
-+    expect(out).not.toHaveProperty("Streaming");
-+    expect(out).not.toHaveProperty("Frontend");
-+  });
-+
-+  it("dedupes the same skill across categories ΓÇö earlier canonical category wins", () => {
-+    const out = normalizeSkillCategories({
-+      Testing: ["Jest"],
-+      Backend: ["Jest", "Python"],
-+    });
-+    expect(out.Backend).toEqual(["Jest", "Python"]);
-+    expect(out).not.toHaveProperty("Testing");
-+  });
-+});
-diff --git a/lib/tailoring/skill-categories.ts b/lib/tailoring/skill-categories.ts
-new file mode 100644
-index 0000000..6a0ebab
---- /dev/null
-+++ b/lib/tailoring/skill-categories.ts
-@@ -0,0 +1,87 @@
-+import { skillKey } from "@/lib/tailoring/skill-ontology";
-+
-+export const CANONICAL_SKILL_CATEGORIES = [
-+  "Languages",
-+  "Backend",
-+  "Frontend",
-+  "Database",
-+  "Cloud & DevOps",
-+  "Tools & Protocols",
-+  "Testing",
-+] as const;
-+
-+export type CanonicalSkillCategory = (typeof CANONICAL_SKILL_CATEGORIES)[number];
-+
-+export const FALLBACK_SKILL_CATEGORY: CanonicalSkillCategory = "Tools & Protocols";
-+
-+/** Lowercase alias / exact label ΓåÆ canonical label */
-+const CATEGORY_ALIASES: Record<string, CanonicalSkillCategory> = {
-+  languages: "Languages",
-+  backend: "Backend",
-+  frontend: "Frontend",
-+  database: "Database",
-+  databases: "Database",
-+  data: "Database",
-+  "cloud & devops": "Cloud & DevOps",
-+  "cloud and devops": "Cloud & DevOps",
-+  cloud: "Cloud & DevOps",
-+  devops: "Cloud & DevOps",
-+  "tools & protocols": "Tools & Protocols",
-+  "tools & technologies": "Tools & Protocols",
-+  tools: "Tools & Protocols",
-+  testing: "Testing",
-+  "testing & tools": "Testing",
-+};
-+
-+export function resolveCanonicalSkillCategory(
-+  raw: string | null | undefined
-+): CanonicalSkillCategory | null {
-+  const trimmed = typeof raw === "string" ? raw.trim() : "";
-+  if (!trimmed) return null;
-+  return CATEGORY_ALIASES[trimmed.toLowerCase()] ?? null;
-+}
-+
-+/**
-+ * Remap known aliases, drop skills under unknown headings, dedupe by skill key
-+ * (earlier canonical category wins), emit only non-empty categories in fixed order.
-+ */
-+export function normalizeSkillCategories(
-+  skillCategories: Record<string, string[]>
-+): Record<string, string[]> {
-+  const buckets: Record<CanonicalSkillCategory, string[]> = {
-+    Languages: [],
-+    Backend: [],
-+    Frontend: [],
-+    Database: [],
-+    "Cloud & DevOps": [],
-+    "Tools & Protocols": [],
-+    Testing: [],
-+  };
-+  const seen = new Set<string>();
-+
-+  const pending: { category: CanonicalSkillCategory; skill: string }[] = [];
-+  for (const [rawCategory, skills] of Object.entries(skillCategories)) {
-+    const canonical = resolveCanonicalSkillCategory(rawCategory);
-+    if (!canonical) continue;
-+    for (const skill of skills) {
-+      if (!skillKey(skill)) continue;
-+      pending.push({ category: canonical, skill });
-+    }
-+  }
-+
-+  for (const label of CANONICAL_SKILL_CATEGORIES) {
-+    for (const item of pending) {
-+      if (item.category !== label) continue;
-+      const key = skillKey(item.skill);
-+      if (seen.has(key)) continue;
-+      seen.add(key);
-+      buckets[label].push(item.skill);
-+    }
-+  }
-+
-+  const out: Record<string, string[]> = {};
-+  for (const label of CANONICAL_SKILL_CATEGORIES) {
-+    if (buckets[label].length > 0) out[label] = buckets[label];
-+  }
-+  return out;
-+}
+@@ -374,13 +382,13 @@ export async function runTailoringPipeline(
+   });
+   totalCost += repairOutcome.costUsd;
+ 
+   // Guarantee every JD-required target skill is shown as used in the experience bullets
+   // (user policy: all target skills must appear in experiences, not just the skills list).
+-  const coveredExperienceResults = ensureTargetSkillsInExperiences(
+-    repairOutcome.experienceResults,
+-    targetSkillNames
++  const coveredExperienceResults = ensureMainSkillBulletCoverage(
++    ensureTargetSkillsInExperiences(repairOutcome.experienceResults, targetSkillNames),
++    mainSkill
+   );
+ 
+   // Technologies the writer introduced in experience bullets ΓÇö used only to filter
+   // enrichment recommendations.
+   const introducedSkillNames = new Set<string>();

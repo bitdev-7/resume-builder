@@ -1,81 +1,63 @@
-# Task 1 Report: Canonical skill-categories module
+# Task 1 Report: Migration + jobs service JD field (TDD)
 
 ## Status
 
-**DONE**
+**Complete.** Added `job_description` column migration, extended `UserJobListItem` and jobs service read/write paths, and preserved existing JD on status-only updates.
 
-## Summary
-
-Created shared skill category module at `lib/tailoring/skill-categories.ts` with the seven canonical labels, alias map, `resolveCanonicalSkillCategory`, and `normalizeSkillCategories` (simpler two-pass loop per brief). Added focused Vitest coverage in `lib/tailoring/skill-categories.test.ts`. No composer/pipeline wiring (later tasks).
-
-## Files Created
-
-| File | Purpose |
-|------|---------|
-| `lib/tailoring/skill-categories.ts` | Canonical labels, alias resolution, category normalization |
-| `lib/tailoring/skill-categories.test.ts` | Vitest for constants, resolver, and normalizer |
-
-## Exports
-
-| Export | Description |
-|--------|-------------|
-| `CANONICAL_SKILL_CATEGORIES` | Seven labels in fixed order (`Languages` … `Testing`) |
-| `FALLBACK_SKILL_CATEGORY` | `"Tools & Protocols"` |
-| `resolveCanonicalSkillCategory(raw)` | Alias/exact match → canonical label; unknown/empty → `null` |
-| `normalizeSkillCategories(input)` | Remap aliases, drop unknown buckets, dedupe by `skillKey` (earlier canonical category wins), emit non-empty in order |
-
-## TDD Evidence
+## TDD Cycle
 
 ### RED (Step 2)
 
-Command:
+Command: `npm test -- lib/supabase/services/jobs.test.ts`
 
-```bash
-npm test -- lib/tailoring/skill-categories.test.ts
-```
-
-Result: **FAIL**
-
-```
- FAIL  lib/tailoring/skill-categories.test.ts [ lib/tailoring/skill-categories.test.ts ]
-Error: Cannot find module '@/lib/tailoring/skill-categories' imported from 'E:/Profiles/resume-maker/lib/tailoring/skill-categories.test.ts'.
-```
-
-Cause: `lib/tailoring/skill-categories.ts` did not exist yet; test imported module before implementation.
+Result: **FAIL** — 7 failed (missing `job_description` on merge/list items; `resolveJobDescriptionOnAdd` not exported)
 
 ### GREEN (Step 4)
 
-After creating `lib/tailoring/skill-categories.ts` with the simpler two-pass `normalizeSkillCategories` implementation:
+Command: `npm test -- lib/supabase/services/jobs.test.ts`
 
-Command:
+Result: **PASS** — 11 passed
 
-```bash
-npm test -- lib/tailoring/skill-categories.test.ts
-```
+## Changes
 
-Result: **PASS**
+| File | Action |
+|------|--------|
+| `supabase/migrations/014_user_job_description.sql` | Created — `job_description text not null default ''` on `user_job_status` |
+| `lib/supabase/database.types.ts` | Added `UserJobListItem.job_description: string` |
+| `lib/supabase/services/jobs.ts` | `resolveJobDescriptionOnAdd`, merge/list/add/open updates; `setJobStatusForUser` uses `.update({ status })` to avoid wiping JD |
+| `lib/supabase/services/jobs.test.ts` | Added merge + resolveJobDescriptionOnAdd tests; updated existing expectations for `job_description` |
 
-```
- ✓ lib/tailoring/skill-categories.test.ts (7 tests) 3ms
- Test Files  1 passed (1)
-      Tests  7 passed (7)
-```
+## Key implementation notes
+
+- `addJobForUser(userId, rawUrl, jobDescription = "", client?)` — incoming JD trims; empty incoming preserves existing.
+- `mergeCatalogJobsWithUserStatus` maps `job_description: row?.job_description ?? ""`.
+- `listJobsForUser` / `getJobForUser` select `"job_id,status,job_description"` / `"status,job_description"`.
+- `setJobStatusForUser` switched from upsert to update-only on status — does not touch `job_description`.
+- `openJobForUser` upsert omits `job_description` (PostgREST preserves existing column on conflict update).
 
 ## Commit
 
-| SHA | Subject |
-|-----|---------|
-| `c44d584` | feat: add canonical skill category normalizer |
+```
+0d6ecd0 feat: store per-user job description on user_job_status
+```
 
-## Self-Review
+Files committed: migration, `database.types.ts`, `jobs.ts`, `jobs.test.ts`
 
-- **Scope:** Only the two files named in the brief — no composer/pipeline changes.
-- **Implementation:** Used the simpler second `normalizeSkillCategories` loop (pending collect + canonical-order assign) as instructed.
-- **Dedupe:** Skills deduped via `skillKey` from existing `skill-ontology`; earlier canonical category wins (e.g. `Backend` before `Testing`).
-- **Aliases:** All brief-specified aliases covered in `CATEGORY_ALIASES`; case-insensitive via `toLowerCase()`.
-- **Conventions:** Matches existing `lib/tailoring/*.test.ts` Vitest patterns and `@/` import alias used elsewhere.
-- **Dependencies:** Consumes only `skillKey` from `skill-ontology` (pre-existing); produces module for later tasks.
+## Out of scope (unchanged)
+
+- Jobs page UI (Task 2)
+- Git stash not restored
 
 ## Concerns
 
-None.
+- `setJobStatusForUser` now uses `.update` instead of upsert — will not create a status row if one is missing (acceptable for dropdown on listed jobs; differs from prior upsert behavior).
+- `openJobForUser` still upserts without `job_description`; relies on PostgREST not nulling unspecified columns on conflict — verify in staging if JD ever disappears on first open.
+- `addJobForUser` signature adds optional `jobDescription` before `client`; callers passing client as 3rd arg must migrate to 4th position.
+
+## Test summary
+
+| Suite | Result |
+|-------|--------|
+| `jobs.test.ts` | 11 passed |
+
+Tests cover: merge with/without JD, `resolveJobDescriptionOnAdd` overwrite rules, list overlay, addJob concurrent paths.

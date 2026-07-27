@@ -1,197 +1,221 @@
-Base: 7147ea5994c621c826cf3361952ca5549ff62f49
-Head: c44d584b6c82dfbce626f0101ccac4cb21e7c50b
+Base: 0da141056c3864c76fcccc4d0609e00fd1208067
+Head: c32b5ed32d9ee191dad8bb414e7f1db741689777
 
 ## Commits
-c44d584 feat: add canonical skill category normalizer
-
-## Stat
- lib/tailoring/skill-categories.test.ts | 86 +++++++++++++++++++++++++++++++++
- lib/tailoring/skill-categories.ts      | 87 ++++++++++++++++++++++++++++++++++
- 2 files changed, 173 insertions(+)
+c32b5ed feat: add main-skill bullet coverage helpers
 
 ## Diff
-diff --git a/lib/tailoring/skill-categories.test.ts b/lib/tailoring/skill-categories.test.ts
+diff --git a/lib/tailoring/main-skill-coverage.test.ts b/lib/tailoring/main-skill-coverage.test.ts
 new file mode 100644
-index 0000000..2a64be1
+index 0000000..1465fcf
 --- /dev/null
-+++ b/lib/tailoring/skill-categories.test.ts
-@@ -0,0 +1,86 @@
++++ b/lib/tailoring/main-skill-coverage.test.ts
+@@ -0,0 +1,112 @@
 +import { describe, expect, it } from "vitest";
++import type { JDAnalysis } from "@/lib/types/tailoring";
 +import {
-+  CANONICAL_SKILL_CATEGORIES,
-+  FALLBACK_SKILL_CATEGORY,
-+  normalizeSkillCategories,
-+  resolveCanonicalSkillCategory,
-+} from "@/lib/tailoring/skill-categories";
++  MAIN_SKILL_COVERAGE_RATIO,
++  bulletMentionsSkill,
++  ensureMainSkillBulletCoverage,
++  selectMainSkill,
++} from "@/lib/tailoring/main-skill-coverage";
 +
-+describe("CANONICAL_SKILL_CATEGORIES", () => {
-+  it("is exactly the seven approved labels in order", () => {
-+    expect([...CANONICAL_SKILL_CATEGORIES]).toEqual([
-+      "Languages",
-+      "Backend",
-+      "Frontend",
-+      "Database",
-+      "Cloud & DevOps",
-+      "Tools & Protocols",
-+      "Testing",
-+    ]);
-+  });
-+
-+  it("uses Tools & Protocols as the must-keep fallback label", () => {
-+    expect(FALLBACK_SKILL_CATEGORY).toBe("Tools & Protocols");
-+  });
-+});
-+
-+describe("resolveCanonicalSkillCategory", () => {
-+  it("returns exact canonical labels", () => {
-+    expect(resolveCanonicalSkillCategory("Backend")).toBe("Backend");
-+    expect(resolveCanonicalSkillCategory("cloud & devops")).toBe("Cloud & DevOps");
-+  });
-+
-+  it("remaps known aliases", () => {
-+    expect(resolveCanonicalSkillCategory("Cloud")).toBe("Cloud & DevOps");
-+    expect(resolveCanonicalSkillCategory("DevOps")).toBe("Cloud & DevOps");
-+    expect(resolveCanonicalSkillCategory("Cloud and DevOps")).toBe("Cloud & DevOps");
-+    expect(resolveCanonicalSkillCategory("Testing & Tools")).toBe("Testing");
-+    expect(resolveCanonicalSkillCategory("Data")).toBe("Database");
-+    expect(resolveCanonicalSkillCategory("Databases")).toBe("Database");
-+    expect(resolveCanonicalSkillCategory("Tools & Technologies")).toBe("Tools & Protocols");
-+    expect(resolveCanonicalSkillCategory("Tools")).toBe("Tools & Protocols");
-+  });
-+
-+  it("returns null for unknown or empty names", () => {
-+    expect(resolveCanonicalSkillCategory("Streaming")).toBeNull();
-+    expect(resolveCanonicalSkillCategory("AI/ML")).toBeNull();
-+    expect(resolveCanonicalSkillCategory("")).toBeNull();
-+    expect(resolveCanonicalSkillCategory(null)).toBeNull();
-+    expect(resolveCanonicalSkillCategory(undefined)).toBeNull();
-+    expect(resolveCanonicalSkillCategory("   ")).toBeNull();
-+  });
-+});
-+
-+describe("normalizeSkillCategories", () => {
-+  it("remaps aliases, drops unknown buckets, orders, and omits empty", () => {
-+    const out = normalizeSkillCategories({
-+      Streaming: ["Kafka"],
-+      Cloud: ["AWS", "Docker"],
-+      Backend: ["Python"],
-+      Frontend: [],
-+      Data: ["PostgreSQL"],
-+      "Tools & Technologies": ["Git"],
-+    });
-+    expect(Object.keys(out)).toEqual([
-+      "Backend",
-+      "Database",
-+      "Cloud & DevOps",
-+      "Tools & Protocols",
-+    ]);
-+    expect(out.Backend).toEqual(["Python"]);
-+    expect(out.Database).toEqual(["PostgreSQL"]);
-+    expect(out["Cloud & DevOps"]).toEqual(["AWS", "Docker"]);
-+    expect(out["Tools & Protocols"]).toEqual(["Git"]);
-+    expect(out).not.toHaveProperty("Streaming");
-+    expect(out).not.toHaveProperty("Frontend");
-+  });
-+
-+  it("dedupes the same skill across categories ΓÇö earlier canonical category wins", () => {
-+    const out = normalizeSkillCategories({
-+      Testing: ["Jest"],
-+      Backend: ["Jest", "Python"],
-+    });
-+    expect(out.Backend).toEqual(["Jest", "Python"]);
-+    expect(out).not.toHaveProperty("Testing");
-+  });
-+});
-diff --git a/lib/tailoring/skill-categories.ts b/lib/tailoring/skill-categories.ts
-new file mode 100644
-index 0000000..6a0ebab
---- /dev/null
-+++ b/lib/tailoring/skill-categories.ts
-@@ -0,0 +1,87 @@
-+import { skillKey } from "@/lib/tailoring/skill-ontology";
-+
-+export const CANONICAL_SKILL_CATEGORIES = [
-+  "Languages",
-+  "Backend",
-+  "Frontend",
-+  "Database",
-+  "Cloud & DevOps",
-+  "Tools & Protocols",
-+  "Testing",
-+] as const;
-+
-+export type CanonicalSkillCategory = (typeof CANONICAL_SKILL_CATEGORIES)[number];
-+
-+export const FALLBACK_SKILL_CATEGORY: CanonicalSkillCategory = "Tools & Protocols";
-+
-+/** Lowercase alias / exact label ΓåÆ canonical label */
-+const CATEGORY_ALIASES: Record<string, CanonicalSkillCategory> = {
-+  languages: "Languages",
-+  backend: "Backend",
-+  frontend: "Frontend",
-+  database: "Database",
-+  databases: "Database",
-+  data: "Database",
-+  "cloud & devops": "Cloud & DevOps",
-+  "cloud and devops": "Cloud & DevOps",
-+  cloud: "Cloud & DevOps",
-+  devops: "Cloud & DevOps",
-+  "tools & protocols": "Tools & Protocols",
-+  "tools & technologies": "Tools & Protocols",
-+  tools: "Tools & Protocols",
-+  testing: "Testing",
-+  "testing & tools": "Testing",
-+};
-+
-+export function resolveCanonicalSkillCategory(
-+  raw: string | null | undefined
-+): CanonicalSkillCategory | null {
-+  const trimmed = typeof raw === "string" ? raw.trim() : "";
-+  if (!trimmed) return null;
-+  return CATEGORY_ALIASES[trimmed.toLowerCase()] ?? null;
++function jd(partial: Partial<JDAnalysis> & Pick<JDAnalysis, "requirements">): Pick<JDAnalysis, "requirements" | "atsTerms"> {
++  return { atsTerms: [], ...partial };
 +}
 +
-+/**
-+ * Remap known aliases, drop skills under unknown headings, dedupe by skill key
-+ * (earlier canonical category wins), emit only non-empty categories in fixed order.
-+ */
-+export function normalizeSkillCategories(
-+  skillCategories: Record<string, string[]>
-+): Record<string, string[]> {
-+  const buckets: Record<CanonicalSkillCategory, string[]> = {
-+    Languages: [],
-+    Backend: [],
-+    Frontend: [],
-+    Database: [],
-+    "Cloud & DevOps": [],
-+    "Tools & Protocols": [],
-+    Testing: [],
-+  };
-+  const seen = new Set<string>();
++describe("selectMainSkill", () => {
++  it("picks highest-priority must_have technology by canonicalTerm", () => {
++    const skill = selectMainSkill(
++      jd({
++        requirements: [
++          { id: "r1", text: "Python", type: "must_have", category: "technology", canonicalTerm: "Python", priority: 5 },
++          { id: "r2", text: "Java", type: "must_have", category: "technology", canonicalTerm: "Java", priority: 9 },
++          { id: "r3", text: "Teamwork", type: "must_have", category: "soft_skill", canonicalTerm: null, priority: 10 },
++        ],
++      })
++    );
++    expect(skill).toBe("Java");
++  });
 +
-+  const pending: { category: CanonicalSkillCategory; skill: string }[] = [];
-+  for (const [rawCategory, skills] of Object.entries(skillCategories)) {
-+    const canonical = resolveCanonicalSkillCategory(rawCategory);
-+    if (!canonical) continue;
-+    for (const skill of skills) {
-+      if (!skillKey(skill)) continue;
-+      pending.push({ category: canonical, skill });
-+    }
++  it("falls back to first known atsTerms skill when no must_have tech", () => {
++    const skill = selectMainSkill(
++      jd({
++        requirements: [
++          { id: "r1", text: "Communicate well", type: "must_have", category: "soft_skill", canonicalTerm: null, priority: 9 },
++        ],
++        atsTerms: ["Kubernetes", "Java"],
++      })
++    );
++    expect(skill).toBe("Kubernetes");
++  });
++
++  it("returns null when nothing usable", () => {
++    expect(selectMainSkill(jd({ requirements: [], atsTerms: [] }))).toBeNull();
++  });
++});
++
++describe("bulletMentionsSkill", () => {
++  it("matches word-boundary skill mentions", () => {
++    expect(bulletMentionsSkill("Built APIs in Java and Spring", "Java")).toBe(true);
++    expect(bulletMentionsSkill("Built JavaScript UIs", "Java")).toBe(false);
++  });
++});
++
++describe("ensureMainSkillBulletCoverage", () => {
++  it("is a no-op when mainSkill is null or already >= 60%", () => {
++    const results = [
++      {
++        experienceId: "e1",
++        bullets: [
++          { text: "Built services in Java", evidenceIds: ["f1"], requirementIds: [] },
++          { text: "Shipped Java APIs", evidenceIds: [], requirementIds: [] },
++          { text: "Mentored teammates", evidenceIds: [], requirementIds: [] },
++        ],
++      },
++    ];
++    // 2/3 >= 0.6
++    expect(ensureMainSkillBulletCoverage(results, "Java")).toEqual(results);
++    expect(ensureMainSkillBulletCoverage(results, null)).toEqual(results);
++  });
++
++  it("injects mainSkill into enough uncovered bullets to reach ceil(60%)", () => {
++    const results = [
++      {
++        experienceId: "e1",
++        bullets: [
++          { text: "Built payment APIs", evidenceIds: ["f1"], requirementIds: [] },
++          { text: "Improved latency", evidenceIds: [], requirementIds: [] },
++          { text: "Mentored teammates", evidenceIds: [], requirementIds: [] },
++          { text: "Owned on-call", evidenceIds: [], requirementIds: [] },
++          { text: "Documented runbooks", evidenceIds: [], requirementIds: [] },
++        ],
++      },
++    ];
++    // needed = ceil(0.6*5) = 3; currently 0 covered
++    const out = ensureMainSkillBulletCoverage(results, "Java");
++    const covered = out[0].bullets.filter((b) => bulletMentionsSkill(b.text, "Java")).length;
++    expect(covered).toBeGreaterThanOrEqual(Math.ceil(MAIN_SKILL_COVERAGE_RATIO * 5));
++    expect(out[0].bullets).toHaveLength(5); // prefer mutate, not append
++    expect(out[0].bullets[0].evidenceIds).toEqual(["f1"]);
++  });
++
++  it("prefers larger experiences when choosing bullets to rewrite", () => {
++    const results = [
++      {
++        experienceId: "small",
++        bullets: [{ text: "Did stuff", evidenceIds: [], requirementIds: [] }],
++      },
++      {
++        experienceId: "large",
++        bullets: [
++          { text: "Built APIs", evidenceIds: [], requirementIds: [] },
++          { text: "Shipped features", evidenceIds: [], requirementIds: [] },
++          { text: "Led reviews", evidenceIds: [], requirementIds: [] },
++        ],
++      },
++    ];
++    // total 4, needed = ceil(2.4)=3
++    const out = ensureMainSkillBulletCoverage(results, "Go");
++    const largeCovered = out.find((r) => r.experienceId === "large")!.bullets.filter((b) =>
++      bulletMentionsSkill(b.text, "Go")
++    ).length;
++    expect(largeCovered).toBeGreaterThanOrEqual(2);
++  });
++});
+diff --git a/lib/tailoring/main-skill-coverage.ts b/lib/tailoring/main-skill-coverage.ts
+new file mode 100644
+index 0000000..69f7ecc
+--- /dev/null
++++ b/lib/tailoring/main-skill-coverage.ts
+@@ -0,0 +1,90 @@
++import type { ExperienceGenerationResult, JDAnalysis } from "@/lib/types/tailoring";
++import { normalizeSkillName } from "@/lib/tailoring/skill-ontology";
++
++export const MAIN_SKILL_COVERAGE_RATIO = 0.6;
++
++function escapeRegExp(value: string): string {
++  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
++}
++
++export function bulletMentionsSkill(text: string, skillName: string): boolean {
++  const canonical = normalizeSkillName(skillName) || skillName;
++  if (!canonical.trim()) return false;
++  const re = new RegExp(
++    `(^|[^a-z0-9+#.])${escapeRegExp(canonical.toLowerCase())}([^a-z0-9+#]|$)`,
++    "i"
++  );
++  return re.test(String(text || "").toLowerCase());
++}
++
++export function selectMainSkill(
++  jdAnalysis: Pick<JDAnalysis, "requirements" | "atsTerms">
++): string | null {
++  const mustTech = jdAnalysis.requirements
++    .filter(
++      (r) =>
++        r.type === "must_have" &&
++        (r.category === "technology" || Boolean(r.canonicalTerm))
++    )
++    .slice()
++    .sort((a, b) => b.priority - a.priority);
++
++  for (const r of mustTech) {
++    const raw = (r.canonicalTerm || r.text || "").trim();
++    const canonical = normalizeSkillName(raw);
++    if (canonical) return canonical;
 +  }
 +
-+  for (const label of CANONICAL_SKILL_CATEGORIES) {
-+    for (const item of pending) {
-+      if (item.category !== label) continue;
-+      const key = skillKey(item.skill);
-+      if (seen.has(key)) continue;
-+      seen.add(key);
-+      buckets[label].push(item.skill);
-+    }
++  for (const term of jdAnalysis.atsTerms ?? []) {
++    const canonical = normalizeSkillName(String(term || "").trim());
++    if (canonical) return canonical;
 +  }
++  return null;
++}
 +
-+  const out: Record<string, string[]> = {};
-+  for (const label of CANONICAL_SKILL_CATEGORIES) {
-+    if (buckets[label].length > 0) out[label] = buckets[label];
++function injectSkillIntoBullet(text: string, skill: string): string {
++  const trimmed = text.trim().replace(/\.$/, "");
++  return `${trimmed} using ${skill}.`;
++}
++
++export function ensureMainSkillBulletCoverage(
++  results: ExperienceGenerationResult[],
++  mainSkill: string | null,
++  minRatio: number = MAIN_SKILL_COVERAGE_RATIO
++): ExperienceGenerationResult[] {
++  if (!mainSkill || results.length === 0) return results;
++
++  const total = results.reduce((n, r) => n + r.bullets.length, 0);
++  if (total === 0) return results;
++
++  const needed = Math.ceil(minRatio * total);
++
++  type Loc = { expIdx: number; bulletIdx: number; expSize: number };
++  const uncovered: Loc[] = [];
++  let covered = 0;
++
++  results.forEach((r, expIdx) => {
++    r.bullets.forEach((b, bulletIdx) => {
++      if (bulletMentionsSkill(b.text, mainSkill)) covered += 1;
++      else uncovered.push({ expIdx, bulletIdx, expSize: r.bullets.length });
++    });
++  });
++
++  if (covered >= needed) return results;
++
++  uncovered.sort((a, b) => b.expSize - a.expSize || a.bulletIdx - b.bulletIdx);
++
++  const next = results.map((r) => ({
++    ...r,
++    bullets: r.bullets.map((b) => ({ ...b })),
++  }));
++  let i = 0;
++  while (covered < needed && i < uncovered.length) {
++    const loc = uncovered[i++];
++    const bullet = next[loc.expIdx].bullets[loc.bulletIdx];
++    if (bulletMentionsSkill(bullet.text, mainSkill)) continue;
++    bullet.text = injectSkillIntoBullet(bullet.text, mainSkill);
++    covered += 1;
 +  }
-+  return out;
++  return next;
 +}

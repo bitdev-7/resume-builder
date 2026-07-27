@@ -1,260 +1,172 @@
-Base: c44d584b6c82dfbce626f0101ccac4cb21e7c50b
-Head: c92f44ea7f9a2eb10c8dbb305aa759e01e7edb0a
+Base: c32b5ed32d9ee191dad8bb414e7f1db741689777
+Head: 0985b3ac88d8e4ab86f9948eee155db577e1aef5
 
 ## Commits
-c92f44e feat: normalize composer skill categories to canonical set
-
-## Stat
- lib/tailoring/composer.test.ts | 68 ++++++++++++++++++++++++++++++++++++++----
- lib/tailoring/composer.ts      | 28 +++++++++--------
- 2 files changed, 78 insertions(+), 18 deletions(-)
+0985b3a feat: enforce 60% main-skill coverage in experience bullets
 
 ## Diff
-diff --git a/lib/tailoring/composer.test.ts b/lib/tailoring/composer.test.ts
-index 45dfce5..0210902 100644
---- a/lib/tailoring/composer.test.ts
-+++ b/lib/tailoring/composer.test.ts
-@@ -1,13 +1,14 @@
- import { describe, expect, it, vi } from "vitest";
- import type { ResolvedAIRequest } from "@/lib/ai-api";
+diff --git a/lib/prompts/experience-writer-prompt.ts b/lib/prompts/experience-writer-prompt.ts
+index 1169373..ff91602 100644
+--- a/lib/prompts/experience-writer-prompt.ts
++++ b/lib/prompts/experience-writer-prompt.ts
+@@ -44,16 +44,19 @@ Reference material policy:
+ Experience skill policy:
+ - Incorporate as many targetSkills as possible within this experience.
+ - Every targetSkill that is historically compatible with the employment period should appear naturally as hands-on work in one or more bullets.
+ - Do not force historically incompatible targetSkills into this experience.
+ - Prefer allowedSkills and targetSkills whenever appropriate.
+ - You may introduce additional technologies only if they are historically accurate and consistent with the role.
+ - Mention technologies explicitly instead of leaving them implied.
+ - Group related technologies naturally within project-focused achievements.
++- mainSkill (when present) is the JD's top must-have technology. Across ALL experiences in this generation, at least ~60% of bullets overall must mention mainSkill by name when historically compatible with the employment dates.
++- Spread mainSkill mentions across roles rather than concentrating them in a single bullet when possible.
++- Do not force mainSkill into historically incompatible periods; leave those bullets for other skills and rely on compatible roles to meet the overall ratio.
+ 
+ Creative writing rules:
+ - Rewrite achievements instead of copying them verbatim.
+ - Improve technical depth, ownership, business impact, and clarity.
+ - Use believable implementation details that fit the role.
+ - Quantify impact only when supported by evidence or when using conservative, realistic estimates that do not materially misrepresent the experience.
+ - Never fabricate awards, promotions, patents, certifications, leadership titles, customers, revenue figures, compliance claims, security clearances, or major business outcomes.
+ - Never alter the experience title, company, or employment dates.
+@@ -141,16 +144,18 @@ export interface ExperienceWriterInput {
+   title: string;
+   company: string;
+   startDate: string;
+   endDate: string;
+   allowedEvidence: EvidenceFact[];
+   allowedSkills: string[];
+   /** JD-required skills to feature strongly in this role's bullets. */
+   targetSkills: string[];
++  /** Top JD must-have technology to feature in ΓëÑ60% of bullets overall; null/omit if none. */
++  mainSkill?: string | null;
+   priorityRequirements: Pick<JDRequirement, "id" | "text">[];
+   targetBulletCount: number;
+   extraInstructions?: string;
+ }
+ 
+ export function buildExperienceWriterUserPrompt(input: ExperienceWriterInput): string {
+   const payload = {
+     experienceId: input.experienceId,
+@@ -163,16 +168,17 @@ export function buildExperienceWriterUserPrompt(input: ExperienceWriterInput): s
+     referenceEvidence: input.allowedEvidence.map((f) => ({
+       id: f.id,
+       text: f.text,
+       factType: f.factType,
+       metrics: f.metrics?.map((m) => ({ id: m.id, value: m.value })) ?? [],
+     })),
+     allowedSkills: input.allowedSkills,
+     targetSkills: input.targetSkills,
++    mainSkill: input.mainSkill ?? null,
+     priorityRequirements: input.priorityRequirements,
+     targetBulletCount: input.targetBulletCount,
+   };
+ 
+   const extra = input.extraInstructions?.trim()
+     ? `\n\nADDITIONAL USER-CONFIGURED INSTRUCTIONS (apply unless they conflict with producing a strong JD-aligned resume):\n${input.extraInstructions.trim()}`
+     : "";
+ 
+@@ -192,16 +198,17 @@ export function buildExperienceWriterBatchedUserPrompt(inputs: ExperienceWriterI
+     referenceEvidence: input.allowedEvidence.map((f) => ({
+       id: f.id,
+       text: f.text,
+       factType: f.factType,
+       metrics: f.metrics?.map((m) => ({ id: m.id, value: m.value })) ?? [],
+     })),
+     allowedSkills: input.allowedSkills,
+     targetSkills: input.targetSkills,
++    mainSkill: input.mainSkill ?? null,
+     priorityRequirements: input.priorityRequirements,
+     targetBulletCount: input.targetBulletCount,
+     extraInstructions: input.extraInstructions?.trim() || undefined,
+   }));
+ 
+   const sharedExtra = inputs.every((i) => i.extraInstructions?.trim()) &&
+     new Set(inputs.map((i) => i.extraInstructions?.trim())).size === 1
+     ? `\n\nADDITIONAL USER-CONFIGURED INSTRUCTIONS (apply to every experience, unless they conflict with producing a strong JD-aligned resume):\n${inputs[0].extraInstructions!.trim()}`
+diff --git a/lib/tailoring/pipeline.ts b/lib/tailoring/pipeline.ts
+index 0aa170a..1a2deba 100644
+--- a/lib/tailoring/pipeline.ts
++++ b/lib/tailoring/pipeline.ts
+@@ -25,16 +25,20 @@ import {
+   DEFAULT_SKILL_BUDGET,
+ } from "@/lib/tailoring/composer";
  import type { ComposerInput } from "@/lib/prompts/composer-prompt";
-+import { CANONICAL_SKILL_CATEGORIES } from "@/lib/tailoring/skill-categories";
- 
- const callAIMock = vi.fn();
- 
- vi.mock("@/lib/ai-provider", async (importOriginal) => {
-   const actual = await importOriginal<typeof import("@/lib/ai-provider")>();
-   return { ...actual, callAI: callAIMock };
- });
- 
- const { composeResumeTopSection, ensureAllEligibleSkills, DEFAULT_SKILL_BUDGET } = await import(
-   "@/lib/tailoring/composer"
-@@ -46,40 +47,95 @@ describe("composer ΓÇö skill categories", () => {
-       categoryHints: ["Backend"],
-       projects: [],
-     };
- 
-     const { result } = await composeResumeTopSection(input, aiRequest, { maxTotalSkills: 35, maxSkillsPerCategory: 10 });
- 
-     expect(result.skillCategories.Backend).toHaveLength(21); // 20 allowed + Kubernetes; Skill0 deduped
-     expect(result.skillCategories.Backend).toContain("Kubernetes");
-   });
- 
-+  it("normalizes composer skillCategories ΓÇö drops unknown headings", async () => {
-+    callAIMock.mockResolvedValue({
-+      providerUsed: "openai",
-+      modelUsed: "gpt-4.1-mini",
-+      text: "",
-+      json: {
-+        summary: "A".repeat(10),
-+        skillCategories: {
-+          Backend: ["Python"],
-+          Streaming: ["Kafka"],
-+        },
-+        softSkills: [],
-+        projects: [],
-+      },
-+      raw: {},
-+      costUsd: 0,
-+    });
-+
-+    const input: ComposerInput = {
-+      normalizedTitle: "Backend Engineer",
-+      seniority: "mid",
-+      domains: [],
-+      topRequirements: [],
-+      summaryEvidence: [],
-+      allowedSkills: ["Python"],
-+      targetSkills: [],
-+      categoryHints: [...CANONICAL_SKILL_CATEGORIES],
-+      projects: [],
-+    };
-+
-+    const { result } = await composeResumeTopSection(input, aiRequest);
-+    expect(result.skillCategories).toEqual({ Backend: ["Python"] });
-+  });
-+
-   it("uses the default skill budget when none is provided", () => {
-     expect(DEFAULT_SKILL_BUDGET.maxSkillsPerCategory).toBeGreaterThan(0);
-   });
- });
- 
- describe("ensureAllEligibleSkills ΓÇö must-keep guarantee", () => {
--  it("appends must-keep skills the composer omitted, and leaves present ones untouched", () => {
-+  it("appends must-keep skills under Tools & Protocols when category is unknown", () => {
-     const composerResult = {
-       summary: "s",
-       skillCategories: { Backend: ["Python", "FastAPI"] },
-       softSkills: [],
-       projects: [],
-     };
--    // Redis (declared) and Kafka (JD-required) were both eligible but dropped by the composer.
-     const result = ensureAllEligibleSkills(composerResult, ["Python", "FastAPI", "Redis", "Kafka"]);
-+    expect(result.skillCategories).toEqual({
-+      Backend: ["Python", "FastAPI"],
-+      "Tools & Protocols": ["Redis", "Kafka"],
-+    });
-+  });
- 
--    const allSkills = Object.values(result.skillCategories).flat();
--    expect(allSkills).toEqual(expect.arrayContaining(["Python", "FastAPI", "Redis", "Kafka"]));
--    // Original category preserved.
--    expect(result.skillCategories.Backend).toEqual(["Python", "FastAPI"]);
-+  it("aliases profile categories, maps unmappable profile cats to Tools & Protocols, drops unknown headings", () => {
-+    const composerResult = {
-+      summary: "s",
-+      skillCategories: { Streaming: ["Kafka"], Backend: ["Python"] },
-+      softSkills: [],
-+      projects: [],
-+    };
-+    const categoryByKey = new Map<string, string>([
-+      ["redis", "Databases"],
-+      ["pinecone", "AI/ML"],
-+    ]);
-+    const result = ensureAllEligibleSkills(
-+      composerResult,
-+      ["Python", "Redis", "Pinecone"],
-+      categoryByKey
-+    );
-+    expect(result.skillCategories).toEqual({
-+      Backend: ["Python"],
-+      Database: ["Redis"],
-+      "Tools & Protocols": ["Pinecone"],
-+    });
-   });
- 
-   it("returns the input unchanged when every eligible skill is already present", () => {
-     const composerResult = {
-       summary: "s",
-       skillCategories: { Backend: ["Python"] },
-       softSkills: [],
-       projects: [],
-     };
-     const result = ensureAllEligibleSkills(composerResult, ["Python"]);
-diff --git a/lib/tailoring/composer.ts b/lib/tailoring/composer.ts
-index 3193236..75f0bf0 100644
---- a/lib/tailoring/composer.ts
-+++ b/lib/tailoring/composer.ts
-@@ -3,20 +3,25 @@ import type { AIMessage } from "@/lib/ai-provider";
- import type { ResolvedAIRequest } from "@/lib/ai-api";
- import {
-   buildComposerSystemPrompt,
-   buildComposerUserPrompt,
-   type ComposerInput,
- } from "@/lib/prompts/composer-prompt";
- import { composerAiOutputSchema } from "@/lib/tailoring/schemas";
- import { cleanJsonText } from "@/lib/analyze-json";
- import type { ComposerResult, SkillBudgetConfig } from "@/lib/types/tailoring";
- import { skillKey } from "@/lib/tailoring/skill-ontology";
+ import type { ExperienceWriterInput } from "@/lib/prompts/experience-writer-prompt";
+ import { repairTailoredResume } from "@/lib/tailoring/repair";
+ import { assembleFinalResume } from "@/lib/tailoring/assemble";
+ import { buildProfileHardSkills } from "@/lib/tailoring/profile-hard-skills";
+ import { buildEnrichmentRecommendations } from "@/lib/tailoring/enrichment";
 +import {
-+  FALLBACK_SKILL_CATEGORY,
-+  normalizeSkillCategories,
-+  resolveCanonicalSkillCategory,
-+} from "@/lib/tailoring/skill-categories";
++  ensureMainSkillBulletCoverage,
++  selectMainSkill,
++} from "@/lib/tailoring/main-skill-coverage";
+ import { skillKey, detectSkillMentions } from "@/lib/tailoring/skill-ontology";
+ import type { ExperienceGenerationMode } from "@/lib/workflow-settings";
  import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
  
- export const DEFAULT_SKILL_BUDGET: SkillBudgetConfig = {
-   maxTotalSkills: 35,
-   maxSkillsPerCategory: 10,
- };
+ export interface RunTailoringPipelineInput {
+   jd: string;
+   profileData: LegacyAnalyzeProfile;
+   aiRequest: ResolvedAIRequest;
+@@ -253,16 +257,19 @@ export async function runTailoringPipeline(
+         .filter(Boolean)
+         .map((n) => [skillKey(n), n] as const)
+     ).values()
+   ).slice(0, 20);
+   console.log(
+     `[tailoring] target skills to weave (${targetSkillNames.length}): ${targetSkillNames.join(", ") || "(none)"}`
+   );
  
- /**
-  * Last-resort fallback if the composer AI call fails outright (network/API
-  * failure, unparseable output) ΓÇö keeps the pipeline from hard-failing the
-@@ -26,38 +31,36 @@ export const DEFAULT_SKILL_BUDGET: SkillBudgetConfig = {
- export function buildDeterministicComposerFallback(input: {
-   normalizedTitle: string;
-   allowedSkills: string[];
-   categoryHints: string[];
- }): ComposerResult {
-   const topSkills = input.allowedSkills.slice(0, 20);
-   const highlight = input.allowedSkills.slice(0, 3).join(", ");
-   const summary = highlight
-     ? `${input.normalizedTitle} with hands-on experience across ${highlight}. Focused on delivering well-tested, maintainable solutions aligned with team and business goals.`
-     : `${input.normalizedTitle} with a track record of delivering well-tested, maintainable solutions aligned with team and business goals.`;
--  const category = input.categoryHints[0] || "Skills";
- 
-   return {
-     summary,
--    skillCategories: topSkills.length > 0 ? { [category]: topSkills } : {},
-+    skillCategories: normalizeSkillCategories(
-+      topSkills.length > 0 ? { [FALLBACK_SKILL_CATEGORY]: topSkills } : {}
-+    ),
-     softSkills: [],
-     projects: [],
-   };
- }
- 
--/** Fallback category for skills with no known category ΓÇö a real, resume-appropriate name (never an "Additional Skills" catch-all). */
--const FALLBACK_SKILL_CATEGORY = "Tools & Technologies";
--
- /**
-  * Guarantees selected skills appear in the skills section: typically JD-required
-  * target skills and technologies introduced in experience bullets. Any omitted
-  * names are placed under their real category (profile category when known,
-- * otherwise "Tools & Technologies"). Unrelated profile skills may be omitted
-+ * otherwise "Tools & Protocols"). Unrelated profile skills may be omitted
-  * by the composer and are intentionally not forced back here.
-  */
- export function ensureAllEligibleSkills(
-   composerResult: ComposerResult,
-   eligibleSkillNames: string[],
-   categoryByKey?: Map<string, string>
- ): ComposerResult {
-   const present = new Set<string>();
-   for (const skills of Object.values(composerResult.skillCategories)) {
-     for (const s of skills) present.add(skillKey(s));
-@@ -65,28 +68,29 @@ export function ensureAllEligibleSkills(
- 
-   const missing: string[] = [];
-   const seen = new Set<string>();
-   for (const name of eligibleSkillNames) {
-     const key = skillKey(name);
-     if (present.has(key) || seen.has(key)) continue;
-     seen.add(key);
-     missing.push(name);
-   }
- 
--  if (missing.length === 0) return composerResult;
--
--  const skillCategories = { ...composerResult.skillCategories };
-+  let skillCategories = { ...composerResult.skillCategories };
-   for (const name of missing) {
--    const known = categoryByKey?.get(skillKey(name))?.trim();
--    const category = known || FALLBACK_SKILL_CATEGORY;
-+    const knownRaw = categoryByKey?.get(skillKey(name))?.trim();
-+    const category =
-+      resolveCanonicalSkillCategory(knownRaw) ?? FALLBACK_SKILL_CATEGORY;
-     skillCategories[category] = [...(skillCategories[category] ?? []), name];
-   }
++  const mainSkill = selectMainSkill(jdAnalysis);
++  console.log(`[tailoring] main skill for 60% coverage: ${mainSkill ?? "(none)"}`);
 +
-+  skillCategories = normalizeSkillCategories(skillCategories);
-   return { ...composerResult, skillCategories };
- }
+   const experienceWriterInputsById = new Map<string, ExperienceWriterInput>();
+   for (const expPlan of plan.experiencePlans) {
+     const exp = experiencesById.get(expPlan.experienceId);
+     if (!exp) continue;
  
- export interface ComposerCallResult {
-   result: ComposerResult;
-   costUsd?: number;
- }
- 
- /**
-  * Stage 8 ΓÇö summary/skills/projects. Runs only after experience bullets exist.
-@@ -159,17 +163,17 @@ export async function composeResumeTopSection(
-       if (!key || seenKeys.has(key)) continue;
-       seenKeys.add(key);
-       unique.push(s);
-     }
-     if (unique.length > 0) skillCategories[category] = unique;
+     const allowedSkills = expPlan.relevantSkillIds
+       .map((id) => candidateById.get(id)?.canonicalName)
+       .filter((name): name is string => Boolean(name));
+@@ -276,16 +283,17 @@ export async function runTailoringPipeline(
+       experienceId: exp.id,
+       title: exp.title,
+       company: exp.company,
+       startDate: exp.startDate,
+       endDate: exp.endDate,
+       allowedEvidence: exp.facts,
+       allowedSkills,
+       targetSkills: targetSkillNames,
++      mainSkill,
+       priorityRequirements,
+       targetBulletCount: expPlan.targetBulletCount,
+       extraInstructions: input.customPromptOverride ?? undefined,
+     });
    }
  
-   return {
-     result: {
-       summary: parsed.data.summary,
--      skillCategories,
-+      skillCategories: normalizeSkillCategories(skillCategories),
-       softSkills: parsed.data.softSkills,
-       projects: parsed.data.projects,
-     },
-     costUsd: resp.costUsd,
-   };
- }
+   const buildFallback = buildFallbackFactory(experiencesById);
+ 
+@@ -371,19 +379,19 @@ export async function runTailoringPipeline(
+     experienceMode,
+     buildFallback,
+     promptOverrides,
+   });
+   totalCost += repairOutcome.costUsd;
+ 
+   // Guarantee every JD-required target skill is shown as used in the experience bullets
+   // (user policy: all target skills must appear in experiences, not just the skills list).
+-  const coveredExperienceResults = ensureTargetSkillsInExperiences(
+-    repairOutcome.experienceResults,
+-    targetSkillNames
++  const coveredExperienceResults = ensureMainSkillBulletCoverage(
++    ensureTargetSkillsInExperiences(repairOutcome.experienceResults, targetSkillNames),
++    mainSkill
+   );
+ 
+   // Technologies the writer introduced in experience bullets ΓÇö used only to filter
+   // enrichment recommendations.
+   const introducedSkillNames = new Set<string>();
+   for (const r of coveredExperienceResults) {
+     for (const b of r.bullets) {
+       for (const mention of detectSkillMentions(b.text)) introducedSkillNames.add(mention);

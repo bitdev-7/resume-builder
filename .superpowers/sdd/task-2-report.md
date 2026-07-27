@@ -1,98 +1,42 @@
-# Task 2 Report: Assemble + pipeline use AI skills
+# Task 2 Report: Add Job UI — JD field
 
 ## Status
 
-**Complete.** `assembleFinalResume` restored to 3-arg signature; resume `hardSkills`/`softSkills` come from composer output. Pipeline success path no longer overwrites composer skills with profile map; failure fallback passes `profileHardSkills` into `buildDeterministicComposerFallback`.
-
-## TDD Cycle
-
-### RED (Step 2)
-
-Skipped explicit RED run — assemble test and implementation updated in same pass after brief review (Task 1 already restored composer skills).
-
-### GREEN (Step 6)
-
-Command:
-
-```bash
-npm test -- lib/tailoring/composer.test.ts lib/tailoring/assemble.test.ts lib/tailoring/pipeline.test.ts lib/tailoring/profile-hard-skills.test.ts
-```
-
-Result: **PASS** — 4 files, 15 tests passed
+**Complete.** Add Job form now includes a job-description textarea; submit passes JD to `addJobForUser` and clears both fields on success.
 
 ## Changes
 
 | File | Action |
 |------|--------|
-| `lib/tailoring/assemble.ts` | 3-arg signature; `hardSkills` from `composerResult.skillCategories`, `softSkills` from `composerResult.softSkills` |
-| `lib/tailoring/assemble.test.ts` | All call sites 3 args; replaced profile-overwrite test with composer-skills test |
-| `lib/tailoring/pipeline.ts` | Removed success-path `skillCategories: profileHardSkills` overwrite; 3-arg assemble; `skillsOnResume` from composer; fallback passes `profileHardSkills` |
-| `lib/tailoring/pipeline.test.ts` | Mock composer returns `{ Backend: ["Python", "FastAPI"] }`; asserts resume skills match mock |
+| `frontend/app/jobs/page.tsx` | Added `jobDescription` state; stacked form layout (URL row + textarea); wired `handleAdd` to pass JD and clear on success |
+
+## Implementation notes
+
+- Form stacks vertically on all sizes; URL + Add button share a row on `sm+`.
+- `addJobForUser(user.id, jobUrl, jobDescription)` — empty JD preserved by service (Task 1).
+- List state uses `result.item` which includes `job_description`.
+- Generate button not implemented (Task 3).
+
+## Verification
+
+Command: `npx tsc --noEmit -p frontend`
+
+Result: **FAIL** — 13 errors in `lib/jobs-batch-state.test.ts` and `lib/jobs-page-state.test.ts` (missing `job_description` on test fixtures from Task 1). No errors in `frontend/app/jobs/page.tsx`.
 
 ## Commit
 
 ```
-6ec6926 feat: assemble resume skills from composer output
+a4195e8 feat: add job description field to Jobs add form
 ```
 
-Files committed: `lib/tailoring/assemble.ts`, `lib/tailoring/assemble.test.ts`, `lib/tailoring/pipeline.ts`, `lib/tailoring/pipeline.test.ts`
+Files committed: `frontend/app/jobs/page.tsx`
 
 ## Out of scope (unchanged)
 
-- Git stash not restored (per brief)
-- `profile-hard-skills.ts` still used for `categoryHints` and composer failure fallback only
+- Generate button + one-click flow (Task 3)
+- Git stash not restored
 
 ## Concerns
 
-- Composer fallback still returns empty `softSkills`; only successful AI compose path surfaces soft skills on resume.
-- Repair loop may mutate composer skills via `ensureAllEligibleSkills`; resume reflects post-repair composer output, not raw model output.
-- Pipeline test stderr shows batched experience mock edge case (fallback path); test still passes.
-
-## Test summary
-
-| Suite | Result |
-|-------|--------|
-| `composer.test.ts` | 2 passed |
-| `assemble.test.ts` | 6 passed |
-| `pipeline.test.ts` | 2 passed |
-| `profile-hard-skills.test.ts` | 5 passed |
-
----
-
-## Final review fix: empty composer skillCategories
-
-### Status
-
-**Complete.** Pipeline now falls back to `profileHardSkills` when composer succeeds but returns empty `skillCategories`. JSDoc in `assemble.ts` updated to reflect composer-sourced skills with pipeline fallback.
-
-### Tests
-
-Command:
-
-```bash
-npm test -- lib/tailoring/assemble.test.ts lib/tailoring/pipeline.test.ts lib/tailoring/composer.test.ts
-```
-
-Result: **PASS** — 3 files, 11 tests passed
-
-### Changes
-
-| File | Action |
-|------|--------|
-| `lib/tailoring/pipeline.ts` | After repair, if `skillCategories` empty and profile has hard skills, substitute `profileHardSkills` |
-| `lib/tailoring/assemble.ts` | JSDoc: skills from composer (profile fallback in pipeline only) |
-| `lib/tailoring/pipeline.test.ts` | New test: composer returns `{}` skillCategories → resume uses profile `{ Backend: ["Python"] }` |
-
-### Commit
-
-```
-fix: fall back to profile skills when composer returns none
-```
-
-### Test summary
-
-| Suite | Result |
-|-------|--------|
-| `composer.test.ts` | 2 passed |
-| `assemble.test.ts` | 6 passed |
-| `pipeline.test.ts` | 3 passed |
+- Frontend typecheck blocked by pre-existing test fixture gaps (Task 1); page change itself is type-safe.
+- JD is not shown in the table yet — only stored on add; Generate (Task 3) will consume saved JD.

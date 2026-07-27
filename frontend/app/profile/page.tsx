@@ -9,6 +9,7 @@ import { saveProfileForm } from "@/lib/supabase/services/save-profile";
 import {
   createResumeProfile,
   deleteResumeProfile,
+  setDefaultResumeProfile,
 } from "@/lib/supabase/services/resume-profiles";
 import type { ResumeProfile } from "@/lib/supabase/database.types";
 import {
@@ -159,6 +160,26 @@ export default function ProfilePage() {
     } catch (error) {
       console.error("Error deleting profile:", error);
       showToast("error", "Failed to delete profile.");
+      setLoading(false);
+    }
+  };
+
+  const activeIsDefault =
+    profiles.find((p) => p.id === activeProfileId)?.is_default === true;
+
+  const handleSetDefaultProfile = async () => {
+    if (!user || !activeProfileId || activeIsDefault) return;
+    setLoading(true);
+    try {
+      await setDefaultResumeProfile(user.id, activeProfileId);
+      await loadProfile(activeProfileId);
+      showToast(
+        "success",
+        `"${form.label || "This profile"}" is now the default for Jobs Generate.`
+      );
+    } catch (error) {
+      console.error("Error setting default profile:", error);
+      showToast("error", "Failed to set default profile.");
       setLoading(false);
     }
   };
@@ -367,6 +388,19 @@ export default function ProfilePage() {
             </div>
             <button type="button" onClick={handleNewProfile} disabled={loading || saving} className="btn-soft">
               + New profile
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSetDefaultProfile()}
+              disabled={loading || saving || !activeProfileId || activeIsDefault}
+              className="btn-soft"
+              title={
+                activeIsDefault
+                  ? "This profile is already the default"
+                  : "Use this profile for Jobs one-click Generate"
+              }
+            >
+              {activeIsDefault ? "Default profile" : "Set as default"}
             </button>
             <button
               type="button"

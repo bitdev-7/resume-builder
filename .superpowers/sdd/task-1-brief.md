@@ -1,273 +1,120 @@
-### Task 1: Canonical skill-categories module (TDD)
+### Task 1: Migration + jobs service JD field (TDD)
 
 **Files:**
-- Create: `lib/tailoring/skill-categories.ts`
-- Create: `lib/tailoring/skill-categories.test.ts`
+- Create: `supabase/migrations/014_user_job_description.sql`
+- Modify: `lib/supabase/database.types.ts`
+- Modify: `lib/supabase/services/jobs.ts`
+- Modify: `lib/supabase/services/jobs.test.ts`
 
 **Interfaces:**
-- Consumes: nothing from later tasks
-- Produces:
-  - `CANONICAL_SKILL_CATEGORIES: readonly string[]` — the seven labels in order
-  - `FALLBACK_SKILL_CATEGORY: "Tools & Protocols"`
-  - `resolveCanonicalSkillCategory(raw: string | null | undefined): string | null` — alias or exact match → canonical label; else `null`
-  - `normalizeSkillCategories(skillCategories: Record<string, string[]>): Record<string, string[]>` — remap → drop unknown → dedupe by `skillKey` (first canonical category wins) → order → omit empty
+- `UserJobListItem.job_description: string`
+- `addJobForUser(userId, rawUrl, jobDescription?: string, client?)`
+- `mergeCatalogJobsWithUserStatus(jobs, statuses: Array<{ job_id; status; job_description?: string }>)`
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Write failing tests for merge + add JD rules**
 
-Create `lib/tailoring/skill-categories.test.ts`:
+Extend `jobs.test.ts`:
 
 ```ts
-import { describe, expect, it } from "vitest";
-import {
-  CANONICAL_SKILL_CATEGORIES,
-  FALLBACK_SKILL_CATEGORY,
-  normalizeSkillCategories,
-  resolveCanonicalSkillCategory,
-} from "@/lib/tailoring/skill-categories";
-
-describe("CANONICAL_SKILL_CATEGORIES", () => {
-  it("is exactly the seven approved labels in order", () => {
-    expect([...CANONICAL_SKILL_CATEGORIES]).toEqual([
-      "Languages",
-      "Backend",
-      "Frontend",
-      "Database",
-      "Cloud & DevOps",
-      "Tools & Protocols",
-      "Testing",
-    ]);
+describe("mergeCatalogJobsWithUserStatus — job_description", () => {
+  it("includes job_description from status rows (default empty)", () => {
+    const merged = mergeCatalogJobsWithUserStatus(
+      [{ id: "job-a", url: "https://example.com/a", created_at: "2026-07-16T00:00:00.000Z" }],
+      [{ job_id: "job-a", status: "opened", job_description: "Need a Java engineer" }]
+    );
+    expect(merged[0].job_description).toBe("Need a Java engineer");
   });
 
-  it("uses Tools & Protocols as the must-keep fallback label", () => {
-    expect(FALLBACK_SKILL_CATEGORY).toBe("Tools & Protocols");
+  it("defaults job_description to empty string when status has none", () => {
+    const merged = mergeCatalogJobsWithUserStatus(
+      [{ id: "job-a", url: "https://example.com/a", created_at: "2026-07-16T00:00:00.000Z" }],
+      []
+    );
+    expect(merged[0].job_description).toBe("");
   });
 });
 
-describe("resolveCanonicalSkillCategory", () => {
-  it("returns exact canonical labels", () => {
-    expect(resolveCanonicalSkillCategory("Backend")).toBe("Backend");
-    expect(resolveCanonicalSkillCategory("cloud & devops")).toBe("Cloud & DevOps");
+describe("resolveJobDescriptionOnAdd", () => {
+  // Prefer exporting a tiny pure helper from jobs.ts for overwrite rules:
+  // resolveJobDescriptionOnAdd(existingJd, incomingJd) => string
+  it("keeps existing when incoming is empty", () => {
+    expect(resolveJobDescriptionOnAdd("old JD", "")).toBe("old JD");
+    expect(resolveJobDescriptionOnAdd("old JD", "   ")).toBe("old JD");
   });
-
-  it("remaps known aliases", () => {
-    expect(resolveCanonicalSkillCategory("Cloud")).toBe("Cloud & DevOps");
-    expect(resolveCanonicalSkillCategory("DevOps")).toBe("Cloud & DevOps");
-    expect(resolveCanonicalSkillCategory("Cloud and DevOps")).toBe("Cloud & DevOps");
-    expect(resolveCanonicalSkillCategory("Testing & Tools")).toBe("Testing");
-    expect(resolveCanonicalSkillCategory("Data")).toBe("Database");
-    expect(resolveCanonicalSkillCategory("Databases")).toBe("Database");
-    expect(resolveCanonicalSkillCategory("Tools & Technologies")).toBe("Tools & Protocols");
-    expect(resolveCanonicalSkillCategory("Tools")).toBe("Tools & Protocols");
+  it("overwrites when incoming is non-empty", () => {
+    expect(resolveJobDescriptionOnAdd("old JD", " new JD ")).toBe("new JD");
   });
-
-  it("returns null for unknown or empty names", () => {
-    expect(resolveCanonicalSkillCategory("Streaming")).toBeNull();
-    expect(resolveCanonicalSkillCategory("AI/ML")).toBeNull();
-    expect(resolveCanonicalSkillCategory("")).toBeNull();
-    expect(resolveCanonicalSkillCategory(null)).toBeNull();
-    expect(resolveCanonicalSkillCategory(undefined)).toBeNull();
-    expect(resolveCanonicalSkillCategory("   ")).toBeNull();
-  });
-});
-
-describe("normalizeSkillCategories", () => {
-  it("remaps aliases, drops unknown buckets, orders, and omits empty", () => {
-    const out = normalizeSkillCategories({
-      Streaming: ["Kafka"],
-      Cloud: ["AWS", "Docker"],
-      Backend: ["Python"],
-      Frontend: [],
-      Data: ["PostgreSQL"],
-      "Tools & Technologies": ["Git"],
-    });
-    expect(Object.keys(out)).toEqual([
-      "Backend",
-      "Database",
-      "Cloud & DevOps",
-      "Tools & Protocols",
-    ]);
-    expect(out.Backend).toEqual(["Python"]);
-    expect(out.Database).toEqual(["PostgreSQL"]);
-    expect(out["Cloud & DevOps"]).toEqual(["AWS", "Docker"]);
-    expect(out["Tools & Protocols"]).toEqual(["Git"]);
-    expect(out).not.toHaveProperty("Streaming");
-    expect(out).not.toHaveProperty("Frontend");
-  });
-
-  it("dedupes the same skill across categories — earlier canonical category wins", () => {
-    const out = normalizeSkillCategories({
-      Testing: ["Jest"],
-      Backend: ["Jest", "Python"],
-    });
-    expect(out.Backend).toEqual(["Jest", "Python"]);
-    expect(out).not.toHaveProperty("Testing");
+  it("uses incoming when no existing", () => {
+    expect(resolveJobDescriptionOnAdd("", "hello")).toBe("hello");
   });
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
-
-Run: `npm test -- lib/tailoring/skill-categories.test.ts`
-
-Expected: FAIL (module not found / export missing)
-
-- [ ] **Step 3: Write minimal implementation**
-
-Create `lib/tailoring/skill-categories.ts`:
+Export from `jobs.ts`:
 
 ```ts
-import { skillKey } from "@/lib/tailoring/skill-ontology";
-
-export const CANONICAL_SKILL_CATEGORIES = [
-  "Languages",
-  "Backend",
-  "Frontend",
-  "Database",
-  "Cloud & DevOps",
-  "Tools & Protocols",
-  "Testing",
-] as const;
-
-export type CanonicalSkillCategory = (typeof CANONICAL_SKILL_CATEGORIES)[number];
-
-export const FALLBACK_SKILL_CATEGORY: CanonicalSkillCategory = "Tools & Protocols";
-
-/** Lowercase alias / exact label → canonical label */
-const CATEGORY_ALIASES: Record<string, CanonicalSkillCategory> = {
-  languages: "Languages",
-  backend: "Backend",
-  frontend: "Frontend",
-  database: "Database",
-  databases: "Database",
-  data: "Database",
-  "cloud & devops": "Cloud & DevOps",
-  "cloud and devops": "Cloud & DevOps",
-  cloud: "Cloud & DevOps",
-  devops: "Cloud & DevOps",
-  "tools & protocols": "Tools & Protocols",
-  "tools & technologies": "Tools & Protocols",
-  tools: "Tools & Protocols",
-  testing: "Testing",
-  "testing & tools": "Testing",
-};
-
-export function resolveCanonicalSkillCategory(
-  raw: string | null | undefined
-): CanonicalSkillCategory | null {
-  const trimmed = typeof raw === "string" ? raw.trim() : "";
-  if (!trimmed) return null;
-  return CATEGORY_ALIASES[trimmed.toLowerCase()] ?? null;
-}
-
-/**
- * Remap known aliases, drop skills under unknown headings, dedupe by skill key
- * (earlier canonical category wins), emit only non-empty categories in fixed order.
- */
-export function normalizeSkillCategories(
-  skillCategories: Record<string, string[]>
-): Record<string, string[]> {
-  const buckets: Record<string, string[]> = {};
-  for (const label of CANONICAL_SKILL_CATEGORIES) {
-    buckets[label] = [];
-  }
-
-  const seen = new Set<string>();
-
-  // Process in canonical order first for skills already under canonical/aliased keys,
-  // then any remaining entries (unknown keys are skipped entirely).
-  const entries = Object.entries(skillCategories);
-  const orderedEntries = [
-    ...CANONICAL_SKILL_CATEGORIES.flatMap((label) =>
-      entries.filter(([k]) => resolveCanonicalSkillCategory(k) === label)
-    ),
-    ...entries.filter(([k]) => resolveCanonicalSkillCategory(k) === null),
-  ];
-  // Dedupe entry pairs that matched multiple times via flatMap
-  const seenEntry = new Set<string>();
-  for (const [rawCategory, skills] of orderedEntries) {
-    const entryId = `${rawCategory}::${skills.join("\0")}`;
-    if (seenEntry.has(entryId)) continue;
-    seenEntry.add(entryId);
-
-    const canonical = resolveCanonicalSkillCategory(rawCategory);
-    if (!canonical) continue; // drop unknown category entirely
-
-    for (const skill of skills) {
-      const key = skillKey(skill);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      buckets[canonical].push(skill);
-    }
-  }
-
-  const out: Record<string, string[]> = {};
-  for (const label of CANONICAL_SKILL_CATEGORIES) {
-    if (buckets[label].length > 0) out[label] = buckets[label];
-  }
-  return out;
+export function resolveJobDescriptionOnAdd(
+  existingJd: string | null | undefined,
+  incomingJd: string | null | undefined
+): string {
+  const incoming = typeof incomingJd === "string" ? incomingJd.trim() : "";
+  const existing = typeof existingJd === "string" ? existingJd.trim() : "";
+  if (incoming) return incoming;
+  return existing;
 }
 ```
 
-Note: if the orderedEntries dedupe feels fragile, a simpler loop is fine — iterate `Object.entries` once, resolve canonical, skip nulls, push into buckets while tracking `seen` skill keys; then emit in `CANONICAL_SKILL_CATEGORIES` order. Prefer that simpler loop if the flatMap version is confusing:
+- [ ] **Step 2: Run — expect FAIL**
+
+`npm test -- lib/supabase/services/jobs.test.ts`
+
+- [ ] **Step 3: Migration + types + service**
+
+`supabase/migrations/014_user_job_description.sql`:
+
+```sql
+alter table public.user_job_status
+  add column if not exists job_description text not null default '';
+```
+
+Update `UserJobListItem`:
 
 ```ts
-export function normalizeSkillCategories(
-  skillCategories: Record<string, string[]>
-): Record<string, string[]> {
-  const buckets: Record<CanonicalSkillCategory, string[]> = {
-    Languages: [],
-    Backend: [],
-    Frontend: [],
-    Database: [],
-    "Cloud & DevOps": [],
-    "Tools & Protocols": [],
-    Testing: [],
-  };
-  const seen = new Set<string>();
-
-  // First pass: collect by canonical label without cross-category skill order yet
-  const pending: { category: CanonicalSkillCategory; skill: string }[] = [];
-  for (const [rawCategory, skills] of Object.entries(skillCategories)) {
-    const canonical = resolveCanonicalSkillCategory(rawCategory);
-    if (!canonical) continue;
-    for (const skill of skills) {
-      if (!skillKey(skill)) continue;
-      pending.push({ category: canonical, skill });
-    }
-  }
-
-  // Assign in canonical category order so earlier category wins on duplicate skills
-  for (const label of CANONICAL_SKILL_CATEGORIES) {
-    for (const item of pending) {
-      if (item.category !== label) continue;
-      const key = skillKey(item.skill);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      buckets[label].push(item.skill);
-    }
-  }
-
-  const out: Record<string, string[]> = {};
-  for (const label of CANONICAL_SKILL_CATEGORIES) {
-    if (buckets[label].length > 0) out[label] = buckets[label];
-  }
-  return out;
+export interface UserJobListItem {
+  job_id: string;
+  url: string;
+  created_at: string;
+  status: BidStatus;
+  job_description: string;
 }
 ```
 
-Use the **simpler** second implementation in the PR.
+Update `mergeCatalogJobsWithUserStatus` to accept `job_description?: string` on status rows and set `job_description: row?.job_description ?? ""`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+Update `listJobsForUser` status select: `"job_id,status,job_description"`.
 
-Run: `npm test -- lib/tailoring/skill-categories.test.ts`
+Update `getJobForUser` similarly.
 
-Expected: PASS (all tests green)
+Update `addJobForUser(userId, rawUrl, jobDescription = "", client?)`:
+
+- Select existing status with `status,job_description`.
+- On insert: include `job_description: resolveJobDescriptionOnAdd("", jobDescription)`.
+- On existing row: `update`/`upsert` with `job_description: resolveJobDescriptionOnAdd(existing.job_description, jobDescription)` (and still handle ignored → unapplied).
+- Return item with `job_description`.
+
+Update `openJobForUser` / any returned items to include `job_description`.
+
+Update `setJobStatusForUser` upserts to **not** wipe JD — when upserting status only, either omit `job_description` (Postgres keeps existing on conflict if column not in payload — verify Supabase upsert behavior) or select+merge. **Decision: for status-only upserts, do not include `job_description` in the payload** so existing JD is preserved (PostgREST upsert updates only provided columns when using default — actually upsert replaces; check). Safer approach: read existing JD before upsert, or use `.update({ status })` when row exists. Prefer: status change uses `update({ status, updated_at })` when possible; for upsert of new rows set `job_description: ""`. Implement carefully so Generate JD is never cleared by status dropdown.
+
+- [ ] **Step 4: Run tests — expect PASS**
+
+`npm test -- lib/supabase/services/jobs.test.ts`
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add lib/tailoring/skill-categories.ts lib/tailoring/skill-categories.test.ts
-git commit -m "feat: add canonical skill category normalizer"
+git add supabase/migrations/014_user_job_description.sql lib/supabase/database.types.ts lib/supabase/services/jobs.ts lib/supabase/services/jobs.test.ts
+git commit -m "feat: store per-user job description on user_job_status"
 ```
 
 ---
