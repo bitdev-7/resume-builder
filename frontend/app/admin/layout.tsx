@@ -10,6 +10,7 @@ import {
 } from "@/components/admin/AdminUserContext";
 
 const ADMIN_NAV = [
+  { href: "/admin/users", label: "Users" },
   { href: "/admin/bids", label: "Job Bid status" },
   { href: "/admin/ai", label: "AI Usage" },
   { href: "/admin/catalog", label: "Skill catalog" },

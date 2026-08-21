@@ -181,6 +181,7 @@ export async function saveResumePdfToDownloadsFolder(
     jobRole: options.jobRole,
     personName: options.personName,
     template: options.template,
+    fileName: options.fileName,
     accessToken: options.accessToken,
   });
 }
@@ -194,14 +195,21 @@ export async function saveGeneratedResumeToDownloads(
     jobRole: string;
     personName: string;
     template?: string;
+    fileName?: string;
     accessToken?: string | null;
   }
 ): Promise<{ paths: ResumeDownloadPaths; savedPath: string }> {
-  const paths = buildResumeDownloadPaths(
-    options.companyName,
-    options.jobRole,
-    options.personName
-  );
+  const paths = options.fileName?.trim()
+    ? buildJobFolderDownloadPaths(
+        options.companyName,
+        options.jobRole,
+        options.fileName.trim()
+      )
+    : buildResumeDownloadPaths(
+        options.companyName,
+        options.jobRole,
+        options.personName
+      );
 
   if (!options.accessToken) {
     throw new Error("You must be signed in to download a resume");
@@ -237,6 +245,7 @@ export async function saveGeneratedResumeToDownloads(
         companyName: options.companyName,
         jobRole: options.jobRole,
         personName: options.personName,
+        fileName: options.fileName,
       },
       options.accessToken,
       SAVE_PDF_API_TIMEOUT_MS

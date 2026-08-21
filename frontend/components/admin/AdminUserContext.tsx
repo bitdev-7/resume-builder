@@ -32,7 +32,7 @@ export function formatUserLabel(user: AdminUserSummary): string {
   if (name && email) return `${name} — ${email}`;
   if (email) return email;
   if (name) return name;
-  return user.id;
+  return `${user.id.slice(0, 8)}…`;
 }
 
 export function AdminUserProvider({ children }: { children: React.ReactNode }) {

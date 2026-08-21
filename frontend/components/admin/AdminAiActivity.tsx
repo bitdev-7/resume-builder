@@ -175,10 +175,21 @@ export default function AdminAiActivity({
           </h2>
         </div>
         <div className="p-6">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-            No AI usage recorded yet for this user. Usage is logged when they
-            generate resumes or run other AI features on a server that has
-            logging configured.
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-950 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+            <p className="font-semibold">No AI usage rows for this account</p>
+            <p className="mt-2 text-amber-900/90 dark:text-amber-100/90">
+              This is not limited to today or this month — the database has{" "}
+              <span className="font-medium">zero</span> logged LLM calls for this
+              user. Resumes can still exist if generations ran on a server that
+              did not write <code className="text-xs">ai_usage_logs</code> (for
+              example missing <code className="text-xs">SUPABASE_SERVICE_ROLE_KEY</code>
+              ).
+            </p>
+            <p className="mt-2 text-amber-900/90 dark:text-amber-100/90">
+              New generates against a correctly configured backend will start
+              appearing here (all-time totals, plus a this-month chart when data
+              exists).
+            </p>
           </div>
         </div>
       </div>

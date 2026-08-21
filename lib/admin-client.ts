@@ -21,11 +21,12 @@ async function adminFetch<T>(accessToken: string, path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function listAdminUsers(accessToken: string): Promise<AdminUserSummary[]> {
-  const data = await adminFetch<{ users: AdminUserSummary[] }>(
-    accessToken,
-    "/api/admin/users"
-  );
+export async function listAdminUsers(
+  accessToken: string,
+  options?: { stats?: boolean }
+): Promise<AdminUserSummary[]> {
+  const path = options?.stats ? "/api/admin/users?stats=1" : "/api/admin/users";
+  const data = await adminFetch<{ users: AdminUserSummary[] }>(accessToken, path);
   return data.users;
 }
 

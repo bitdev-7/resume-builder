@@ -22,7 +22,8 @@ import {
   isToday,
   shiftDateKey,
 } from "@/lib/dashboard-stats";
-import type { InterviewRecord, ResumeRecord } from "@/lib/supabase/database.types";
+import type { BidStatus, InterviewRecord, ResumeRecord } from "@/lib/supabase/database.types";
+import { bidStatusSelectClass } from "@/lib/bid-status-colors";
 
 type RangePreset = "7d" | "30d" | "month" | "all";
 
@@ -32,6 +33,21 @@ const RANGE_PRESETS: { id: RangePreset; label: string }[] = [
   { id: "month", label: "Month" },
   { id: "all", label: "All" },
 ];
+
+function formatStatus(status: BidStatus | null | undefined): string {
+  if (!status) return "—";
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 function getPresetRange(
   preset: RangePreset,
@@ -157,6 +173,62 @@ export default function AdminBidsActivity({
           providerEntries={todayByProvider}
           jobsiteEntries={todayByJobsite}
         />
+
+        <section className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-600/50">
+          <div>
+            <p className="label-kicker">Bid status list</p>
+            <p className="text-xs text-slate-500 dark:text-slate-300">
+              {resumes.length} resume{resumes.length === 1 ? "" : "s"} for this user
+            </p>
+          </div>
+          {resumes.length === 0 ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+              No bid / resume history for this user yet.
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+              <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                <thead className="bg-slate-50 dark:bg-slate-900/40">
+                  <tr className="text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    <th className="px-3 py-2 font-medium">Date</th>
+                    <th className="px-3 py-2 font-medium">Role</th>
+                    <th className="px-3 py-2 font-medium">Company</th>
+                    <th className="px-3 py-2 font-medium">Status</th>
+                    <th className="px-3 py-2 font-medium">Site</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                  {resumes.map((record) => {
+                    const status = (record.bid_status ?? "unapplied") as BidStatus;
+                    return (
+                      <tr key={record.id}>
+                        <td className="whitespace-nowrap px-3 py-2 text-slate-500 dark:text-slate-400">
+                          {formatDateTime(record.created_at)}
+                        </td>
+                        <td className="px-3 py-2 text-slate-800 dark:text-slate-100">
+                          {record.job_title?.trim() || "—"}
+                        </td>
+                        <td className="px-3 py-2 text-slate-700 dark:text-slate-200">
+                          {record.job_company?.trim() || "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${bidStatusSelectClass(status)}`}
+                          >
+                            {formatStatus(status)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                          {record.job_site?.trim() || "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         <section className="space-y-3 border-t border-slate-200 pt-4 dark:border-slate-600/50">
           <div className="flex flex-wrap items-center justify-between gap-2">

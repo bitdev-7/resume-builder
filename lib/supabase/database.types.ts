@@ -64,6 +64,14 @@ export interface AdminUserSummary {
   full_name: string | null;
   email: string | null;
   role: AppRole;
+  /** Total resume_history rows for this account. */
+  resume_count: number;
+  /** Counts of resume_history.bid_status values. */
+  bid_status_counts: Partial<Record<BidStatus, number>>;
+  /** Total ai_usage_logs rows. */
+  ai_call_count: number;
+  /** Sum of ai_usage_logs.cost_usd. */
+  ai_cost_usd: number;
 }
 
 export interface ResumeLanguage {
