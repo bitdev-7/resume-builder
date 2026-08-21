@@ -52,26 +52,26 @@ function snackbarStyles(type: ToastType): {
     case "success":
       return {
         container:
-          "bg-[#2e7d32]/65 text-white backdrop-blur-md shadow-[0_3px_5px_-1px_rgba(0,0,0,0.2),0_6px_10px_0_rgba(0,0,0,0.14)]",
+          "border border-green-800/20 bg-green-700 text-white shadow-[0_3px_5px_-1px_rgba(0,0,0,0.2),0_6px_10px_0_rgba(0,0,0,0.14)]",
         close: "text-white/80 hover:bg-white/10 hover:text-white",
-        progressTrack: "bg-[#1b5e20]/25",
-        progressBar: "bg-[#1b5e20]/65",
+        progressTrack: "bg-green-900/30",
+        progressBar: "bg-green-950/70",
       };
     case "warning":
       return {
         container:
-          "bg-[#ed6c02]/65 text-white backdrop-blur-md shadow-[0_3px_5px_-1px_rgba(0,0,0,0.2),0_6px_10px_0_rgba(0,0,0,0.14)]",
+          "border border-red-900/25 bg-red-600 text-white shadow-[0_3px_5px_-1px_rgba(0,0,0,0.2),0_6px_10px_0_rgba(0,0,0,0.14)]",
         close: "text-white/80 hover:bg-white/10 hover:text-white",
-        progressTrack: "bg-[#e65100]/25",
-        progressBar: "bg-[#e65100]/65",
+        progressTrack: "bg-red-900/30",
+        progressBar: "bg-red-950/70",
       };
     case "error":
       return {
         container:
-          "bg-[#d32f2f]/65 text-white backdrop-blur-md shadow-[0_3px_5px_-1px_rgba(0,0,0,0.2),0_6px_10px_0_rgba(0,0,0,0.14)]",
+          "border border-red-950/30 bg-red-700 text-white shadow-[0_3px_5px_-1px_rgba(0,0,0,0.2),0_6px_10px_0_rgba(0,0,0,0.14)]",
         close: "text-white/80 hover:bg-white/10 hover:text-white",
-        progressTrack: "bg-[#b71c1c]/25",
-        progressBar: "bg-[#b71c1c]/65",
+        progressTrack: "bg-red-950/35",
+        progressBar: "bg-red-950/80",
       };
   }
 }
@@ -86,7 +86,7 @@ function SnackbarIcon({ type }: { type: ToastType }) {
         <path
           d="M9 12.5l2 2 4-4.5"
           fill="none"
-          stroke="#2e7d32"
+          stroke="#15803d"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -112,7 +112,7 @@ function SnackbarIcon({ type }: { type: ToastType }) {
       <path
         d="M8 8l8 8M16 8l-8 8"
         fill="none"
-        stroke="#d32f2f"
+        stroke="#b91c1c"
         strokeWidth="2"
         strokeLinecap="round"
       />

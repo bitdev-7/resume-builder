@@ -67,11 +67,11 @@ export default function JobsBatchAlertDialog({
         aria-labelledby="batch-alert-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b border-slate-200/80 px-6 py-4 dark:border-slate-600/50">
-          <h3 id="batch-alert-title" className="page-title text-xl">
+        <div className="border-b border-red-200/80 bg-red-50/90 px-6 py-4 dark:border-red-900/40 dark:bg-red-950/40">
+          <h3 id="batch-alert-title" className="page-title text-xl text-red-800 dark:text-red-200">
             Batch application alerts
           </h3>
-          <p className="page-subtitle mt-1">
+          <p className="mt-1 text-sm text-red-700/90 dark:text-red-300/90">
             Review these jobs before starting all resume generations.
           </p>
         </div>
@@ -96,13 +96,13 @@ export default function JobsBatchAlertDialog({
                   {card.url}
                 </a>
                 {hybrid ? (
-                  <p className="mt-3 rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-800 dark:bg-orange-950/30 dark:text-orange-200">
+                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
                     This description mentions hybrid or onsite work.
                   </p>
                 ) : null}
                 {duplicateMatches.length > 0 ? (
-                  <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2 dark:bg-amber-950/30">
-                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                  <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/40 dark:bg-red-950/30">
+                    <p className="text-sm text-red-800 dark:text-red-200">
                       Previous applications to this company within {period}:
                     </p>
                     <ul className="mt-2 space-y-1">
