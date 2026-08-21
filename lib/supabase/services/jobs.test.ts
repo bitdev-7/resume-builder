@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import {
   addJobForUser,
+  deleteJobPermanently,
   listJobsForUser,
   mergeCatalogJobsWithUserStatus,
   nextStatusAfterOpen,
@@ -426,5 +427,36 @@ describe("addJobForUser", () => {
 
     expect(result.attached).toBe(false);
     expect(result.item.status).toBe("opened");
+  });
+});
+
+describe("deleteJobPermanently", () => {
+  it("deletes the catalog job by id", async () => {
+    const deletes: Array<{ table: string; id: string }> = [];
+    const client = {
+      from(table: string) {
+        const builder: Record<string, unknown> = {
+          delete() {
+            return builder;
+          },
+          eq(column: string, value: unknown) {
+            if (column === "id" && typeof value === "string") {
+              deletes.push({ table, id: value });
+            }
+            return builder;
+          },
+          then(
+            resolve: (value: { data: unknown; error: unknown }) => unknown
+          ) {
+            return Promise.resolve({ data: null, error: null }).then(resolve);
+          },
+        };
+        return builder;
+      },
+    } as unknown as SupabaseClient;
+
+    await deleteJobPermanently("job-to-remove", client);
+
+    expect(deletes).toEqual([{ table: "jobs", id: "job-to-remove" }]);
   });
 });

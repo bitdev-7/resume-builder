@@ -333,6 +333,7 @@ export async function ignoreJobForUser(
   await setJobStatusForUser(userId, [jobId], "ignored", client);
 }
 
+/** Remove this user's status row only; the shared catalog job remains. */
 export async function removeMyJob(
   userId: string,
   jobId: string,
@@ -344,6 +345,17 @@ export async function removeMyJob(
     .delete()
     .eq("user_id", userId)
     .eq("job_id", jobId);
+
+  if (error) throw error;
+}
+
+/** Permanently delete a job from the shared catalog (cascades user_job_status). */
+export async function deleteJobPermanently(
+  jobId: string,
+  client?: SupabaseClient
+): Promise<void> {
+  const db = await resolveClient(client);
+  const { error } = await db.from("jobs").delete().eq("id", jobId);
 
   if (error) throw error;
 }

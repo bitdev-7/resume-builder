@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { buildJobFolderDownloadFilePath } from "@/lib/pdf-download-paths";
+import { assertServerDownloadsDirReady } from "@/lib/save-pdf-to-disk";
 import { AuthError, requireAuthClient } from "@/lib/supabase/server-client";
 
 export async function POST(request: NextRequest) {
@@ -12,6 +13,8 @@ export async function POST(request: NextRequest) {
     if (!content || typeof content !== "string") {
       return NextResponse.json({ error: "Text content is required" }, { status: 400 });
     }
+
+    await assertServerDownloadsDirReady();
 
     const resolvedFileName =
       typeof fileName === "string" && fileName.trim() ? fileName.trim() : "Cover Letter.txt";

@@ -80,9 +80,10 @@ function resolveWslWindowsDownloadsDir(
 
 /**
  * Default resume save root for the backend host:
+ * - `RESUME_DOWNLOAD_DIR` when set (explicit override)
  * - Windows: `%USERPROFILE%\Downloads`
  * - WSL: Windows Downloads under `/mnt/c/Users/…` when detectable
- * - otherwise: `~/Downloads`
+ * - otherwise: `~/Downloads` (often `/root/Downloads` on a Linux VPS)
  *
  * Keep this module free of Node built-ins like `fs` — it is imported by the frontend.
  */
@@ -93,6 +94,9 @@ export function getSystemDownloadsDir(
   // Optional hook for tests / server callers; default avoids Node `fs`.
   readProcVersion: () => string = () => ""
 ): string {
+  const override = env.RESUME_DOWNLOAD_DIR?.trim();
+  if (override) return override;
+
   if (platform === "win32") {
     const userProfile = env.USERPROFILE?.trim() || homedir();
     return path.win32.join(userProfile, "Downloads");
@@ -103,6 +107,34 @@ export function getSystemDownloadsDir(
 
   const home = env.HOME?.trim() || homedir();
   return path.posix.join(home, "Downloads");
+}
+
+/**
+ * Server disk saves only make sense when the backend can write into a Downloads
+ * folder the operator can open on the same machine (Windows, or WSL→`/mnt/<drive>/…`).
+ * Paths like `/root/Downloads` on a Linux VPS are invisible to Windows browser users.
+ */
+export function isClientReachableDownloadsDir(
+  downloadsDir: string,
+  platform: NodeJS.Platform = process.platform,
+  explicitOverride = false
+): boolean {
+  if (explicitOverride) return true;
+  if (platform === "win32") return true;
+
+  const normalized = downloadsDir.trim().replace(/\\/g, "/");
+  // WSL (or similar) mount of a Windows drive — e.g. /mnt/c/Users/Ada/Downloads
+  if (/^\/mnt\/[a-z]\//i.test(normalized)) return true;
+
+  return false;
+}
+
+/** True when a successful `/api/save-pdf` path is still on a remote Linux host, not the Windows client. */
+export function isRemoteServerDownloadPath(savedPath: string): boolean {
+  const normalized = savedPath.trim().replace(/\\/g, "/");
+  if (!normalized.startsWith("/")) return false;
+  if (/^\/mnt\/[a-z]\//i.test(normalized)) return false;
+  return true;
 }
 
 export function buildResumeDownloadFilePath(

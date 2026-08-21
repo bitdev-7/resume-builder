@@ -4,6 +4,7 @@ import {
   buildJobFolderDownloadPaths,
   buildResumeDownloadPaths,
   formatPdfSaveMessage,
+  isRemoteServerDownloadPath,
   type ResumeDownloadPaths,
 } from "@/lib/pdf-download-paths";
 import type { UpdatedResume } from "@/lib/types/resume";
@@ -112,10 +113,15 @@ export function downloadTextFile(content: string, fileName: string): void {
   }, 2_000);
 }
 
+function browserDownloadsPath(paths: ResumeDownloadPaths): string {
+  return `Downloads\\${paths.dirName}\\${paths.fileName}`;
+}
+
 /**
- * Prefer saving into Downloads/<company>/… via the backend (local host Downloads).
- * Fall back to a browser download only when unsigned-in or the server save fails
- * (e.g. remote VPS where the server disk is not the user's machine).
+ * Prefer saving into Downloads/<company>/… via the backend when that folder is on
+ * the same machine as the user (Windows / WSL). Fall back to a browser download
+ * when unsigned-in, the server save fails, or the server only has a remote Linux
+ * path like `/root/Downloads` (invisible to Windows clients).
  */
 export async function savePdfToDownloadsFolder(
   pdfBase64: string,
@@ -132,10 +138,11 @@ export async function savePdfToDownloadsFolder(
     : buildResumeDownloadPaths(options.companyName, options.jobRole, options.personName);
 
   const browserFileName = `${paths.dirName} - ${paths.fileName}`;
+  const browserSavedPath = browserDownloadsPath(paths);
 
   if (options.accessToken) {
     try {
-      return await postSavePdf(
+      const result = await postSavePdf(
         "/api/save-pdf",
         {
           pdfBase64,
@@ -146,21 +153,27 @@ export async function savePdfToDownloadsFolder(
         },
         options.accessToken
       );
+
+      // Old servers / misconfigured hosts may still report `/root/...` success.
+      if (isRemoteServerDownloadPath(result.savedPath)) {
+        console.warn(
+          "Server saved to a remote Linux path; using browser download for the Windows client:",
+          result.savedPath
+        );
+        downloadPdfViaBrowser(pdfBase64, browserFileName);
+        return { paths, savedPath: browserSavedPath };
+      }
+
+      return result;
     } catch (error) {
       console.warn("Server save to Downloads failed; falling back to browser download:", error);
       downloadPdfViaBrowser(pdfBase64, browserFileName);
-      return {
-        paths,
-        savedPath: `Downloads\\${paths.dirName}\\${paths.fileName}`,
-      };
+      return { paths, savedPath: browserSavedPath };
     }
   }
 
   downloadPdfViaBrowser(pdfBase64, browserFileName);
-  return {
-    paths,
-    savedPath: `Downloads\\${paths.dirName}\\${paths.fileName}`,
-  };
+  return { paths, savedPath: browserSavedPath };
 }
 
 export async function saveResumePdfToDownloadsFolder(
@@ -237,8 +250,11 @@ export async function saveGeneratedResumeToDownloads(
     throw new Error("PDF generation returned empty data");
   }
 
+  const browserFileName = `${paths.dirName} - ${paths.fileName}`;
+  const browserSavedPath = browserDownloadsPath(paths);
+
   try {
-    return await postSavePdf(
+    const result = await postSavePdf(
       "/api/save-pdf",
       {
         pdfBase64: normalized,
@@ -250,13 +266,21 @@ export async function saveGeneratedResumeToDownloads(
       options.accessToken,
       SAVE_PDF_API_TIMEOUT_MS
     );
+
+    if (isRemoteServerDownloadPath(result.savedPath)) {
+      console.warn(
+        "Server saved to a remote Linux path; using browser download for the Windows client:",
+        result.savedPath
+      );
+      downloadPdfViaBrowser(normalized, browserFileName);
+      return { paths, savedPath: browserSavedPath };
+    }
+
+    return result;
   } catch (error) {
     console.warn("Server save to Downloads failed; falling back to browser download:", error);
-    downloadPdfViaBrowser(normalized, `${paths.dirName} - ${paths.fileName}`);
-    return {
-      paths,
-      savedPath: `Downloads\\${paths.dirName}\\${paths.fileName}`,
-    };
+    downloadPdfViaBrowser(normalized, browserFileName);
+    return { paths, savedPath: browserSavedPath };
   }
 }
 
@@ -314,6 +338,8 @@ export async function saveTextToDownloadsFolder(
 
   downloadTextFile(content, `${paths.dirName} - ${paths.fileName}`);
 
+  const browserSavedPath = browserDownloadsPath(paths);
+
   if (options.accessToken) {
     const response = await fetch(apiUrl("/api/save-text"), {
       method: "POST",
@@ -332,12 +358,15 @@ export async function saveTextToDownloadsFolder(
 
     if (response.ok) {
       const data = (await response.json()) as { savedPath: string; paths: ResumeDownloadPaths };
+      if (isRemoteServerDownloadPath(data.savedPath)) {
+        return { paths, savedPath: browserSavedPath };
+      }
       return { paths: data.paths, savedPath: data.savedPath };
     }
   }
 
   return {
     paths,
-    savedPath: `Downloads\\${paths.dirName}\\${paths.fileName}`,
+    savedPath: browserSavedPath,
   };
 }

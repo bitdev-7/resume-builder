@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   getSystemDownloadsDir,
+  isClientReachableDownloadsDir,
+  isRemoteServerDownloadPath,
   windowsPathToWslPath,
 } from "./pdf-download-paths";
 
@@ -52,5 +54,64 @@ describe("getSystemDownloadsDir", () => {
         () => "Linux version 6.1.0"
       )
     ).toBe("/home/ada/Downloads");
+  });
+
+  it("prefers RESUME_DOWNLOAD_DIR when set", () => {
+    expect(
+      getSystemDownloadsDir(
+        { RESUME_DOWNLOAD_DIR: "D:\\Resumes", HOME: "/root" },
+        "linux",
+        () => "/root"
+      )
+    ).toBe("D:\\Resumes");
+  });
+});
+
+describe("isClientReachableDownloadsDir", () => {
+  it("allows Windows paths", () => {
+    expect(
+      isClientReachableDownloadsDir("C:\\Users\\Ada\\Downloads", "win32")
+    ).toBe(true);
+  });
+
+  it("allows WSL mounts of Windows drives", () => {
+    expect(
+      isClientReachableDownloadsDir("/mnt/c/Users/Ada/Downloads", "linux")
+    ).toBe(true);
+  });
+
+  it("rejects plain Linux /root Downloads (VPS)", () => {
+    expect(isClientReachableDownloadsDir("/root/Downloads", "linux")).toBe(
+      false
+    );
+  });
+
+  it("allows explicit override even on plain Linux", () => {
+    expect(
+      isClientReachableDownloadsDir("/var/resumes", "linux", true)
+    ).toBe(true);
+  });
+});
+
+describe("isRemoteServerDownloadPath", () => {
+  it("flags /root and other plain Unix paths", () => {
+    expect(isRemoteServerDownloadPath("/root/Downloads/Acme_Role/a.pdf")).toBe(
+      true
+    );
+    expect(isRemoteServerDownloadPath("/home/ubuntu/Downloads/x.pdf")).toBe(
+      true
+    );
+  });
+
+  it("allows Windows and WSL-mounted paths", () => {
+    expect(
+      isRemoteServerDownloadPath("C:\\Users\\Ada\\Downloads\\a.pdf")
+    ).toBe(false);
+    expect(
+      isRemoteServerDownloadPath("/mnt/c/Users/Ada/Downloads/a.pdf")
+    ).toBe(false);
+    expect(isRemoteServerDownloadPath("Downloads\\Acme_Role\\a.pdf")).toBe(
+      false
+    );
   });
 });

@@ -376,7 +376,10 @@ drop policy if exists "jobs_insert_authenticated" on public.jobs;
 create policy "jobs_insert_authenticated" on public.jobs
   for insert to authenticated with check (true);
 
--- No update/delete policies for authenticated users in v1.
+drop policy if exists "jobs_delete_authenticated" on public.jobs;
+create policy "jobs_delete_authenticated" on public.jobs
+  for delete to authenticated using (true);
+
 create table if not exists public.user_job_status (
   user_id uuid not null references public.profiles (id) on delete cascade,
   job_id uuid not null references public.jobs (id) on delete cascade,

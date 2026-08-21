@@ -51,10 +51,10 @@ import { loadProfileForApp } from "@/lib/supabase/load-profile-for-app";
 import { loadApplyAlertSettings } from "@/lib/supabase/services/apply-alert-settings";
 import {
   addJobForUser,
+  deleteJobPermanently,
   ignoreJobForUser,
   listJobsForUser,
   openJobForUser,
-  removeMyJob,
   setJobStatusForUser,
   updateJobDescriptionForUser,
 } from "@/lib/supabase/services/jobs";
@@ -654,24 +654,27 @@ export default function JobsPage() {
     if (
       !user?.id ||
       !window.confirm(
-        "Clear your tracking status for this job? It will stay in the shared catalog."
+        "Permanently delete this job from the database? This cannot be undone."
       )
     ) {
       return;
     }
     setBusyJobId(job.job_id);
     try {
-      await removeMyJob(user.id, job.job_id);
-      setJobs((current) =>
-        current.map((item) =>
-          item.job_id === job.job_id ? { ...item, status: "unapplied" } : item
-        )
-      );
+      await deleteJobPermanently(job.job_id);
+      setJobs((current) => current.filter((item) => item.job_id !== job.job_id));
+      setSelectedJobIds((current) => {
+        if (!current.has(job.job_id)) return current;
+        const next = new Set(current);
+        next.delete(job.job_id);
+        return next;
+      });
       if (analyseJobId === job.job_id) setAnalyseJobId(null);
-      showToast("success", "Your status cleared — job remains in the shared catalog");
+      if (jdDialogJobId === job.job_id) setJdDialogJobId(null);
+      showToast("success", "Job permanently deleted");
     } catch (error) {
-      console.error("Failed to remove job:", error);
-      showToast("error", "Failed to remove job");
+      console.error("Failed to delete job:", error);
+      showToast("error", "Failed to delete job");
     } finally {
       setBusyJobId(null);
     }
@@ -1000,8 +1003,9 @@ export default function JobsPage() {
                                 onClick={() => void handleRemove(job)}
                                 disabled={busy}
                                 className="btn-compact text-red-600 dark:text-red-400"
+                                title="Permanently delete this job from the database"
                               >
-                                Clear status
+                                Remove
                               </button>
                             </div>
                           </td>

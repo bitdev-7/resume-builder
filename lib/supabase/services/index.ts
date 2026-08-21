@@ -28,6 +28,7 @@ export {
   setJobStatusForUser,
   ignoreJobForUser,
   removeMyJob,
+  deleteJobPermanently,
 } from "@/lib/supabase/services/jobs";
 export {
   listInterviews,
