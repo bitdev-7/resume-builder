@@ -2,9 +2,10 @@
 #
 #   docker compose up -d --build
 #
-# Only the frontend is published to the host (port 80). The backend is reachable
-# only on the internal Docker network, so the browser talks to the frontend and
-# Next.js proxies /api/* to the backend container (see frontend/next.config.js).
+# Caddy is published on host ports 80/443 (HTTP + HTTPS). The frontend and
+# backend stay on the internal Docker network; Caddy terminates TLS and proxies
+# to the frontend, and Next.js proxies /api/* to the backend
+# (see frontend/next.config.js).
 #
 # Values in ${...} are interpolated from a `.env` file next to this compose file.
 # That `.env` is written on the VPS by the GitHub Actions deploy workflow.
@@ -50,14 +51,36 @@ services:
       NODE_ENV: production
       # Server-side proxy target used by next.config.js rewrites().
       BACKEND_URL: http://backend:4000
-    ports:
-      - "80:3000"
+    expose:
+      - "3000"
     depends_on:
       - backend
     restart: unless-stopped
     networks:
       - appnet
 
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-cubi-resume.duckdns.org}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    networks:
+      - appnet
+
 networks:
   appnet:
     driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

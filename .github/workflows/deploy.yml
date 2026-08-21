@@ -20,6 +20,8 @@ jobs:
       VPS_USER: ${{ secrets.VPS_USER }}
       VPS_PORT: ${{ vars.VPS_PORT || '22' }}
       APP_DIR: ${{ vars.APP_DIR || '/opt/resume-maker' }}
+      # Public hostname for Caddy / Let's Encrypt (override via repo variable).
+      APP_DOMAIN: ${{ vars.APP_DOMAIN || 'cubi-resume.duckdns.org' }}
 
     steps:
       - name: Guard - only deploy the develop branch
@@ -87,14 +89,58 @@ jobs:
           # Backend runtime env (all backend keys).
           printf '%s' "${{ secrets.BACKEND_ENV }}" \
             | ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cat > $APP_DIR/backend/.env"
-          # Root .env: only the NEXT_PUBLIC_* values compose needs to bake into the frontend build.
-          printf '%s' "${{ secrets.FRONTEND_ENV }}" \
-            | ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cat > $APP_DIR/.env"
+          # Root .env: NEXT_PUBLIC_* for the frontend build, plus APP_DOMAIN for Caddy TLS.
+          {
+            printf '%s\n' "${{ secrets.FRONTEND_ENV }}"
+            printf 'APP_DOMAIN=%s\n' "$APP_DOMAIN"
+          } | ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "cat > $APP_DIR/.env"
+
+      - name: Ensure HTTP/HTTPS firewall ports
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" '
+            if ! command -v ufw >/dev/null 2>&1; then
+              echo "ufw not installed; skip firewall step (open 80/443 in your cloud firewall if needed)"
+              exit 0
+            fi
+            SUDO=""
+            if [ "$(id -u)" -ne 0 ]; then
+              if command -v sudo >/dev/null 2>&1; then SUDO="sudo"; else
+                echo "Cannot adjust ufw without root/sudo; open 80/443 manually if needed"
+                exit 0
+              fi
+            fi
+            $SUDO ufw allow 80/tcp || true
+            $SUDO ufw allow 443/tcp || true
+            $SUDO ufw status || true
+          '
 
       - name: Build and start containers
         run: |
+          # --force-recreate so bind-mounted Caddyfile / APP_DOMAIN changes always apply
+          # (compose does not recreate caddy when only the mounted file changes).
           ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "cd $APP_DIR && docker compose up -d --build --remove-orphans && docker image prune -f"
+            "cd $APP_DIR && docker compose up -d --build --remove-orphans --force-recreate && docker image prune -f"
+
+      - name: Verify HTTPS
+        run: |
+          # Probe from the runner so we exercise public DNS + 443 + Let's Encrypt.
+          # Retry: first cert issuance can take a short while after Caddy starts.
+          ok=0
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            echo "HTTPS check attempt $i for https://${APP_DOMAIN}/ ..."
+            if curl -fsSI --max-time 20 "https://${APP_DOMAIN}/" >/tmp/https-headers.txt; then
+              cat /tmp/https-headers.txt
+              ok=1
+              break
+            fi
+            sleep 10
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::HTTPS check failed for https://${APP_DOMAIN}/. Dumping caddy logs:"
+            ssh -i ~/.ssh/id_deploy -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+              "cd $APP_DIR && docker compose logs --tail=80 caddy" || true
+            exit 1
+          fi
 
       - name: Show container status
         run: |

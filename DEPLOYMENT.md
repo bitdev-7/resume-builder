@@ -10,11 +10,13 @@ automatically when you push code.
 2. GitHub Actions connects to your VPS over SSH.
 3. It copies the code, writes the `.env` files from your GitHub Secrets, then runs
    `docker compose up -d --build` on the VPS.
-4. Two containers come up:
-   - `frontend` (Next.js) published on host **port 80**.
+4. Three containers come up:
+   - `caddy` published on host **ports 80 and 443**. It terminates TLS (Let’s Encrypt)
+     for your DuckDNS hostname and reverse-proxies to the frontend.
+   - `frontend` (Next.js) on internal port 3000.
    - `backend` (Express API) on internal port 4000, reachable only by the frontend
-     over the private Docker network. The browser calls the frontend, and Next.js
-     proxies `/api/*` to the backend. Only port 80 needs to be open publicly.
+     over the private Docker network. The browser calls Caddy → frontend, and Next.js
+     proxies `/api/*` to the backend. Ports **80** and **443** need to be open publicly.
 
 PDF generation (Puppeteer) runs inside the backend container using the system
 Chromium that the Docker image installs, so you do not install Chrome on the VPS.
@@ -63,23 +65,36 @@ ssh-keygen -t ed25519 -C "github-deploy" -f ./vps_deploy_key
 
 ### 4. Open the firewall
 
-Only port 80 (web) and 22 (SSH) need to be open. The backend port 4000 stays
-internal to Docker and must **not** be exposed.
+Ports 80 (HTTP / ACME challenge), 443 (HTTPS), and 22 (SSH) need to be open.
+The backend port 4000 stays internal to Docker and must **not** be exposed.
+The deploy workflow also tries to allow 80/443 via `ufw` when sudo is available.
 
 ```bash
 sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 sudo ufw enable
 sudo ufw status
 ```
 
 If your VPS provider has its own firewall/security group (DigitalOcean, AWS, etc.),
-open ports 22 and 80 there as well.
+open ports 22, 80, and 443 there as well.
 
-> If something else is already using port 80 on the VPS (for example an old PM2
-> `next start` process), stop it first: `pm2 stop all` / `pm2 delete all`, or
-> change the published port in `docker-compose.yml` (for example `8080:3000`).
+> If something else is already using port 80 or 443 on the VPS (for example an old
+> PM2 `next start` process or another reverse proxy), stop it first:
+> `pm2 stop all` / `pm2 delete all`.
 
+### 5. Point DuckDNS at the VPS
+
+In [DuckDNS](https://www.duckdns.org/), set `cubi-resume` (or your subdomain) to the
+VPS public IP. Confirm from any machine:
+
+```bash
+nslookup cubi-resume.duckdns.org
+```
+
+Caddy will request a Let’s Encrypt certificate for that hostname on first start.
+The certificate renews automatically and is stored in the `caddy_data` Docker volume.
 ---
 
 ## Part B: GitHub configuration
@@ -98,10 +113,11 @@ Go to your repository -> **Settings** -> **Secrets and variables** -> **Actions*
 
 ### Variables (optional, Settings -> Variables -> New repository variable)
 
-| Variable name | Default            | Purpose                              |
-| ------------- | ------------------ | ------------------------------------ |
-| `VPS_PORT`    | `22`               | SSH port, if not the default         |
-| `APP_DIR`     | `/opt/resume-maker`| Where the app lives on the VPS       |
+| Variable name | Default                      | Purpose                                         |
+| ------------- | ---------------------------- | ----------------------------------------------- |
+| `VPS_PORT`    | `22`                         | SSH port, if not the default                    |
+| `APP_DIR`     | `/opt/resume-maker`          | Where the app lives on the VPS                  |
+| `APP_DOMAIN`  | `cubi-resume.duckdns.org`    | Public hostname for Caddy / Let’s Encrypt TLS   |
 
 ### What goes in the `BACKEND_ENV` secret
 
@@ -109,7 +125,7 @@ Paste this whole block as the value, filling in real values. Do **not** include
 `PUPPETEER_EXECUTABLE_PATH` or `PORT`; the compose file sets those for the container.
 
 ```env
-CORS_ORIGIN=http://YOUR_VPS_IP_OR_DOMAIN
+CORS_ORIGIN=https://cubi-resume.duckdns.org
 
 OPENROUTER_API_KEY=...
 OPENROUTER_DEFAULT_MODEL=openai/gpt-4.1-mini
@@ -142,6 +158,20 @@ NEXT_PUBLIC_API_URL=
 
 > When you rotate a key later, just edit the secret and re-run the workflow.
 
+### HTTPS origin checklist (required once when enabling TLS)
+
+Before the first HTTPS deploy, align every place that knows your public URL:
+
+1. **`BACKEND_ENV` → `CORS_ORIGIN`**: must be `https://cubi-resume.duckdns.org` (or your
+   `APP_DOMAIN`), not `http://…` and not a bare VPS IP.
+2. **Supabase Auth URL allowlist**: in the Supabase dashboard, add
+   `https://cubi-resume.duckdns.org` (and any path callbacks you use) under redirect /
+   site URL settings. Keep `http://localhost:3000` for local dev if needed.
+3. Re-run the deploy workflow after updating secrets/dashboard settings.
+
+The workflow force-recreates Caddy on every deploy (so `Caddyfile` / `APP_DOMAIN`
+changes apply) and fails the job if `https://$APP_DOMAIN` does not respond.
+
 ---
 
 ## Part C: Deploy
@@ -150,9 +180,11 @@ NEXT_PUBLIC_API_URL=
 2. In GitHub, open the **Actions** tab.
 3. Select **Deploy to VPS** in the left sidebar.
 4. Click **Run workflow**, choose the `develop` branch, and confirm.
-5. Watch the logs. When it finishes, the last step prints `docker compose ps`.
+5. Watch the logs. When it finishes, **Verify HTTPS** should succeed and the last
+   step prints `docker compose ps`.
 
-Open `http://YOUR_VPS_IP` in a browser to verify.
+Open `https://cubi-resume.duckdns.org` (or your `APP_DOMAIN`) in a browser to verify.
+HTTP on port 80 should redirect to HTTPS automatically via Caddy.
 
 ---
 
@@ -204,20 +236,27 @@ docker compose exec backend node -e "fetch('http://localhost:4000/health').then(
   `NEXT_PUBLIC_API_URL=http://localhost:4000`, which makes the browser call the backend
   directly and bypasses the rewrite proxy entirely — that is why the error only
   appeared on the VPS (where `NEXT_PUBLIC_API_URL` is empty).
-- **Port 80 already in use**: stop the previous PM2/native process, or change the
-  published port in `docker-compose.yml`.
+- **Port 80/443 already in use**: stop the previous PM2/native process or other
+  reverse proxy that is binding those ports.
+- **HTTPS / certificate fails** (workflow **Verify HTTPS** step red): confirm DuckDNS
+  points at the VPS IP, ports 80 and 443 are open on UFW **and** the cloud firewall,
+  then check `docker compose logs caddy` on the VPS (the failed step also dumps recent
+  Caddy logs).
 - **Login/Supabase broken in the browser after deploy**: the `NEXT_PUBLIC_*` values in
   `FRONTEND_ENV` were wrong or empty at build time. Fix the secret and re-run the workflow
-  (these values are baked at build, so a rebuild is required).
+  (these values are baked at build, so a rebuild is required). Also confirm
+  `CORS_ORIGIN` is `https://your-domain` and that the same HTTPS origin is allowed in
+  the Supabase Auth URL settings (see the HTTPS origin checklist above).
 
 ---
 
 ## Files added for CI/CD
 
-| File                          | Purpose                                                    |
-| ----------------------------- | ---------------------------------------------------------- |
-| `.github/workflows/deploy.yml`| Manual deploy workflow (develop branch, SSH to VPS)        |
-| `backend/Dockerfile`          | Backend image (Node + tsx + Chromium for PDFs)             |
-| `frontend/Dockerfile`         | Frontend image (Next.js build with public env baked in)    |
-| `docker-compose.yml`          | Runs both containers; publishes only port 80               |
-| `.dockerignore`               | Keeps build context small and secrets out of images        |
+| File                          | Purpose                                                         |
+| ----------------------------- | --------------------------------------------------------------- |
+| `.github/workflows/deploy.yml`| Manual deploy workflow (develop branch, SSH to VPS)             |
+| `backend/Dockerfile`          | Backend image (Node + tsx + Chromium for PDFs)                  |
+| `frontend/Dockerfile`         | Frontend image (Next.js build with public env baked in)         |
+| `docker-compose.yml`          | Runs frontend, backend, and Caddy (ports 80/443)                |
+| `Caddyfile`                   | Automatic HTTPS + reverse proxy to the frontend                 |
+| `.dockerignore`               | Keeps build context small and secrets out of images             |

@@ -1,0 +1,6 @@
+# Automatic HTTPS via Let's Encrypt.
+# Domain comes from APP_DOMAIN (root .env / GitHub variable), default below.
+{$APP_DOMAIN:cubi-resume.duckdns.org} {
+	encode gzip
+	reverse_proxy frontend:3000
+}
