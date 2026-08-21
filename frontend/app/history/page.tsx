@@ -25,7 +25,7 @@ import {
 } from "@/lib/supabase/services/interviews";
 import { JOBSITES } from "@/lib/jobsites";
 import { supabase } from "@/lib/supabase";
-import { saveResumePdfToDownloadsFolder, saveTextToDownloadsFolder } from "@/lib/pdf-download";
+import { formatPdfSaveMessage, saveResumePdfToDownloadsFolder, saveTextToDownloadsFolder } from "@/lib/pdf-download";
 import type { UpdatedResume } from "@/lib/types/resume";
 import { ToastContainer, useToast } from "@/components/Toast";
 
@@ -579,12 +579,13 @@ export default function HistoryPage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      await saveResumePdfToDownloadsFolder(expandedResumeData, {
+      const { savedPath } = await saveResumePdfToDownloadsFolder(expandedResumeData, {
         companyName: record.job_company || "",
         jobRole: record.job_title || "",
         personName: expandedResumeData.name || "resume",
         accessToken: session?.access_token,
       });
+      showToast("success", formatPdfSaveMessage(savedPath, false));
     } catch (error) {
       console.error("Failed to download resume PDF:", error);
       showToast("error", error instanceof Error ? error.message : "Failed to download PDF");

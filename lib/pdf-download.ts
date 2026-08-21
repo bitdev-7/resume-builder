@@ -60,7 +60,6 @@ export function downloadPdfViaBrowser(pdfBase64: string, fileName: string): void
 }
 
 const SAVE_PDF_API_TIMEOUT_MS = 120_000;
-const SAVE_RESUME_PDF_API_TIMEOUT_MS = 180_000;
 
 async function postSavePdf(
   endpoint: string,
@@ -175,27 +174,15 @@ export async function saveResumePdfToDownloadsFolder(
     accessToken?: string | null;
   }
 ): Promise<{ paths: ResumeDownloadPaths; savedPath: string }> {
-  const paths = options.fileName?.trim()
-    ? buildJobFolderDownloadPaths(options.companyName, options.jobRole, options.fileName.trim())
-    : buildResumeDownloadPaths(options.companyName, options.jobRole, options.personName);
-
-  if (!options.accessToken) {
-    throw new Error("You must be signed in to save PDF to Downloads");
-  }
-
-  return postSavePdf(
-    "/api/save-resume-pdf",
-    {
-      resume,
-      template: options.template,
-      companyName: options.companyName,
-      jobRole: options.jobRole,
-      personName: options.personName,
-      fileName: options.fileName,
-    },
-    options.accessToken,
-    SAVE_RESUME_PDF_API_TIMEOUT_MS
-  );
+  // Render then save with browser fallback so History works when the backend
+  // host path is Linux/WSL/Docker while the user is on Windows (or remote).
+  return saveGeneratedResumeToDownloads(resume, undefined, {
+    companyName: options.companyName,
+    jobRole: options.jobRole,
+    personName: options.personName,
+    template: options.template,
+    accessToken: options.accessToken,
+  });
 }
 
 /** Save a generated resume: render PDF on server, download in browser, then save to Downloads folder. */
