@@ -495,7 +495,7 @@ export default function JobsPage() {
       const resumeLabel =
         [result.jobTitle, result.companyName].filter(Boolean).join(" @ ") || "Resume";
 
-      showToast("success", formatPdfSaveMessage(result.savedPath, true));
+      showToast("success", formatPdfSaveMessage(result.savedPath, true, result.downloadMode));
       void notifyCompletion("Cubi — Generate complete", `${resumeLabel} downloaded.`);
     },
     [

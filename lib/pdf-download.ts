@@ -1,16 +1,61 @@
 import { apiUrl } from "@/lib/api-config";
+import { writeFileToLinkedDownloadFolder } from "@/lib/client-folder-download";
+import {
+  isDownloadPathOutOfSyncWithLink,
+  joinClientDownloadPath,
+  readCachedDownloadBasePath,
+  type ClientDownloadMode,
+} from "@/lib/download-settings";
 import {
   buildCoverLetterDownloadPaths,
   buildJobFolderDownloadPaths,
   buildResumeDownloadPaths,
   formatPdfSaveMessage,
-  isRemoteServerDownloadPath,
   type ResumeDownloadPaths,
 } from "@/lib/pdf-download-paths";
 import type { UpdatedResume } from "@/lib/types/resume";
 
 export type { ResumeDownloadPaths };
 export { buildResumeDownloadPaths, formatPdfSaveMessage };
+
+export type ClientSaveResult = {
+  paths: ResumeDownloadPaths;
+  savedPath: string;
+  mode: ClientDownloadMode;
+};
+
+type ClientSaveOptions = {
+  companyName: string;
+  jobRole: string;
+  personName?: string;
+  fileName?: string;
+  /** Profile Settings → default download path (editable). */
+  downloadBasePath?: string;
+  /** Needed to write into the linked client folder (IndexedDB handle). */
+  userId?: string | null;
+  accessToken?: string | null;
+};
+
+function resolveBasePath(explicit?: string): string {
+  const trimmed = explicit?.trim();
+  return trimmed || readCachedDownloadBasePath();
+}
+
+function linkedSavedPath(
+  basePath: string,
+  paths: ResumeDownloadPaths
+): string {
+  return joinClientDownloadPath(basePath, paths.dirName, paths.fileName);
+}
+
+function pdfBase64ToBlob(pdfBase64: string): Blob {
+  const binary = atob(pdfBase64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: "application/pdf" });
+}
 
 /** Render a resume to a PDF (base64) without saving/downloading. Used for the preview. */
 export async function renderResumePdfBase64(
@@ -39,12 +84,7 @@ export async function renderResumePdfBase64(
 }
 
 export function downloadPdfViaBrowser(pdfBase64: string, fileName: string): void {
-  const binary = atob(pdfBase64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  const blob = new Blob([bytes], { type: "application/pdf" });
+  const blob = pdfBase64ToBlob(pdfBase64);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -52,50 +92,10 @@ export function downloadPdfViaBrowser(pdfBase64: string, fileName: string): void
   link.rel = "noopener";
   document.body.appendChild(link);
   link.click();
-  // Chrome often aborts the download if the blob URL is revoked synchronously after
-  // click(). Keep the URL alive long enough for the download to start.
   window.setTimeout(() => {
     link.remove();
     URL.revokeObjectURL(url);
   }, 2_000);
-}
-
-const SAVE_PDF_API_TIMEOUT_MS = 120_000;
-
-async function postSavePdf(
-  endpoint: string,
-  body: Record<string, unknown>,
-  accessToken: string,
-  _timeoutMs = SAVE_PDF_API_TIMEOUT_MS
-): Promise<{ paths: ResumeDownloadPaths; savedPath: string }> {
-  try {
-    const response = await fetch(apiUrl(endpoint), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(
-        typeof err.error === "string" ? err.error : "Failed to save PDF to Downloads"
-      );
-    }
-
-    return (await response.json()) as { savedPath: string; paths: ResumeDownloadPaths };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : String(error);
-    if (/aborted|abort/i.test(message)) {
-      throw new Error(
-        "PDF request was cancelled or timed out. Try again — the first PDF may take a minute while Chrome starts."
-      );
-    }
-    throw error;
-  }
 }
 
 export function downloadTextFile(content: string, fileName: string): void {
@@ -113,105 +113,38 @@ export function downloadTextFile(content: string, fileName: string): void {
   }, 2_000);
 }
 
-function browserDownloadsPath(paths: ResumeDownloadPaths): string {
-  return `Downloads\\${paths.dirName}\\${paths.fileName}`;
+async function tryWriteLinkedFolder(
+  userId: string | null | undefined,
+  basePath: string,
+  paths: ResumeDownloadPaths,
+  data: Blob | string
+): Promise<boolean> {
+  if (!userId) return false;
+  // Path was edited after linking — do not claim the Settings path was used.
+  if (isDownloadPathOutOfSyncWithLink(basePath)) return false;
+
+  try {
+    return await writeFileToLinkedDownloadFolder(
+      userId,
+      paths.dirName,
+      paths.fileName,
+      data
+    );
+  } catch (error) {
+    console.warn("Linked-folder write failed; using browser download:", error);
+    return false;
+  }
 }
 
 /**
- * Prefer saving into Downloads/<company>/… via the backend when that folder is on
- * the same machine as the user (Windows / WSL). Fall back to a browser download
- * when unsigned-in, the server save fails, or the server only has a remote Linux
- * path like `/root/Downloads` (invisible to Windows clients).
+ * Never writes to the server disk. Saves into the linked client folder when
+ * available; otherwise triggers a normal browser download.
+ * `savedPath` always describes where the file actually went.
  */
 export async function savePdfToDownloadsFolder(
   pdfBase64: string,
-  options: {
-    companyName: string;
-    jobRole: string;
-    personName: string;
-    fileName?: string;
-    accessToken?: string | null;
-  }
-): Promise<{ paths: ResumeDownloadPaths; savedPath: string }> {
-  const paths = options.fileName?.trim()
-    ? buildJobFolderDownloadPaths(options.companyName, options.jobRole, options.fileName.trim())
-    : buildResumeDownloadPaths(options.companyName, options.jobRole, options.personName);
-
-  const browserFileName = `${paths.dirName} - ${paths.fileName}`;
-  const browserSavedPath = browserDownloadsPath(paths);
-
-  if (options.accessToken) {
-    try {
-      const result = await postSavePdf(
-        "/api/save-pdf",
-        {
-          pdfBase64,
-          companyName: options.companyName,
-          jobRole: options.jobRole,
-          personName: options.personName,
-          fileName: options.fileName,
-        },
-        options.accessToken
-      );
-
-      // Old servers / misconfigured hosts may still report `/root/...` success.
-      if (isRemoteServerDownloadPath(result.savedPath)) {
-        console.warn(
-          "Server saved to a remote Linux path; using browser download for the Windows client:",
-          result.savedPath
-        );
-        downloadPdfViaBrowser(pdfBase64, browserFileName);
-        return { paths, savedPath: browserSavedPath };
-      }
-
-      return result;
-    } catch (error) {
-      console.warn("Server save to Downloads failed; falling back to browser download:", error);
-      downloadPdfViaBrowser(pdfBase64, browserFileName);
-      return { paths, savedPath: browserSavedPath };
-    }
-  }
-
-  downloadPdfViaBrowser(pdfBase64, browserFileName);
-  return { paths, savedPath: browserSavedPath };
-}
-
-export async function saveResumePdfToDownloadsFolder(
-  resume: UpdatedResume | Record<string, unknown>,
-  options: {
-    companyName: string;
-    jobRole: string;
-    personName: string;
-    template?: string;
-    fileName?: string;
-    accessToken?: string | null;
-  }
-): Promise<{ paths: ResumeDownloadPaths; savedPath: string }> {
-  // Render then save with browser fallback so History works when the backend
-  // host path is Linux/WSL/Docker while the user is on Windows (or remote).
-  return saveGeneratedResumeToDownloads(resume, undefined, {
-    companyName: options.companyName,
-    jobRole: options.jobRole,
-    personName: options.personName,
-    template: options.template,
-    fileName: options.fileName,
-    accessToken: options.accessToken,
-  });
-}
-
-/** Save a generated resume: render PDF on server, download in browser, then save to Downloads folder. */
-export async function saveGeneratedResumeToDownloads(
-  resume: UpdatedResume | Record<string, unknown>,
-  _pdfBase64: string | undefined,
-  options: {
-    companyName: string;
-    jobRole: string;
-    personName: string;
-    template?: string;
-    fileName?: string;
-    accessToken?: string | null;
-  }
-): Promise<{ paths: ResumeDownloadPaths; savedPath: string }> {
+  options: ClientSaveOptions & { personName: string }
+): Promise<ClientSaveResult> {
   const paths = options.fileName?.trim()
     ? buildJobFolderDownloadPaths(
         options.companyName,
@@ -224,74 +157,73 @@ export async function saveGeneratedResumeToDownloads(
         options.personName
       );
 
+  const basePath = resolveBasePath(options.downloadBasePath);
+  const browserFileName = `${paths.dirName} - ${paths.fileName}`;
+  const blob = pdfBase64ToBlob(pdfBase64);
+
+  const written = await tryWriteLinkedFolder(
+    options.userId,
+    basePath,
+    paths,
+    blob
+  );
+  if (written) {
+    return {
+      paths,
+      savedPath: linkedSavedPath(basePath, paths),
+      mode: "linked",
+    };
+  }
+
+  downloadPdfViaBrowser(pdfBase64, browserFileName);
+  return { paths, savedPath: browserFileName, mode: "browser" };
+}
+
+export async function saveResumePdfToDownloadsFolder(
+  resume: UpdatedResume | Record<string, unknown>,
+  options: ClientSaveOptions & {
+    personName: string;
+    template?: string;
+  }
+): Promise<ClientSaveResult> {
+  return saveGeneratedResumeToDownloads(resume, undefined, options);
+}
+
+/** Render PDF on server, then download only on the client (never server disk). */
+export async function saveGeneratedResumeToDownloads(
+  resume: UpdatedResume | Record<string, unknown>,
+  _pdfBase64: string | undefined,
+  options: ClientSaveOptions & {
+    personName: string;
+    template?: string;
+  }
+): Promise<ClientSaveResult> {
   if (!options.accessToken) {
     throw new Error("You must be signed in to download a resume");
   }
 
-  const response = await fetch(apiUrl("/api/generate-pdf"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${options.accessToken}`,
-    },
-    body: JSON.stringify({ resume, template: options.template }),
+  const pdfBase64 = await renderResumePdfBase64(
+    resume,
+    options.template,
+    options.accessToken
+  );
+
+  return savePdfToDownloadsFolder(pdfBase64, {
+    companyName: options.companyName,
+    jobRole: options.jobRole,
+    personName: options.personName,
+    fileName: options.fileName,
+    downloadBasePath: options.downloadBasePath,
+    userId: options.userId,
   });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(
-      typeof err.error === "string" ? err.error : "Failed to generate PDF"
-    );
-  }
-
-  const { pdfBase64 } = (await response.json()) as { pdfBase64?: string };
-  const normalized = pdfBase64 ? String(pdfBase64).trim() : "";
-  if (!normalized) {
-    throw new Error("PDF generation returned empty data");
-  }
-
-  const browserFileName = `${paths.dirName} - ${paths.fileName}`;
-  const browserSavedPath = browserDownloadsPath(paths);
-
-  try {
-    const result = await postSavePdf(
-      "/api/save-pdf",
-      {
-        pdfBase64: normalized,
-        companyName: options.companyName,
-        jobRole: options.jobRole,
-        personName: options.personName,
-        fileName: options.fileName,
-      },
-      options.accessToken,
-      SAVE_PDF_API_TIMEOUT_MS
-    );
-
-    if (isRemoteServerDownloadPath(result.savedPath)) {
-      console.warn(
-        "Server saved to a remote Linux path; using browser download for the Windows client:",
-        result.savedPath
-      );
-      downloadPdfViaBrowser(normalized, browserFileName);
-      return { paths, savedPath: browserSavedPath };
-    }
-
-    return result;
-  } catch (error) {
-    console.warn("Server save to Downloads failed; falling back to browser download:", error);
-    downloadPdfViaBrowser(normalized, browserFileName);
-    return { paths, savedPath: browserSavedPath };
-  }
 }
 
 export async function saveCoverLetterPdfToDownloadsFolder(
   text: string,
-  options: {
-    companyName: string;
-    jobRole: string;
+  options: ClientSaveOptions & {
     accessToken?: string | null;
   }
-): Promise<{ paths: ResumeDownloadPaths; savedPath: string }> {
+): Promise<ClientSaveResult> {
   const paths = buildCoverLetterDownloadPaths(options.companyName, options.jobRole);
 
   const response = await fetch(apiUrl("/api/generate-cover-letter-pdf"), {
@@ -315,20 +247,15 @@ export async function saveCoverLetterPdfToDownloadsFolder(
     jobRole: options.jobRole,
     personName: "cover-letter",
     fileName: paths.fileName,
-    accessToken: options.accessToken,
+    downloadBasePath: options.downloadBasePath,
+    userId: options.userId,
   });
 }
 
 export async function saveTextToDownloadsFolder(
   content: string,
-  options: {
-    companyName: string;
-    jobRole: string;
-    personName?: string;
-    fileName?: string;
-    accessToken?: string | null;
-  }
-): Promise<{ paths: ResumeDownloadPaths; savedPath: string }> {
+  options: ClientSaveOptions
+): Promise<ClientSaveResult> {
   const fileName = options.fileName?.trim() || "Cover Letter.txt";
   const paths = buildJobFolderDownloadPaths(
     options.companyName,
@@ -336,37 +263,23 @@ export async function saveTextToDownloadsFolder(
     fileName
   );
 
-  downloadTextFile(content, `${paths.dirName} - ${paths.fileName}`);
+  const basePath = resolveBasePath(options.downloadBasePath);
+  const browserFileName = `${paths.dirName} - ${paths.fileName}`;
 
-  const browserSavedPath = browserDownloadsPath(paths);
-
-  if (options.accessToken) {
-    const response = await fetch(apiUrl("/api/save-text"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${options.accessToken}`,
-      },
-      body: JSON.stringify({
-        content,
-        companyName: options.companyName,
-        jobRole: options.jobRole,
-        personName: options.personName ?? "resume",
-        fileName,
-      }),
-    });
-
-    if (response.ok) {
-      const data = (await response.json()) as { savedPath: string; paths: ResumeDownloadPaths };
-      if (isRemoteServerDownloadPath(data.savedPath)) {
-        return { paths, savedPath: browserSavedPath };
-      }
-      return { paths: data.paths, savedPath: data.savedPath };
-    }
+  const written = await tryWriteLinkedFolder(
+    options.userId,
+    basePath,
+    paths,
+    content
+  );
+  if (written) {
+    return {
+      paths,
+      savedPath: linkedSavedPath(basePath, paths),
+      mode: "linked",
+    };
   }
 
-  return {
-    paths,
-    savedPath: browserSavedPath,
-  };
+  downloadTextFile(content, browserFileName);
+  return { paths, savedPath: browserFileName, mode: "browser" };
 }

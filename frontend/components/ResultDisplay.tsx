@@ -89,12 +89,13 @@ export default function ResultDisplay({
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const { savedPath } = await saveGeneratedResumeToDownloads(result, pdfBase64, {
+      const { savedPath, mode } = await saveGeneratedResumeToDownloads(result, pdfBase64, {
         companyName,
         jobRole,
         personName: result.name || "resume",
         template: resumeTemplate,
         accessToken: session?.access_token,
+        userId,
       });
       setLastDiskSavePath(savedPath);
 
@@ -117,7 +118,7 @@ export default function ResultDisplay({
         newlySaved = true;
       }
 
-      showToast("success", formatPdfSaveMessage(savedPath, newlySaved));
+      showToast("success", formatPdfSaveMessage(savedPath, newlySaved, mode));
     } catch (error) {
       console.error("Failed to save resume or PDF:", error);
 
@@ -209,13 +210,19 @@ export default function ResultDisplay({
       });
 
       const { data: { session } } = await supabase.auth.getSession();
-      const { savedPath } = await saveCoverLetterPdfToDownloadsFolder(coverLetter, {
+      const { savedPath, mode } = await saveCoverLetterPdfToDownloadsFolder(coverLetter, {
         companyName,
         jobRole,
         accessToken: session?.access_token,
+        userId,
       });
 
-      showToast("success", `Cover letter saved to cloud and downloaded to ${savedPath}`);
+      showToast(
+        "success",
+        mode === "browser"
+          ? `Cover letter saved to cloud and downloaded via browser as “${savedPath}”`
+          : `Cover letter saved to cloud and downloaded to ${savedPath}`
+      );
     } catch (err) {
       showToast("error", `Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {

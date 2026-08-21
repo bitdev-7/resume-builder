@@ -48,6 +48,10 @@ import {
   renderResumePdfBase64,
   savePdfToDownloadsFolder,
 } from "@/lib/pdf-download";
+import {
+  cacheDownloadBasePath,
+  parseDownloadBasePath,
+} from "@/lib/download-settings";
 import type { ExtractedJobInfo } from "@/lib/extract-job-page";
 import type { AtsMatchResult } from "@/lib/types/ats-match";
 import type { EnrichmentRecommendation } from "@/lib/types/tailoring";
@@ -348,6 +352,9 @@ export default function JobsGeneratePanel({
           resolveResumeTemplate(loaded.legacyAnalyzeProfile.default_resume?.resume_template)
         );
         setDesiredTitle(loaded.legacyAnalyzeProfile.default_resume?.headline?.trim() ?? "");
+        cacheDownloadBasePath(
+          parseDownloadBasePath(loaded.bundle.profile.default_settings)
+        );
 
         const alertSettings = await loadApplyAlertSettings(user.id);
         if (!cancelled) setApplyAlertSettings(alertSettings);
@@ -695,13 +702,13 @@ export default function JobsGeneratePanel({
           );
         } else {
           try {
-            const { savedPath } = await savePdfToDownloadsFolder(previewPdfBase64, {
+            const { savedPath, mode } = await savePdfToDownloadsFolder(previewPdfBase64, {
               companyName: data.companyName?.trim() || session.companyName,
               jobRole: data.jobTitle?.trim() || session.jobTitle,
               personName: resume.name || "resume",
-              accessToken: authSession.access_token,
+              userId: user.id,
             });
-            showToast("success", formatPdfSaveMessage(savedPath, true));
+            showToast("success", formatPdfSaveMessage(savedPath, true, mode));
             void notifyCompletion(
               "Cubi — Generate complete",
               `${resumeLabel} downloaded.`
@@ -795,16 +802,13 @@ export default function JobsGeneratePanel({
     const session = sessions.find((s) => s.id === sessionId);
     if (!session?.previewPdfBase64) return;
     try {
-      const {
-        data: { session: authSession },
-      } = await supabase.auth.getSession();
-      const { savedPath } = await savePdfToDownloadsFolder(session.previewPdfBase64, {
+      const { savedPath, mode } = await savePdfToDownloadsFolder(session.previewPdfBase64, {
         companyName: session.companyName,
         jobRole: session.jobTitle,
         personName: session.result?.name || "resume",
-        accessToken: authSession?.access_token ?? null,
+        userId: user?.id,
       });
-      showToast("success", formatPdfSaveMessage(savedPath, true));
+      showToast("success", formatPdfSaveMessage(savedPath, true, mode));
     } catch (err) {
       showToast("error", err instanceof Error ? err.message : "Failed to download");
     }

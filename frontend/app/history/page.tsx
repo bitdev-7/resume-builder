@@ -552,14 +552,11 @@ export default function HistoryPage() {
     if (!expandedJd) return;
     setJdDownloadingId(record.id);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
       await saveTextToDownloadsFolder(expandedJd, {
         companyName: record.job_company || "",
         jobRole: record.job_title || "",
         fileName: "Job Description.txt",
-        accessToken: session?.access_token,
+        userId: user?.id,
       });
     } catch (error) {
       console.error("Failed to download job description:", error);
@@ -579,13 +576,14 @@ export default function HistoryPage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      const { savedPath } = await saveResumePdfToDownloadsFolder(expandedResumeData, {
+      const { savedPath, mode } = await saveResumePdfToDownloadsFolder(expandedResumeData, {
         companyName: record.job_company || "",
         jobRole: record.job_title || "",
         personName: expandedResumeData.name || "resume",
         accessToken: session?.access_token,
+        userId: user?.id,
       });
-      showToast("success", formatPdfSaveMessage(savedPath, false));
+      showToast("success", formatPdfSaveMessage(savedPath, false, mode));
     } catch (error) {
       console.error("Failed to download resume PDF:", error);
       showToast("error", error instanceof Error ? error.message : "Failed to download PDF");

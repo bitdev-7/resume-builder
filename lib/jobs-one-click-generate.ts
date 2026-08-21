@@ -12,6 +12,7 @@ import {
   renderResumePdfBase64,
   savePdfToDownloadsFolder,
 } from "@/lib/pdf-download";
+import type { ClientDownloadMode } from "@/lib/download-settings";
 import type { PromptOverrides } from "@/lib/prompts/prompt-overrides";
 import type { BidStatus } from "@/lib/supabase/database.types";
 import { createResumeWithArtifacts } from "@/lib/supabase/services/resumes";
@@ -40,6 +41,7 @@ export type OneClickGenerateInput = {
 
 export type OneClickGenerateResult = {
   savedPath: string;
+  downloadMode?: ClientDownloadMode;
   previewPdfBase64?: string;
   jobTitle: string;
   companyName: string;
@@ -212,15 +214,17 @@ export async function runJobsOneClickGenerate(
     };
   }
 
-  const { savedPath } = await savePdfToDownloadsFolder(previewPdfBase64, {
+  const { savedPath, mode } = await savePdfToDownloadsFolder(previewPdfBase64, {
     companyName: finalCompanyName,
     jobRole: finalJobTitle,
     personName: resume.name || "resume",
-    accessToken: input.accessToken,
+    userId: input.userId,
+    downloadBasePath: input.downloadBaseDir,
   });
 
   return {
     savedPath,
+    downloadMode: mode,
     jobTitle: finalJobTitle,
     companyName: finalCompanyName,
     resume,

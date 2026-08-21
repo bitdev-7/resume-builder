@@ -202,9 +202,18 @@ export function buildCoverLetterDownloadFilePath(
   return buildJobFolderDownloadFilePath(companyName, jobRole, "Cover Letter.pdf");
 }
 
-export function formatPdfSaveMessage(savedPath: string, savedToHistory: boolean): string {
+export function formatPdfSaveMessage(
+  savedPath: string,
+  savedToHistory: boolean,
+  mode: "linked" | "browser" = "linked"
+): string {
+  const location =
+    mode === "browser"
+      ? `browser download “${savedPath}” (check your browser’s download folder)`
+      : savedPath;
+
   if (savedToHistory) {
-    return `Saved to history & PDF saved to ${savedPath}`;
+    return `Saved to history & PDF saved to ${location}`;
   }
-  return `PDF saved to ${savedPath}`;
+  return `PDF saved to ${location}`;
 }
