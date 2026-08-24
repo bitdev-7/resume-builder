@@ -48,6 +48,8 @@ export default function ApplyAlertDialog({
 
   const period =
     duplicateMonths === 1 ? "the last month" : `the last ${duplicateMonths} months`;
+  const hasDuplicates = duplicateMatches.length > 0;
+  const alertCount = (showHybridOnsite ? 1 : 0) + (hasDuplicates ? 1 : 0);
 
   return createPortal(
     <div
@@ -61,15 +63,18 @@ export default function ApplyAlertDialog({
         aria-labelledby="apply-alert-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex-shrink-0 border-b border-red-200/80 bg-red-50/90 px-6 py-4 dark:border-red-900/40 dark:bg-red-950/40">
-          <h3 id="apply-alert-title" className="page-title text-xl text-red-800 dark:text-red-200">
-            Application alert
+        <div className="flex-shrink-0 border-b border-amber-200/80 bg-amber-50/90 px-6 py-4 dark:border-amber-900/40 dark:bg-amber-950/40">
+          <h3
+            id="apply-alert-title"
+            className="page-title text-xl text-amber-900 dark:text-amber-100"
+          >
+            Warning
           </h3>
-          <p className="mt-1 text-sm text-red-700/90 dark:text-red-300/90">
+          <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/90">
             Review the following before generating this resume.
-            {showHybridOnsite && duplicateMatches.length > 0 && (
-              <span className="mt-1 block text-xs font-medium text-red-600 dark:text-red-400">
-                {2} alerts apply to this application.
+            {alertCount > 1 && (
+              <span className="mt-1 block text-xs font-medium text-amber-700 dark:text-amber-300">
+                {alertCount} alerts apply to this application.
               </span>
             )}
           </p>
@@ -77,30 +82,30 @@ export default function ApplyAlertDialog({
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
           {showHybridOnsite && (
-            <div className="rounded-xl border border-red-200 bg-red-50/90 p-4 dark:border-red-900/40 dark:bg-red-950/30">
-              <p className="text-sm font-semibold text-red-900 dark:text-red-200">
+            <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 dark:border-amber-900/40 dark:bg-amber-950/30">
+              <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
                 Hybrid or onsite role
               </p>
-              <p className="mt-1 text-sm text-red-800 dark:text-red-300/90">
+              <p className="mt-1 text-sm text-amber-900 dark:text-amber-200/90">
                 This job description mentions hybrid or onsite work. Review the
                 location requirements before applying.
               </p>
             </div>
           )}
 
-          {duplicateMatches.length > 0 && (
-            <div className="rounded-xl border border-red-200 bg-red-50/90 p-4 dark:border-red-900/40 dark:bg-red-950/30">
-              <p className="text-sm font-semibold text-red-900 dark:text-red-200">
-                Duplicate company application
+          {hasDuplicates && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 dark:border-amber-900/40 dark:bg-amber-950/30">
+              <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+                Already tracked
               </p>
-              <p className="mt-1 text-sm text-red-800 dark:text-red-300/90">
-                You already applied to this company within {period}:
+              <p className="mt-1 text-sm text-amber-900 dark:text-amber-200/90">
+                This company was already tracked within {period}:
               </p>
               <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1">
                 {duplicateMatches.map((item, index) => (
                   <li
                     key={`${item.date}-${item.role}-${index}`}
-                    className="rounded-lg border border-red-200/80 bg-white/80 px-3 py-2 text-sm dark:border-red-900/30 dark:bg-slate-800/80"
+                    className="rounded-lg border border-amber-200/80 bg-white/80 px-3 py-2 text-sm dark:border-amber-900/30 dark:bg-slate-800/80"
                   >
                     <span className="font-medium text-slate-900 dark:text-slate-50">
                       {item.date}

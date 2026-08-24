@@ -67,11 +67,14 @@ export default function JobsBatchAlertDialog({
         aria-labelledby="batch-alert-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b border-red-200/80 bg-red-50/90 px-6 py-4 dark:border-red-900/40 dark:bg-red-950/40">
-          <h3 id="batch-alert-title" className="page-title text-xl text-red-800 dark:text-red-200">
-            Batch application alerts
+        <div className="border-b border-amber-200/80 bg-amber-50/90 px-6 py-4 dark:border-amber-900/40 dark:bg-amber-950/40">
+          <h3
+            id="batch-alert-title"
+            className="page-title text-xl text-amber-900 dark:text-amber-100"
+          >
+            Warning
           </h3>
-          <p className="mt-1 text-sm text-red-700/90 dark:text-red-300/90">
+          <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-200/90">
             Review these jobs before starting all resume generations.
           </p>
         </div>
@@ -96,14 +99,17 @@ export default function JobsBatchAlertDialog({
                   {card.url}
                 </a>
                 {hybrid ? (
-                  <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+                  <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
                     This description mentions hybrid or onsite work.
                   </p>
                 ) : null}
                 {duplicateMatches.length > 0 ? (
-                  <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/40 dark:bg-red-950/30">
-                    <p className="text-sm text-red-800 dark:text-red-200">
-                      Previous applications to this company within {period}:
+                  <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/40 dark:bg-amber-950/30">
+                    <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">
+                      Already tracked
+                    </p>
+                    <p className="mt-1 text-sm text-amber-900 dark:text-amber-200">
+                      This company was already tracked within {period}:
                     </p>
                     <ul className="mt-2 space-y-1">
                       {duplicateMatches.map((match, index) => (

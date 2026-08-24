@@ -19,14 +19,14 @@ export function findDuplicateCompanyApplications(
   companyName: string,
   months: number
 ): DuplicateApplicationMatch[] {
-  const target = companyName.trim();
+  const target = companyName;
   if (!target) return [];
 
   const cutoff = monthsAgoDate(months);
 
   return records
     .filter((record) => {
-      const company = record.job_company?.trim();
+      const company = record.job_company;
       if (!company) return false;
       if (company !== target) return false;
       return new Date(record.created_at) >= cutoff;
@@ -41,8 +41,8 @@ export function findDuplicateCompanyApplications(
         month: "short",
         day: "numeric",
       }),
-      company: record.job_company?.trim() || "Unknown company",
-      role: record.job_title?.trim() || "Untitled role",
+      company: record.job_company || "Unknown company",
+      role: record.job_title || "Untitled role",
     }));
 }
 
@@ -60,8 +60,7 @@ export function formatDuplicateApplicationsMessage(
     (item) => `• ${item.date} — ${item.company} — ${item.role}`
   );
   return (
-    `You already applied to this company within ${period}:\n\n` +
-    lines.join("\n")
+    `Already tracked — this company within ${period}:\n\n` + lines.join("\n")
   );
 }
 
