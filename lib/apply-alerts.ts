@@ -7,15 +7,6 @@ export interface DuplicateApplicationMatch {
   role: string;
 }
 
-function normalizeCompanyName(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[.,]/g, "")
-    .replace(/\s+(inc|llc|ltd|corp|corporation|co|company)\.?$/i, "")
-    .replace(/\s+/g, " ");
-}
-
 function monthsAgoDate(months: number): Date {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
@@ -28,7 +19,7 @@ export function findDuplicateCompanyApplications(
   companyName: string,
   months: number
 ): DuplicateApplicationMatch[] {
-  const target = normalizeCompanyName(companyName);
+  const target = companyName.trim();
   if (!target) return [];
 
   const cutoff = monthsAgoDate(months);
@@ -37,7 +28,7 @@ export function findDuplicateCompanyApplications(
     .filter((record) => {
       const company = record.job_company?.trim();
       if (!company) return false;
-      if (normalizeCompanyName(company) !== target) return false;
+      if (company !== target) return false;
       return new Date(record.created_at) >= cutoff;
     })
     .sort(
