@@ -1,8 +1,4 @@
-/** Strip UTM/query params; same rule as Windows Job Tracker. */
+/** Store and compare job URLs exactly as provided (no trim, no query stripping). */
 export function normalizeJobUrl(url: string): string {
-  let s = String(url).trim().split(/\s+/).join(" ");
-  if (s.includes("?")) {
-    s = s.split("?", 2)[0] ?? s;
-  }
-  return s;
+  return String(url ?? "");
 }
